@@ -9,18 +9,27 @@ data class ApiResponse<T>(
 )
 
 data class LoginRequest(
-    val username: String,
+    @SerializedName("email", alternate = ["username"])
+    val email: String,
+    @SerializedName("password")
     val password: String
+)
+
+data class TeacherLoginData(
+    val message: String? = null,
+    val teacher: TeacherProfile? = null,
+    val authenticated: Boolean? = null
 )
 
 data class LoginResponse(
     val success: Boolean,
     val message: String,
-    val username: String?,
-    val role: String?,
-    val displayName: String?,
-    val teacherId: String?,
-    val department: String?
+    val data: TeacherLoginData? = null,
+    val username: String? = null,
+    val role: String? = null,
+    val displayName: String? = null,
+    val teacherId: String? = null,
+    val department: String? = null
 )
 
 data class TeacherProfile(

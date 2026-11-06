@@ -27,7 +27,7 @@ class SessionPreferences(context: Context) {
         private const val KEY_TEACHER_EMAIL = "teacher_email"
         private const val KEY_DEPARTMENT = "teacher_department"
         private const val KEY_CUSTOM_BASE_URL = "custom_base_url"
-        const val DEFAULT_BASE_URL = "https://attendance-system-latest.onrender.com/"
+        const val DEFAULT_BASE_URL = "https://attendance-system-gfr7.onrender.com/"
     }
 
     fun saveSession(cookie: String, name: String, teacherId: String?, email: String, department: String?) {

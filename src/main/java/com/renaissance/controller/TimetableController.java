@@ -22,7 +22,7 @@ public class TimetableController {
         this.authService = authService;
     }
 
-    @GetMapping("/my-schedule")
+    @GetMapping({"/my-schedule", "/teacher"})
     public ResponseEntity<ApiResponse<List<TimetableScheduleDto>>> getMySchedule() {
         Teacher currentTeacher = authService.getCurrentTeacher();
         List<TimetableScheduleDto> schedules = timetableService.getSchedulesByTeacher(currentTeacher.getId());

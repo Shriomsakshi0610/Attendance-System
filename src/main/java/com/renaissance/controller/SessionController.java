@@ -21,7 +21,7 @@ public class SessionController {
         this.sessionService = sessionService;
     }
 
-    @PostMapping("/start")
+    @PostMapping({"/start", "/create"})
     public ResponseEntity<ApiResponse<SessionDto>> startSession(@Valid @RequestBody CreateSessionRequest request) {
         SessionDto session = sessionService.createAndStartSession(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -46,7 +46,7 @@ public class SessionController {
         return ResponseEntity.ok(ApiResponse.ok(activeSessions));
     }
 
-    @GetMapping("/my-sessions")
+    @GetMapping({"/my-sessions", "/teacher"})
     public ResponseEntity<ApiResponse<List<SessionDto>>> getTeacherSessions() {
         List<SessionDto> sessions = sessionService.getTeacherSessions();
         return ResponseEntity.ok(ApiResponse.ok(sessions));

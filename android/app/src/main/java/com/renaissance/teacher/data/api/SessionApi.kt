@@ -12,7 +12,7 @@ import retrofit2.http.Path
 
 interface SessionApi {
 
-    @POST("api/sessions/create")
+    @POST("api/sessions/start")
     suspend fun createSession(@Body request: CreateSessionRequest): Response<ApiResponse<AttendanceSessionItem>>
 
     @GET("api/sessions/{id}")
@@ -21,7 +21,7 @@ interface SessionApi {
     @POST("api/sessions/{id}/end")
     suspend fun endSession(@Path("id") id: String): Response<ApiResponse<AttendanceSessionItem>>
 
-    @GET("api/sessions/teacher")
+    @GET("api/sessions/my-sessions")
     suspend fun getTeacherSessions(): Response<ApiResponse<List<AttendanceSessionItem>>>
 
     @GET("api/attendance/session/{id}/records")

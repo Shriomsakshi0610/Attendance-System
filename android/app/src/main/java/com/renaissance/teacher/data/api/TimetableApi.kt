@@ -7,6 +7,6 @@ import retrofit2.http.GET
 
 interface TimetableApi {
 
-    @GET("api/timetable/teacher")
+    @GET("api/timetable/my-schedule")
     suspend fun getTeacherTimetable(): Response<ApiResponse<List<TimetableItem>>>
 }

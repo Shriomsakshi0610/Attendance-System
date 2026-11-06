@@ -17,9 +17,11 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Teacher teacher = teacherRepository.findByEmailIgnoreCase(email.trim())
-                .orElseThrow(() -> new UsernameNotFoundException("No teacher account found with email: " + email));
+    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
+        String trimmed = identifier != null ? identifier.trim() : "";
+        Teacher teacher = teacherRepository.findByEmailIgnoreCase(trimmed)
+                .or(() -> teacherRepository.findByEmployeeIdIgnoreCase(trimmed))
+                .orElseThrow(() -> new UsernameNotFoundException("No teacher account found with email or employee ID: " + identifier));
         return new SecurityUser(teacher);
     }
 }

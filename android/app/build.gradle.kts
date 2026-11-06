@@ -19,7 +19,7 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "BASE_URL", "\"https://attendance-system-latest.onrender.com/\"")
+        buildConfigField("String", "BASE_URL", "\"https://attendance-system-gfr7.onrender.com/\"")
     }
 
     buildTypes {

@@ -93,19 +93,20 @@ fun LoginScreen(
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
                     if (body.success) {
+                        val teacher = body.data?.teacher
                         sessionPrefs.saveSession(
-                            cookie = response.headers()["Set-Cookie"] ?: "JSESSIONID=active",
-                            name = body.displayName ?: body.username ?: "Faculty",
-                            teacherId = body.teacherId,
-                            email = body.username ?: "",
-                            department = body.department ?: "Faculty"
+                            cookie = response.headers()["Set-Cookie"] ?: "RENAISSANCE_SESSION=active",
+                            name = teacher?.name ?: body.displayName ?: body.username ?: u,
+                            teacherId = teacher?.id ?: body.teacherId,
+                            email = teacher?.email ?: body.username ?: u,
+                            department = teacher?.department ?: body.department ?: "Faculty"
                         )
                         onLoginSuccess()
                     } else {
                         errorMessage = body.message
                     }
                 } else {
-                    errorMessage = "Invalid credentials. Please verify your username and password."
+                    errorMessage = "Invalid credentials. Please verify your email/username and password."
                 }
             } catch (e: Exception) {
                 errorMessage = "Connection error: ${e.message}. Check your network or server URL."

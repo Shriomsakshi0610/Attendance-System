@@ -21,7 +21,7 @@ class ApiClient(private val context: Context) {
             cookieStore[url.host] = cookies
             // Also store any session cookie
             for (cookie in cookies) {
-                if (cookie.name == "JSESSIONID") {
+                if (cookie.name == "JSESSIONID" || cookie.name == "RENAISSANCE_SESSION") {
                     val fullCookie = "${cookie.name}=${cookie.value}"
                     val currentName = sessionPrefs.getTeacherName()
                     val currentId = sessionPrefs.getTeacherId()

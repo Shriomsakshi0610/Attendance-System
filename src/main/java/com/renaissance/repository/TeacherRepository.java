@@ -12,6 +12,8 @@ public interface TeacherRepository extends MongoRepository<Teacher, String> {
 
     Optional<Teacher> findByEmailIgnoreCase(String email);
 
+    Optional<Teacher> findByEmployeeIdIgnoreCase(String employeeId);
+
     boolean existsByEmailIgnoreCase(String email);
 
     List<Teacher> findByDepartment_Id(String departmentId);
