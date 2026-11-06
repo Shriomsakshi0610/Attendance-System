@@ -39,6 +39,12 @@ public class AttendanceSession {
 
     private Double geofenceRadiusMeters = 15.0;
 
+    private boolean bluetoothVerificationEnabled = false;
+
+    private String bleBeaconUuid;
+
+    private Integer bleRssiThreshold = -75;
+
     private LocalDateTime startTime;
 
     private LocalDateTime endTime;
@@ -144,6 +150,30 @@ public class AttendanceSession {
 
     public void setGeofenceRadiusMeters(Double geofenceRadiusMeters) {
         this.geofenceRadiusMeters = geofenceRadiusMeters;
+    }
+
+    public boolean isBluetoothVerificationEnabled() {
+        return bluetoothVerificationEnabled;
+    }
+
+    public void setBluetoothVerificationEnabled(boolean bluetoothVerificationEnabled) {
+        this.bluetoothVerificationEnabled = bluetoothVerificationEnabled;
+    }
+
+    public String getBleBeaconUuid() {
+        return bleBeaconUuid;
+    }
+
+    public void setBleBeaconUuid(String bleBeaconUuid) {
+        this.bleBeaconUuid = bleBeaconUuid;
+    }
+
+    public Integer getBleRssiThreshold() {
+        return bleRssiThreshold;
+    }
+
+    public void setBleRssiThreshold(Integer bleRssiThreshold) {
+        this.bleRssiThreshold = bleRssiThreshold;
     }
 
     public LocalDateTime getStartTime() {

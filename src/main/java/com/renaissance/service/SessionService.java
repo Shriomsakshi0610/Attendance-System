@@ -99,6 +99,14 @@ public class SessionService {
                 endTime
         );
 
+        if (Boolean.TRUE.equals(request.getEnableBluetoothVerification())) {
+            session.setBluetoothVerificationEnabled(true);
+            session.setBleBeaconUuid(java.util.UUID.randomUUID().toString());
+            if (request.getBleRssiThreshold() != null) {
+                session.setBleRssiThreshold(request.getBleRssiThreshold());
+            }
+        }
+
         AttendanceSession saved = sessionRepository.save(session);
         return toDto(saved);
     }
@@ -185,6 +193,9 @@ public class SessionService {
         dto.setPresentCount(presentCount);
         dto.setTotalEnrolled(enrolledCount);
         dto.setAttendanceLink("/student-attendance.html?code=" + session.getSessionCode());
+        dto.setBluetoothVerificationEnabled(session.isBluetoothVerificationEnabled());
+        dto.setBleBeaconUuid(session.getBleBeaconUuid());
+        dto.setBleRssiThreshold(session.getBleRssiThreshold());
 
         return dto;
     }

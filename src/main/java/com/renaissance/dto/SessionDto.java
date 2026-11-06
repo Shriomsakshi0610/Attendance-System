@@ -19,6 +19,9 @@ public class SessionDto {
     private Double teacherLatitude;
     private Double teacherLongitude;
     private Double geofenceRadiusMeters;
+    private boolean bluetoothVerificationEnabled;
+    private String bleBeaconUuid;
+    private Integer bleRssiThreshold;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String status;
@@ -155,6 +158,30 @@ public class SessionDto {
 
     public void setGeofenceRadiusMeters(Double geofenceRadiusMeters) {
         this.geofenceRadiusMeters = geofenceRadiusMeters;
+    }
+
+    public boolean isBluetoothVerificationEnabled() {
+        return bluetoothVerificationEnabled;
+    }
+
+    public void setBluetoothVerificationEnabled(boolean bluetoothVerificationEnabled) {
+        this.bluetoothVerificationEnabled = bluetoothVerificationEnabled;
+    }
+
+    public String getBleBeaconUuid() {
+        return bleBeaconUuid;
+    }
+
+    public void setBleBeaconUuid(String bleBeaconUuid) {
+        this.bleBeaconUuid = bleBeaconUuid;
+    }
+
+    public Integer getBleRssiThreshold() {
+        return bleRssiThreshold;
+    }
+
+    public void setBleRssiThreshold(Integer bleRssiThreshold) {
+        this.bleRssiThreshold = bleRssiThreshold;
     }
 
     public LocalDateTime getStartTime() {

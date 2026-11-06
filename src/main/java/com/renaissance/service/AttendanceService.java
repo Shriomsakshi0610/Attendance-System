@@ -112,6 +112,23 @@ public class AttendanceService {
             throw new AttendanceValidationException("Unable to verify your location. Please try again.", "LOCATION_ERROR");
         }
 
+        // 5b. Bluetooth Low Energy (BLE) Proximity Verification (if enabled for session)
+        boolean bleVerified = false;
+        if (session.isBluetoothVerificationEnabled()) {
+            if (request.getBleBeaconUuid() == null || request.getBleBeaconUuid().isBlank() ||
+                    !request.getBleBeaconUuid().trim().equalsIgnoreCase(session.getBleBeaconUuid())) {
+                logAttempt(session.getId(), code, usn, "FAILED", "BLE_VERIFICATION_FAILED", request, verificationResult.getDistanceMeters(), clientIp, userAgent);
+                throw new AttendanceValidationException("Bluetooth proximity verification failed: teacher beacon not detected.", "BLE_VERIFICATION_FAILED");
+            }
+            if (session.getBleRssiThreshold() != null && request.getBleRssi() != null) {
+                if (request.getBleRssi() < session.getBleRssiThreshold()) {
+                    logAttempt(session.getId(), code, usn, "FAILED", "BLE_SIGNAL_TOO_WEAK", request, verificationResult.getDistanceMeters(), clientIp, userAgent);
+                    throw new AttendanceValidationException("Bluetooth proximity signal is too weak. Please move closer to the teacher.", "BLE_SIGNAL_TOO_WEAK");
+                }
+            }
+            bleVerified = true;
+        }
+
         // 6. Save Attendance Record (Status PRESENT)
         AttendanceRecord record = new AttendanceRecord(
                 session,
@@ -122,6 +139,8 @@ public class AttendanceService {
                 request.getAccuracy(),
                 verificationResult.getDistanceMeters()
         );
+        record.setBleVerified(bleVerified);
+        record.setBleRssi(request.getBleRssi());
 
         recordRepository.save(record);
 

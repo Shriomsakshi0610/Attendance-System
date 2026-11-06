@@ -41,6 +41,10 @@ public class AttendanceRecord {
 
     private Double distanceFromTeacher;
 
+    private boolean bleVerified = false;
+
+    private Integer bleRssi;
+
     private LocalDateTime markedAt = LocalDateTime.now();
 
     public AttendanceRecord() {
@@ -149,6 +153,22 @@ public class AttendanceRecord {
 
     public void setDistanceFromTeacher(Double distanceFromTeacher) {
         this.distanceFromTeacher = distanceFromTeacher;
+    }
+
+    public boolean isBleVerified() {
+        return bleVerified;
+    }
+
+    public void setBleVerified(boolean bleVerified) {
+        this.bleVerified = bleVerified;
+    }
+
+    public Integer getBleRssi() {
+        return bleRssi;
+    }
+
+    public void setBleRssi(Integer bleRssi) {
+        this.bleRssi = bleRssi;
     }
 
     public LocalDateTime getMarkedAt() {

@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Renaissance Teacher</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_timetable">Timetable</string>
+    <string name="title_history">Attendance History</string>
+    <string name="title_settings">Settings &amp; Updates</string>
+    <string name="geofence_status_ok">Inside 15m Geofence</string>
+    <string name="geofence_status_outside">Outside 15m Geofence</string>
+    <string name="ble_active">BLE Beacon Advertising Active</string>
+</resources>

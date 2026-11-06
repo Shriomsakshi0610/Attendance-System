@@ -17,10 +17,23 @@ public class AdminController {
 
     private final AdminService adminService;
     private final TimetableService timetableService;
+    private final com.renaissance.service.AuthService authService;
 
-    public AdminController(AdminService adminService, TimetableService timetableService) {
+    public AdminController(AdminService adminService, TimetableService timetableService, com.renaissance.service.AuthService authService) {
         this.adminService = adminService;
         this.timetableService = timetableService;
+        this.authService = authService;
+    }
+
+    // ----------------------------------------------------
+    // ADMIN PROFILE & PASSWORD MANAGEMENT
+    // ----------------------------------------------------
+
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<Void>> changeAdminPassword(@Valid @RequestBody ResetPasswordRequest req) {
+        com.renaissance.entity.Teacher current = authService.getCurrentTeacher();
+        adminService.resetTeacherPassword(current.getId(), req.getNewPassword());
+        return ResponseEntity.ok(ApiResponse.ok("Administrator password changed successfully", null));
     }
 
     // ----------------------------------------------------

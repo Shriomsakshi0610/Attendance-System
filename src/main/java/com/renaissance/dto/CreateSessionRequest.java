@@ -21,6 +21,10 @@ public class CreateSessionRequest {
 
     private Integer durationMinutes = 15; // default 15 minutes
 
+    private Boolean enableBluetoothVerification = false;
+
+    private Integer bleRssiThreshold = -75;
+
     public CreateSessionRequest() {
     }
 
@@ -79,5 +83,21 @@ public class CreateSessionRequest {
 
     public void setDurationMinutes(Integer durationMinutes) {
         this.durationMinutes = durationMinutes;
+    }
+
+    public Boolean getEnableBluetoothVerification() {
+        return enableBluetoothVerification;
+    }
+
+    public void setEnableBluetoothVerification(Boolean enableBluetoothVerification) {
+        this.enableBluetoothVerification = enableBluetoothVerification;
+    }
+
+    public Integer getBleRssiThreshold() {
+        return bleRssiThreshold;
+    }
+
+    public void setBleRssiThreshold(Integer bleRssiThreshold) {
+        this.bleRssiThreshold = bleRssiThreshold;
     }
 }

@@ -33,6 +33,9 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${renaissance.admin.employee-id:ADM001}")
     private String adminEmpId;
 
+    @Value("${renaissance.admin.reset-password-on-boot:false}")
+    private boolean resetAdminPasswordOnBoot;
+
     @Value("${renaissance.teacher.email:teacher@renaissance.edu}")
     private String teacherEmail;
 
@@ -73,8 +76,9 @@ public class DataInitializer implements CommandLineRunner {
                 .orElseGet(() -> departmentRepository.save(new Department("MECH", "Mechanical Engineering", "Department of MECH", "ACTIVE")));
 
         // 2. Seed Dedicated Admin Account
-        if (!teacherRepository.existsByEmailIgnoreCase(adminEmail)) {
-            Teacher adminUser = new Teacher(
+        Teacher adminUser = teacherRepository.findByEmailIgnoreCase(adminEmail).orElse(null);
+        if (adminUser == null) {
+            adminUser = new Teacher(
                     adminName,
                     adminEmail,
                     passwordEncoder.encode(adminPassword),
@@ -83,6 +87,9 @@ public class DataInitializer implements CommandLineRunner {
                     "ROLE_ADMIN"
             );
             adminUser.setPhone("+91 9876543200");
+            teacherRepository.save(adminUser);
+        } else if (resetAdminPasswordOnBoot) {
+            adminUser.setPassword(passwordEncoder.encode(adminPassword));
             teacherRepository.save(adminUser);
         }
 
