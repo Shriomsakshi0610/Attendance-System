@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renaissance — Smart GPS-Based Attendance Management System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+    <style>
+        .hero-section {
+            text-align: center;
+            padding: 4rem 1rem 3rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--accent-light);
+            color: var(--accent-600);
+            padding: 0.4rem 1rem;
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .hero-title {
+            font-size: 2.75rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, var(--primary-900) 0%, var(--accent-600) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+        .hero-subtitle {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+        }
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 880px;
+            margin: 0 auto 4rem;
+            padding: 0 1rem;
+        }
+        .portal-card {
+            background: var(--surface-card);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-lg);
+            padding: 2.25rem 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+        .portal-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--accent-400);
+        }
+        .portal-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        .portal-icon.student {
+            background: var(--accent-light);
+            color: var(--accent-600);
+        }
+        .portal-icon.teacher {
+            background: #e0e7ff;
+            color: var(--secondary-600);
+        }
+    </style>
+</head>
+<body class="landing-body">
+    <header style="padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--surface-border-subtle);">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 38px; height: 38px; border-radius: 8px; background: linear-gradient(135deg, var(--accent-600), var(--secondary-600)); display: flex; align-items: center; justify-content: center; color:#fff; font-weight:800; font-size:1.25rem;">
+                R
+            </div>
+            <div>
+                <strong style="font-size: 1.15rem; color: var(--primary-900);">RENAISSANCE</strong>
+                <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Smart Attendance System</span>
+            </div>
+        </div>
+        <div>
+            <a href="/teacher-login.html" class="btn btn-secondary btn-sm">Faculty Login</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="hero-section">
+            <div class="hero-badge">
+                <span>📍 Precision 15-Meter GPS Geofencing</span>
+            </div>
+            <h1 class="hero-title">Intelligent College Classroom Attendance</h1>
+            <p class="hero-subtitle">
+                Renaissance eliminates proxy attendance through cryptographic session codes and strict server-side Haversine GPS verification.
+            </p>
+        </section>
+
+        <section class="portal-grid">
+            <!-- Student Attendance Portal -->
+            <div class="portal-card">
+                <div class="portal-icon student">📱</div>
+                <h2>Student Portal</h2>
+                <p style="margin: 0.75rem 0 1.75rem; font-size: 0.95rem;">
+                    Mark attendance for your ongoing class session. Requires browser GPS permission within the 15m radius.
+                </p>
+                <a href="/student-attendance.html" class="btn btn-primary btn-block btn-lg">
+                    <span>Enter Student Attendance →</span>
+                </a>
+            </div>
+
+            <!-- Teacher Portal -->
+            <div class="portal-card">
+                <div class="portal-icon teacher">🎓</div>
+                <h2>Faculty / Admin</h2>
+                <p style="margin: 0.75rem 0 1.75rem; font-size: 0.95rem;">
+                    Launch attendance sessions, view live real-time headcounts, manage student rosters, and download CSV reports.
+                </p>
+                <a href="/teacher-login.html" class="btn btn-secondary btn-block btn-lg">
+                    <span>Teacher Dashboard Login →</span>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer style="margin-top: auto; padding: 2rem 0; text-align: center; border-top: 1px solid var(--surface-border); font-size: 0.85rem; color: var(--text-muted);">
+        <p>© 2026 Renaissance Smart Attendance Management System. Built with Java Spring Boot & Pure Vanilla Web Stack.</p>
+    </footer>
+</body>
+</html>

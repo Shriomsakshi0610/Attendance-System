@@ -1,0 +1,128 @@
+/* ========================================================
+   Renaissance - Smart GPS Attendance Management System
+   Global Stylesheet & CSS Variables
+   ======================================================== */
+
+:root {
+    /* Color Palette */
+    --primary-900: #1e0847;
+    --primary-800: #2e1065;
+    --primary-700: #3b1c6e;
+    --primary-600: #4a154b;
+    --primary-500: #581c87;
+
+    --secondary-700: #3730a3;
+    --secondary-600: #4338ca;
+    --secondary-500: #4f46e5;
+    --secondary-400: #6366f1;
+
+    --accent-600: #7c3aed;
+    --accent-500: #8b5cf6;
+    --accent-400: #a78bfa;
+    --accent-light: #ede9fe;
+
+    --surface-bg: #f8fafc;
+    --surface-card: #ffffff;
+    --surface-card-hover: #fcfcfd;
+    --surface-border: #e2e8f0;
+    --surface-border-subtle: #f1f5f9;
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --text-inverted: #ffffff;
+
+    --success-bg: #ecfdf5;
+    --success-border: #a7f3d0;
+    --success-text: #065f46;
+    --success-accent: #10b981;
+
+    --warning-bg: #fffbeb;
+    --warning-border: #fde68a;
+    --warning-text: #92400e;
+    --warning-accent: #f59e0b;
+
+    --danger-bg: #fef2f2;
+    --danger-border: #fecaca;
+    --danger-text: #991b1b;
+    --danger-accent: #ef4444;
+
+    /* Shadows & Radii */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+    --shadow-glow: 0 0 20px rgba(124, 58, 237, 0.25);
+
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-base: 250ms ease;
+    --transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Base Reset */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--surface-bg);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: var(--accent-600);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: var(--secondary-600);
+}
+
+/* Typography Utilities */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+h1 { font-size: 1.875rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.125rem; }
+
+p {
+    color: var(--text-secondary);
+}
+
+.text-muted { color: var(--text-muted); }
+.text-danger { color: var(--danger-accent); }
+.text-success { color: var(--success-accent); }
+.text-warning { color: var(--warning-accent); }
+.text-bold { font-weight: 600; }
+.text-center { text-align: center; }
+
+/* Layout Wrappers */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.landing-body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.08) 0%, rgba(248, 250, 252, 1) 90%);
+}

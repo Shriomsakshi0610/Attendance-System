@@ -1,0 +1,228 @@
+package com.renaissance.dto;
+
+import java.util.List;
+
+public class StudentProfileDto {
+    private Long id;
+    private String usn;
+    private String name;
+    private String email;
+    private String department;
+    private Integer semester;
+    private String section;
+    private double overallPercentage;
+    private long totalConducted;
+    private long totalPresent;
+    private long totalAbsent;
+    private boolean below75;
+    private List<HistoryRecordDto> attendanceHistory;
+
+    public static class HistoryRecordDto {
+        private Long sessionId;
+        private String sessionCode;
+        private String subjectCode;
+        private String subjectName;
+        private String sessionDate;
+        private String sessionTime;
+        private String status;
+        private String markedTime;
+        private String distanceFromTeacher;
+
+        public HistoryRecordDto() {
+        }
+
+        public HistoryRecordDto(Long sessionId, String sessionCode, String subjectCode, String subjectName,
+                                String sessionDate, String sessionTime, String status,
+                                String markedTime, String distanceFromTeacher) {
+            this.sessionId = sessionId;
+            this.sessionCode = sessionCode;
+            this.subjectCode = subjectCode;
+            this.subjectName = subjectName;
+            this.sessionDate = sessionDate;
+            this.sessionTime = sessionTime;
+            this.status = status;
+            this.markedTime = markedTime;
+            this.distanceFromTeacher = distanceFromTeacher;
+        }
+
+        public Long getSessionId() {
+            return sessionId;
+        }
+
+        public void setSessionId(Long sessionId) {
+            this.sessionId = sessionId;
+        }
+
+        public String getSessionCode() {
+            return sessionCode;
+        }
+
+        public void setSessionCode(String sessionCode) {
+            this.sessionCode = sessionCode;
+        }
+
+        public String getSubjectCode() {
+            return subjectCode;
+        }
+
+        public void setSubjectCode(String subjectCode) {
+            this.subjectCode = subjectCode;
+        }
+
+        public String getSubjectName() {
+            return subjectName;
+        }
+
+        public void setSubjectName(String subjectName) {
+            this.subjectName = subjectName;
+        }
+
+        public String getSessionDate() {
+            return sessionDate;
+        }
+
+        public void setSessionDate(String sessionDate) {
+            this.sessionDate = sessionDate;
+        }
+
+        public String getSessionTime() {
+            return sessionTime;
+        }
+
+        public void setSessionTime(String sessionTime) {
+            this.sessionTime = sessionTime;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+
+        public String getMarkedTime() {
+            return markedTime;
+        }
+
+        public void setMarkedTime(String markedTime) {
+            this.markedTime = markedTime;
+        }
+
+        public String getDistanceFromTeacher() {
+            return distanceFromTeacher;
+        }
+
+        public void setDistanceFromTeacher(String distanceFromTeacher) {
+            this.distanceFromTeacher = distanceFromTeacher;
+        }
+    }
+
+    public StudentProfileDto() {
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getUsn() {
+        return usn;
+    }
+
+    public void setUsn(String usn) {
+        this.usn = usn;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = department;
+    }
+
+    public Integer getSemester() {
+        return semester;
+    }
+
+    public void setSemester(Integer semester) {
+        this.semester = semester;
+    }
+
+    public String getSection() {
+        return section;
+    }
+
+    public void setSection(String section) {
+        this.section = section;
+    }
+
+    public double getOverallPercentage() {
+        return overallPercentage;
+    }
+
+    public void setOverallPercentage(double overallPercentage) {
+        this.overallPercentage = overallPercentage;
+        this.below75 = overallPercentage < 75.0;
+    }
+
+    public long getTotalConducted() {
+        return totalConducted;
+    }
+
+    public void setTotalConducted(long totalConducted) {
+        this.totalConducted = totalConducted;
+    }
+
+    public long getTotalPresent() {
+        return totalPresent;
+    }
+
+    public void setTotalPresent(long totalPresent) {
+        this.totalPresent = totalPresent;
+    }
+
+    public long getTotalAbsent() {
+        return totalAbsent;
+    }
+
+    public void setTotalAbsent(long totalAbsent) {
+        this.totalAbsent = totalAbsent;
+    }
+
+    public boolean isBelow75() {
+        return below75;
+    }
+
+    public void setBelow75(boolean below75) {
+        this.below75 = below75;
+    }
+
+    public List<HistoryRecordDto> getAttendanceHistory() {
+        return attendanceHistory;
+    }
+
+    public void setAttendanceHistory(List<HistoryRecordDto> attendanceHistory) {
+        this.attendanceHistory = attendanceHistory;
+    }
+}

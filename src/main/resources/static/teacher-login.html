@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Login — Renaissance Attendance</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+    <style>
+        .login-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.1) 0%, rgba(248, 250, 252, 1) 90%);
+        }
+        .login-card {
+            width: 100%;
+            max-width: 440px;
+            background-color: var(--surface-card);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+        .login-header {
+            padding: 2.25rem 2rem 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid var(--surface-border-subtle);
+        }
+        .login-logo {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-600) 0%, var(--secondary-600) 100%);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin: 0 auto 1rem;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        }
+        .login-body {
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">R</div>
+                <h2>Faculty Portal</h2>
+                <p style="font-size: 0.875rem; margin-top: 0.35rem;">Log in to manage attendance sessions and view analytics.</p>
+            </div>
+
+            <div class="login-body">
+                <div id="login-error-alert" class="alert alert-danger" style="display: none;"></div>
+
+                <form id="teacher-login-form">
+                    <div class="form-group">
+                        <label class="form-label" for="login-email">Faculty Email Address</label>
+                        <input type="email" id="login-email" class="form-control" placeholder="teacher@renaissance.edu" required autocomplete="email" value="teacher@renaissance.edu">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="login-password">Password</label>
+                        <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password" value="Admin@1234">
+                    </div>
+
+                    <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.5rem;">
+                        Sign In to Dashboard →
+                    </button>
+                </form>
+
+                <div style="margin-top: 1.75rem; padding: 0.85rem; background-color: var(--surface-bg); border: 1px dashed var(--accent-400); border-radius: var(--radius-md); font-size: 0.8rem; color: var(--text-secondary);">
+                    <strong>Default Provisioned Account:</strong><br>
+                    Email: <code>teacher@renaissance.edu</code><br>
+                    Password: <code>Admin@1234</code>
+                </div>
+
+                <div style="margin-top: 1.25rem; text-align: center;">
+                    <a href="/index.html" style="font-size: 0.85rem; color: var(--text-muted);">← Back to Main Portal</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('teacher-login-form');
+            const emailInput = document.getElementById('login-email');
+            const passInput = document.getElementById('login-password');
+            const errorAlert = document.getElementById('login-error-alert');
+            const submitBtn = document.getElementById('login-submit-btn');
+
+            // Check if redirected due to unauthorized or logout
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('error') === 'unauthorized') {
+                errorAlert.textContent = 'Please log in as an authorized teacher to access the dashboard.';
+                errorAlert.style.display = 'block';
+            } else if (urlParams.get('logout') === 'true') {
+                App.showToast('You have been logged out successfully.', 'info');
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errorAlert.style.display = 'none';
+
+                const email = emailInput.value.trim();
+                const password = passInput.value;
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Signing in...';
+
+                try {
+                    const res = await Auth.login(email, password);
+                    if (res && res.success) {
+                        App.showToast('Login successful! Redirecting...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/dashboard.html';
+                        }, 500);
+                    }
+                } catch (err) {
+                    errorAlert.textContent = err.message || 'Invalid email or password.';
+                    errorAlert.style.display = 'block';
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Sign In to Dashboard →';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

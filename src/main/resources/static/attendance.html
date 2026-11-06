@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Records & Calculations — Renaissance</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">R</div>
+                <div>
+                    <div class="brand-title">RENAISSANCE</div>
+                    <div class="brand-sub">Attendance System</div>
+                </div>
+            </div>
+
+            <ul class="sidebar-nav">
+                <li class="nav-item">
+                    <a href="/dashboard.html" class="nav-link">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/sessions.html" class="nav-link">
+                        <span class="nav-icon">🎯</span>
+                        <span>Class Sessions</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/students.html" class="nav-link">
+                        <span class="nav-icon">👥</span>
+                        <span>Students</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/attendance.html" class="nav-link active">
+                        <span class="nav-icon">📋</span>
+                        <span>Attendance Records</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/reports.html" class="nav-link">
+                        <span class="nav-icon">📈</span>
+                        <span>Reports & Analytics</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/reports.html" class="nav-link">
+                        <span class="nav-icon">📥</span>
+                        <span>Export CSV</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" onclick="App.showToast('Settings: Radius fixed to 15m as per institutional policy.', 'info')" class="nav-link">
+                        <span class="nav-icon">⚙️</span>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li class="nav-item" style="margin-top: 1.5rem;">
+                    <a href="javascript:void(0)" class="nav-link btn-logout" style="color: #f87171;">
+                        <span class="nav-icon">🚪</span>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-profile-badge">
+                    <div class="user-avatar" id="teacher-avatar-display">T</div>
+                    <div class="user-info">
+                        <div class="user-name" id="teacher-name-display">Faculty</div>
+                        <div class="user-role" id="teacher-role-display">CSE Department</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Wrapper -->
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="menu-toggle-btn" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+                    <div class="page-title">
+                        <h2>Attendance Records & Percentage Calculations</h2>
+                    </div>
+                </div>
+
+                <div class="topbar-actions">
+                    <button type="button" id="export-summary-csv-btn" class="btn btn-secondary btn-sm">
+                        <span>📥 Export Summary CSV</span>
+                    </button>
+                </div>
+            </header>
+
+            <main class="content-container">
+                <!-- Filters Toolbar -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="card-body" style="padding: 1.25rem;">
+                        <div class="form-row">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label">Department</label>
+                                <select id="report-department" class="form-select">
+                                    <option value="">All Departments</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label">Class</label>
+                                <select id="report-class" class="form-select">
+                                    <option value="">All Classes</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label">Subject</label>
+                                <select id="report-subject" class="form-select">
+                                    <option value="">All Subjects</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alert Information banner -->
+                <div class="alert alert-warning" style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <strong>Institutional Compliance Note:</strong> Students with overall attendance below <strong>75%</strong> are highlighted in red/amber alert status.
+                    </div>
+                    <span class="badge badge-danger">Threshold: 75%</span>
+                </div>
+
+                <!-- Attendance Table -->
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>USN</th>
+                                <th>Student Name (Click for History)</th>
+                                <th>Class & Section</th>
+                                <th style="text-align: center;">Total Classes</th>
+                                <th style="text-align: center;">Attended</th>
+                                <th style="text-align: center;">Absent</th>
+                                <th style="text-align: right;">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-summary-table-body">
+                            <!-- Populated by reports.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Student Profile & History Modal -->
+    <div id="profile-modal" class="modal-backdrop">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-header">
+                <div>
+                    <h3 id="profile-name">Student Profile</h3>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
+                        <span id="profile-usn">1MS21CS001</span> • <span id="profile-dept">CSE</span> • <span id="profile-sem-sec">Sem 5</span>
+                    </div>
+                </div>
+                <button type="button" class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Summary Stats Bar -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div style="background-color: var(--surface-bg); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted);">Total Conducted</div>
+                        <div style="font-size: 1.4rem; font-weight: 800;" id="profile-conducted">0</div>
+                    </div>
+                    <div style="background-color: var(--surface-bg); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted);">Present</div>
+                        <div style="font-size: 1.4rem; font-weight: 800; color: var(--success-accent);" id="profile-present">0</div>
+                    </div>
+                    <div style="background-color: var(--surface-bg); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted);">Absent</div>
+                        <div style="font-size: 1.4rem; font-weight: 800; color: var(--danger-accent);" id="profile-absent">0</div>
+                    </div>
+                    <div style="background-color: var(--surface-bg); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted);">Attendance %</div>
+                        <div style="font-size: 1.4rem; font-weight: 800;" id="profile-percentage">0%</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                    <h4 style="font-size: 1rem;">Complete Attendance History</h4>
+                    <button type="button" id="export-student-csv-btn" class="btn btn-secondary btn-sm">
+                        📥 Download History CSV
+                    </button>
+                </div>
+
+                <!-- History Table -->
+                <div class="table-container" style="max-height: 280px; overflow-y: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Subject</th>
+                                <th>Marked Time</th>
+                                <th>Distance from Teacher</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="profile-history-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary modal-close-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/reports.js"></script>
+</body>
+</html>

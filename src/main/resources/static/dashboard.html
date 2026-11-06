@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard — Renaissance</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">R</div>
+                <div>
+                    <div class="brand-title">RENAISSANCE</div>
+                    <div class="brand-sub">Attendance System</div>
+                </div>
+            </div>
+
+            <ul class="sidebar-nav">
+                <li class="nav-item">
+                    <a href="/dashboard.html" class="nav-link active">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/sessions.html" class="nav-link">
+                        <span class="nav-icon">🎯</span>
+                        <span>Class Sessions</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/students.html" class="nav-link">
+                        <span class="nav-icon">👥</span>
+                        <span>Students</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/attendance.html" class="nav-link">
+                        <span class="nav-icon">📋</span>
+                        <span>Attendance Records</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/reports.html" class="nav-link">
+                        <span class="nav-icon">📈</span>
+                        <span>Reports & Analytics</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/reports.html" class="nav-link">
+                        <span class="nav-icon">📥</span>
+                        <span>Export CSV</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" onclick="App.showToast('Settings: Radius fixed to 15m as per institutional policy.', 'info')" class="nav-link">
+                        <span class="nav-icon">⚙️</span>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li class="nav-item" style="margin-top: 1.5rem;">
+                    <a href="javascript:void(0)" class="nav-link btn-logout" style="color: #f87171;">
+                        <span class="nav-icon">🚪</span>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-profile-badge">
+                    <div class="user-avatar" id="teacher-avatar-display">T</div>
+                    <div class="user-info">
+                        <div class="user-name" id="teacher-name-display">Faculty</div>
+                        <div class="user-role" id="teacher-role-display">CSE Department</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Wrapper -->
+        <div class="main-wrapper">
+            <!-- Topbar -->
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="menu-toggle-btn" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+                    <div class="page-title">
+                        <h2>Analytics Dashboard</h2>
+                    </div>
+                </div>
+
+                <div class="topbar-actions">
+                    <a href="/sessions.html" class="btn btn-primary btn-sm">
+                        <span>+ Launch Session</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <main class="content-container">
+                <!-- Overview Stats Cards -->
+                <section class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon purple">👥</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="stat-total-students">-</div>
+                            <div class="stat-label">Total Students</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon indigo">📚</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="stat-total-classes">-</div>
+                            <div class="stat-label">Classes Conducted</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon emerald">📈</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="stat-avg-attendance">-%</div>
+                            <div class="stat-label">Avg Attendance</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon amber">📅</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="stat-today-attendance">-</div>
+                            <div class="stat-label">Today's Attendance</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon rose">📡</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="stat-active-sessions">-</div>
+                            <div class="stat-label">Active Sessions</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Active Sessions Section -->
+                <section>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                        <h3>Active Attendance Sessions</h3>
+                        <a href="/sessions.html" class="btn btn-secondary btn-sm">Manage Sessions →</a>
+                    </div>
+                    <div id="active-sessions-container">
+                        <!-- Populated by dashboard.js -->
+                    </div>
+                </section>
+
+                <!-- Charts Grid -->
+                <section class="charts-grid">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Weekly Attendance Trends</h3>
+                            <span class="badge badge-primary">Last 7 Days</span>
+                        </div>
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="weeklyAttendanceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Subject-Wise Attendance</h3>
+                            <span class="badge badge-primary">Average %</span>
+                        </div>
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="subjectAttendanceChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>

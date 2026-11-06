@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance — Renaissance</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/student.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body class="student-app">
+
+    <div class="student-card">
+        <!-- Header -->
+        <div class="student-header">
+            <div class="logo-badge">📍</div>
+            <h1>RENAISSANCE</h1>
+            <p>Smart GPS Location-Verified Attendance</p>
+        </div>
+
+        <div class="student-body">
+            <!-- 1. Attendance Form -->
+            <div id="attendance-form-section">
+                <div style="margin-bottom: 1.5rem; text-align: center;">
+                    <span class="badge badge-primary">Geofence Radius: 15 Meters</span>
+                    <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-muted);">
+                        Please allow device location access when prompted to verify your presence in class.
+                    </p>
+                </div>
+
+                <form id="student-attendance-form" onsubmit="return false;">
+                    <!-- Choose Class Dropdown -->
+                    <div class="form-group">
+                        <label class="form-label" for="class-select">Choose Your Class</label>
+                        <select id="class-select" class="form-select" required>
+                            <option value="">-- Choose Your Class --</option>
+                        </select>
+                    </div>
+
+                    <!-- USN Input -->
+                    <div class="form-group">
+                        <label class="form-label" for="usn-input">University Seat Number (USN)</label>
+                        <input type="text" id="usn-input" class="form-control" placeholder="e.g. 1MS21CS001" style="text-transform: uppercase;" required autocomplete="off">
+                    </div>
+
+                    <!-- Attendance Code Input -->
+                    <div class="form-group">
+                        <label class="form-label" for="code-input">Session Attendance Code</label>
+                        <input type="text" id="code-input" class="form-control attendance-code-input" maxlength="6" placeholder="XXXXXX" required autocomplete="off">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 0.35rem;">
+                            Enter the 6-character code shared by your teacher.
+                        </div>
+                    </div>
+
+                    <button type="button" id="submit-attendance-btn" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.5rem;">
+                        <span>📍 Verify Location & Mark Present</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- 2. Loading & GPS Radar Section -->
+            <div id="attendance-loading-section" style="display: none;">
+                <div class="location-radar-container">
+                    <div class="radar-circle scanning" id="radar-circle">📡</div>
+                    <div class="location-status-text" id="location-status-text">
+                        Requesting GPS Coordinates...
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; text-align: center;">
+                        Verifying that your coordinates fall within the teacher's 15-meter classroom perimeter.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 3. Attendance Success Screen -->
+            <div id="attendance-success-section" style="display: none;" class="result-screen">
+                <div class="result-icon-wrapper success">✓</div>
+                <h2 style="color: var(--success-accent); font-size: 1.4rem;">Attendance Marked!</h2>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                    Your location has been verified inside the classroom.
+                </p>
+
+                <div class="result-details-card">
+                    <div class="result-row">
+                        <span class="label">Student Name:</span>
+                        <span class="val" id="res-student-name">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="label">USN:</span>
+                        <span class="val" id="res-usn">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="label">Department:</span>
+                        <span class="val" id="res-department">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="label">Semester / Sec:</span>
+                        <span class="val" id="res-semester">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="label">Subject:</span>
+                        <span class="val" id="res-subject">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="label">Date & Time:</span>
+                        <span class="val" id="res-datetime">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="label">Distance from Teacher:</span>
+                        <span class="val" id="res-distance" style="color: var(--accent-600);">-</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="label">Attendance Status:</span>
+                        <span class="val" id="res-status" style="color: var(--success-accent);">PRESENT</span>
+                    </div>
+                </div>
+
+                <a href="/" class="btn btn-secondary btn-block">Back to Home</a>
+            </div>
+
+            <!-- 4. Attendance Failure / Error Screen -->
+            <div id="attendance-error-section" style="display: none;" class="result-screen">
+                <div class="result-icon-wrapper failure">✕</div>
+                <h2 style="color: var(--danger-accent); font-size: 1.4rem;">Verification Failed</h2>
+                
+                <div class="alert alert-danger" style="margin-top: 1.25rem; text-align: left;">
+                    <div id="error-message-text" style="font-weight: 600;">
+                        Unable to verify your location.
+                    </div>
+                </div>
+
+                <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 1.5rem; text-align: left; line-height: 1.5;">
+                    • Ensure you are physically inside the classroom within 15 meters of the teacher.<br>
+                    • Enable High Accuracy GPS in device settings.<br>
+                    • Make sure the attendance code matches the teacher's active session.
+                </p>
+
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" id="retry-btn" class="btn btn-primary" style="flex: 1;">
+                        🔄 Try Again
+                    </button>
+                    <button type="button" id="restart-btn" class="btn btn-secondary" style="flex: 1;">
+                        Edit Details
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/location.js"></script>
+    <script src="/js/attendance.js"></script>
+</body>
+</html>

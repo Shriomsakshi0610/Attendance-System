@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Sessions & Geofencing — Renaissance</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">R</div>
+                <div>
+                    <div class="brand-title">RENAISSANCE</div>
+                    <div class="brand-sub">Attendance System</div>
+                </div>
+            </div>
+
+            <ul class="sidebar-nav">
+                <li class="nav-item">
+                    <a href="/dashboard.html" class="nav-link">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/sessions.html" class="nav-link active">
+                        <span class="nav-icon">🎯</span>
+                        <span>Class Sessions</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/students.html" class="nav-link">
+                        <span class="nav-icon">👥</span>
+                        <span>Students</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/attendance.html" class="nav-link">
+                        <span class="nav-icon">📋</span>
+                        <span>Attendance Records</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/reports.html" class="nav-link">
+                        <span class="nav-icon">📈</span>
+                        <span>Reports & Analytics</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/reports.html" class="nav-link">
+                        <span class="nav-icon">📥</span>
+                        <span>Export CSV</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" onclick="App.showToast('Settings: Radius fixed to 15m as per institutional policy.', 'info')" class="nav-link">
+                        <span class="nav-icon">⚙️</span>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li class="nav-item" style="margin-top: 1.5rem;">
+                    <a href="javascript:void(0)" class="nav-link btn-logout" style="color: #f87171;">
+                        <span class="nav-icon">🚪</span>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-profile-badge">
+                    <div class="user-avatar" id="teacher-avatar-display">T</div>
+                    <div class="user-info">
+                        <div class="user-name" id="teacher-name-display">Faculty</div>
+                        <div class="user-role" id="teacher-role-display">CSE Department</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Wrapper -->
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="menu-toggle-btn" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+                    <div class="page-title">
+                        <h2>Class Sessions & GPS Geofence Controller</h2>
+                    </div>
+                </div>
+            </header>
+
+            <main class="content-container">
+                <!-- Create Session Form Card -->
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-header">
+                        <h3>Start New Attendance Session</h3>
+                        <span class="badge badge-primary">GPS Geofence: Exactly 15 Meters</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="session-department">Department</label>
+                                <select id="session-department" class="form-select">
+                                    <option value="">Select Department</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="session-class">Class & Section</label>
+                                <select id="session-class" class="form-select">
+                                    <option value="">Select Class</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="session-subject">Subject</label>
+                                <select id="session-subject" class="form-select">
+                                    <option value="">Select Subject</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="max-width: 140px;">
+                                <label class="form-label" for="session-duration">Duration</label>
+                                <select id="session-duration" class="form-select">
+                                    <option value="15" selected>15 Mins</option>
+                                    <option value="30">30 Mins</option>
+                                    <option value="45">45 Mins</option>
+                                    <option value="60">60 Mins</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">
+                                📍 When you click Start Session, your browser location will be pinned as the 15m classroom epicenter.
+                            </div>
+                            <button type="button" id="start-session-btn" class="btn btn-primary btn-lg">
+                                <span>🎯 Start Attendance Session</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Session Live Monitor Card (Hidden when no active session) -->
+                <div id="active-session-card" class="card" style="display: none; margin-bottom: 2rem; border: 2px solid var(--accent-500); box-shadow: var(--shadow-glow);">
+                    <div class="card-header" style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(67, 56, 202, 0.08));">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <span class="badge badge-success badge-pulse">SESSION ACTIVE</span>
+                            <h3 id="live-session-class">CSE - Sem 5 (A)</h3>
+                            <span style="color: var(--text-muted);">•</span>
+                            <span id="live-session-subject" style="font-weight: 600; color: var(--text-secondary);">Database Management Systems</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <button type="button" id="copy-session-link-btn" class="btn btn-secondary btn-sm">
+                                🔗 Copy Link
+                            </button>
+                            <button type="button" id="end-session-btn" class="btn btn-danger btn-sm">
+                                🛑 End Session Manually
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <!-- Stats Ribbon -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                            <div style="background-color: var(--surface-bg); padding: 1.25rem; border-radius: var(--radius-md); text-align: center;">
+                                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.25rem;">Attendance Code</div>
+                                <div id="live-session-code" class="session-live-code">------</div>
+                            </div>
+                            <div style="background-color: var(--surface-bg); padding: 1.25rem; border-radius: var(--radius-md); text-align: center;">
+                                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.25rem;">Students Present</div>
+                                <div id="live-present-count" style="font-size: 1.8rem; font-weight: 800; color: var(--success-accent);">0</div>
+                            </div>
+                            <div style="background-color: var(--surface-bg); padding: 1.25rem; border-radius: var(--radius-md); text-align: center;">
+                                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.25rem;">Total Enrolled</div>
+                                <div id="live-total-enrolled" style="font-size: 1.8rem; font-weight: 800; color: var(--text-primary);">0</div>
+                            </div>
+                            <div style="background-color: var(--surface-bg); padding: 1.25rem; border-radius: var(--radius-md); text-align: center;">
+                                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.25rem;">Live Turnout %</div>
+                                <div id="live-percentage" style="font-size: 1.8rem; font-weight: 800; color: var(--accent-600);">0%</div>
+                            </div>
+                        </div>
+
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;" id="gps-location-status">
+                            Teacher Coordinates: Capturing...
+                        </div>
+
+                        <!-- Live Attendee Feed Table -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                            <h4>Live Students Marked (Real-Time Feed)</h4>
+                            <span class="badge badge-primary">No Refresh Needed</span>
+                        </div>
+
+                        <div class="table-container" style="max-height: 260px; overflow-y: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>USN</th>
+                                        <th>Student Name</th>
+                                        <th>Status</th>
+                                        <th>Distance from Teacher</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="live-records-table-body">
+                                    <!-- Populated in real-time -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Session History Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Session History</h3>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Session Code</th>
+                                    <th>Class & Section</th>
+                                    <th>Subject</th>
+                                    <th>Session Date & Time</th>
+                                    <th>Present / Enrolled</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sessions-history-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/location.js"></script>
+    <script src="/js/sessions.js"></script>
+</body>
+</html>

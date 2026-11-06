@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management — Renaissance</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">R</div>
+                <div>
+                    <div class="brand-title">RENAISSANCE</div>
+                    <div class="brand-sub">Attendance System</div>
+                </div>
+            </div>
+
+            <ul class="sidebar-nav">
+                <li class="nav-item">
+                    <a href="/dashboard.html" class="nav-link">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/sessions.html" class="nav-link">
+                        <span class="nav-icon">🎯</span>
+                        <span>Class Sessions</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/students.html" class="nav-link active">
+                        <span class="nav-icon">👥</span>
+                        <span>Students</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/attendance.html" class="nav-link">
+                        <span class="nav-icon">📋</span>
+                        <span>Attendance Records</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/reports.html" class="nav-link">
+                        <span class="nav-icon">📈</span>
+                        <span>Reports & Analytics</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/reports.html" class="nav-link">
+                        <span class="nav-icon">📥</span>
+                        <span>Export CSV</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" onclick="App.showToast('Settings: Radius fixed to 15m as per institutional policy.', 'info')" class="nav-link">
+                        <span class="nav-icon">⚙️</span>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li class="nav-item" style="margin-top: 1.5rem;">
+                    <a href="javascript:void(0)" class="nav-link btn-logout" style="color: #f87171;">
+                        <span class="nav-icon">🚪</span>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-profile-badge">
+                    <div class="user-avatar" id="teacher-avatar-display">T</div>
+                    <div class="user-info">
+                        <div class="user-name" id="teacher-name-display">Faculty</div>
+                        <div class="user-role" id="teacher-role-display">CSE Department</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Wrapper -->
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="menu-toggle-btn" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+                    <div class="page-title">
+                        <h2>Student Directory & Enrollment</h2>
+                    </div>
+                </div>
+
+                <div class="topbar-actions">
+                    <button type="button" id="import-csv-btn" class="btn btn-secondary btn-sm">
+                        <span>📤 Bulk Import CSV</span>
+                    </button>
+                    <button type="button" id="add-student-btn" class="btn btn-primary btn-sm">
+                        <span>+ Add Student</span>
+                    </button>
+                </div>
+            </header>
+
+            <main class="content-container">
+                <!-- Filters & Search Toolbar -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="card-body" style="padding: 1.25rem;">
+                        <div class="form-row">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <input type="text" id="student-search-input" class="form-control" placeholder="Search student by name or USN...">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <select id="filter-department" class="form-select">
+                                    <option value="">All Departments</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <select id="filter-class" class="form-select">
+                                    <option value="">All Classes</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Students Table -->
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>USN</th>
+                                <th>Student Name</th>
+                                <th>Department</th>
+                                <th>Class & Section</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-table-body">
+                            <!-- Populated by students.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add/Edit Student Modal -->
+    <div id="student-modal" class="modal-backdrop">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 id="student-modal-title">Add New Student</h3>
+                <button type="button" class="modal-close-btn">&times;</button>
+            </div>
+            <form id="student-form">
+                <div class="modal-body">
+                    <input type="hidden" id="student-id">
+
+                    <div class="form-group">
+                        <label class="form-label" for="student-usn">USN (University Seat Number)</label>
+                        <input type="text" id="student-usn" class="form-control" placeholder="e.g. 1MS21CS001" style="text-transform: uppercase;" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="student-name">Full Name</label>
+                        <input type="text" id="student-name" class="form-control" placeholder="e.g. Aarav Sharma" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="student-email">Email (Optional)</label>
+                        <input type="email" id="student-email" class="form-control" placeholder="student@college.edu">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="student-department">Department</label>
+                            <select id="student-department" class="form-select" required>
+                                <option value="">Select Department</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="student-class">Class / Section</label>
+                            <select id="student-class" class="form-select" required>
+                                <option value="">Select Class</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk CSV Import Modal -->
+    <div id="csv-modal" class="modal-backdrop">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>Bulk Student Import via CSV</h3>
+                <button type="button" class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--text-secondary);">
+                    Upload a CSV file containing your student roster. The CSV must contain the following header columns:
+                </p>
+                <div style="background-color: var(--surface-bg); padding: 0.75rem; border-radius: var(--radius-sm); font-family: monospace; font-size: 0.8rem; margin-bottom: 1.25rem;">
+                    USN, Name, Email, Department, Semester, Section
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="csv-file-input">Select CSV File</label>
+                    <input type="file" id="csv-file-input" class="form-control" accept=".csv" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-modal-cancel">Cancel</button>
+                <button type="button" id="upload-csv-btn" class="btn btn-primary">Upload & Import</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/students.js"></script>
+</body>
+</html>

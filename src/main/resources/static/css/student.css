@@ -1,0 +1,181 @@
+/* ========================================================
+   Renaissance - Mobile-First Student Attendance Styles
+   ======================================================== */
+
+.student-app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem 1rem;
+    background: radial-gradient(circle at 50% 10%, #2e1065 0%, #0f172a 100%);
+    color: var(--text-inverted);
+}
+
+.student-card {
+    width: 100%;
+    max-width: 460px;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    color: var(--text-primary);
+    overflow: hidden;
+    transition: transform var(--transition-base);
+}
+
+.student-header {
+    background: linear-gradient(135deg, var(--primary-800) 0%, var(--secondary-700) 100%);
+    padding: 2rem 1.5rem 1.5rem;
+    text-align: center;
+    color: var(--text-inverted);
+    position: relative;
+}
+
+.student-header .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    margin-bottom: 0.75rem;
+    font-size: 1.5rem;
+}
+
+.student-header h1 {
+    color: var(--text-inverted);
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.student-header p {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.student-body {
+    padding: 1.75rem 1.5rem;
+}
+
+/* Radar Location Animation */
+.location-radar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 0;
+}
+
+.radar-circle {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-600);
+    font-size: 2rem;
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4);
+}
+
+.radar-circle.scanning {
+    animation: radarPulse 1.6s infinite ease-out;
+}
+
+@keyframes radarPulse {
+    0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.5); }
+    70% { box-shadow: 0 0 0 30px rgba(124, 58, 237, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+}
+
+.location-status-text {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+/* Attendance Result Views */
+.result-screen {
+    text-align: center;
+    padding: 1rem 0;
+    animation: resultPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes resultPop {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.result-icon-wrapper {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    margin: 0 auto 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.25rem;
+}
+
+.result-icon-wrapper.success {
+    background-color: var(--success-bg);
+    color: var(--success-accent);
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.3);
+}
+
+.result-icon-wrapper.failure {
+    background-color: var(--danger-bg);
+    color: var(--danger-accent);
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.3);
+}
+
+.result-details-card {
+    background-color: var(--surface-bg);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    margin: 1.5rem 0;
+    text-align: left;
+}
+
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--surface-border-subtle);
+    font-size: 0.875rem;
+}
+
+.result-row:last-child {
+    border-bottom: none;
+}
+
+.result-row .label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.result-row .val {
+    color: var(--text-primary);
+    font-weight: 700;
+    text-align: right;
+}
+
+/* Code Input Box */
+.attendance-code-input {
+    letter-spacing: 0.3em;
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-align: center;
+    text-transform: uppercase;
+}
