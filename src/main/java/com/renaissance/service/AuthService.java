@@ -17,7 +17,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
@@ -30,7 +29,6 @@ public class AuthService {
         this.teacherRepository = teacherRepository;
     }
 
-    @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         try {
             Authentication authentication = authenticationManager.authenticate(
@@ -62,7 +60,6 @@ public class AuthService {
         SecurityContextHolder.clearContext();
     }
 
-    @Transactional(readOnly = true)
     public Teacher getCurrentTeacher() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {

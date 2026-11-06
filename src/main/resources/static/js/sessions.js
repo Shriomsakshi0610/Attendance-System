@@ -98,8 +98,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Step 2: Call backend to create and activate session
             const payload = {
-                classId: parseInt(classId, 10),
-                subjectId: parseInt(subjectId, 10),
+                classId: classId,
+                subjectId: subjectId,
                 latitude: coords.latitude,
                 longitude: coords.longitude,
                 accuracy: coords.accuracy,

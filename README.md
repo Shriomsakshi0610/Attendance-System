@@ -1,6 +1,6 @@
 # 🏛️ Renaissance — Smart GPS-Based Attendance Management System
 
-**Renaissance** is a modern, production-ready, full-stack college classroom attendance management web application powered by **strict 15-meter GPS geofencing** using the Haversine formula.
+**Renaissance** is a modern, production-ready, full-stack college classroom attendance management web application powered by **strict 15-meter GPS geofencing** using the Haversine formula and backed by **MongoDB**.
 
 Built specifically to eliminate proxy attendance in university lecture halls, Renaissance pairs ephemeral random attendance codes with cryptographic backend coordinate distance calculations, ensuring attendance can only be registered if the student is physically present inside the classroom.
 
@@ -20,13 +20,14 @@ Built specifically to eliminate proxy attendance in university lecture halls, Re
 - **Spring Boot 3.3.5**
   - **Spring Web** (REST API controllers)
   - **Spring Security** (BCrypt hashing, role-based protection, HTTP-only cookie sessions)
-  - **Spring Data JPA & Hibernate** (Relational ORM, entity relationships, custom query methods)
+  - **Spring Data MongoDB** (Document mapping, compound indexes, references, custom MongoTemplate aggregation)
+  - **MongoDB Java Driver 5.x**
   - **Spring WebSocket with STOMP** (Real-time live attendance counters and feeds)
   - **Apache Commons CSV** (RFC 4180 compliant CSV export and bulk roster import)
 - **Maven** (Build and dependency management)
 
 ### **Database**
-- **MySQL 8.x** (Primary relational persistence with indexes, unique constraints, and audit logs)
+- **MongoDB Atlas / Local MongoDB** (Document database with compound unique indexes and audit logs)
 
 ---
 
@@ -37,23 +38,26 @@ Renaissance is deployed as a single self-contained Spring Boot web application w
 ```
 c:\Users\Shrio\Attendance-System\
 ├── pom.xml
+├── Dockerfile
 ├── .env.example
 ├── README.md
 ├── src/
 │   ├── main/
 │   │   ├── java/com/renaissance/
 │   │   │   ├── RenaissanceApplication.java
-│   │   │   ├── config/             # SecurityConfig, WebSocketConfig, WebConfig, DataInitializer
-│   │   │   ├── controller/         # Auth, Student, Teacher, Class, Subject, Attendance, Session, Report
+│   │   │   ├── config/             # SecurityConfig, WebSocketConfig, WebConfig, DataInitializer, DatabaseConfigValidator
+│   │   │   ├── controller/         # Auth, Student, Teacher, Class, Subject, Attendance, Session, Report, Health
 │   │   │   ├── dto/                # Request/Response data transfer objects
-│   │   │   ├── entity/             # 9 JPA entities (Teacher, Student, CollegeClass, etc.)
+│   │   │   ├── entity/             # 9 MongoDB documents (Teacher, Student, CollegeClass, AttendanceRecord, etc.)
 │   │   │   ├── exception/          # GlobalExceptionHandler, AttendanceValidationException
-│   │   │   ├── repository/         # 9 Spring Data JPA repositories
+│   │   │   ├── repository/         # 9 Spring Data MongoRepository interfaces & MongoTemplate custom impls
 │   │   │   ├── security/           # CustomUserDetailsService, SecurityUser
 │   │   │   ├── service/            # AttendanceService, LocationVerificationService, SessionService, etc.
 │   │   │   └── util/               # GeoLocationUtils (Haversine), AttendanceCodeGenerator
 │   │   └── resources/
 │   │       ├── application.properties
+│   │       ├── application-production.properties
+│   │       ├── application-local.properties
 │   │       └── static/
 │   │           ├── index.html              # Main welcome & portal selector
 │   │           ├── student-attendance.html # Mobile-first student attendance page
@@ -66,9 +70,9 @@ c:\Users\Shrio\Attendance-System\
 │   │           ├── css/                    # style.css, components.css, student.css, dashboard.css, responsive.css
 │   │           └── js/                     # app.js, api.js, auth.js, location.js, attendance.js, etc.
 │   └── test/
-│       ├── java/com/renaissance/           # GeoLocationUtilsTest, AttendanceServiceTest, AppTests
+│       ├── java/com/renaissance/           # GeoLocationUtilsTest, AttendanceServiceTest, AppTests, MongoTestConfig
 │       └── resources/
-│           └── application-test.properties # In-memory test harness
+│           └── application-test.properties # In-memory MongoDB wire test harness
 ```
 
 ---
@@ -95,17 +99,17 @@ When a student submits attendance:
 
 ---
 
-## 🗄️ MySQL Database Schema
+## 🍃 MongoDB Collections & Schema Design
 
-The database consists of 9 normalized tables:
-1. `teachers`: Faculty accounts, BCrypt passwords, department mapping, and roles.
-2. `departments`: Academic branches (CSE, ISE, ECE, MECH).
-3. `classes`: Specific semesters and sections with unique constraints on `(department_id, semester, section)`.
-4. `subjects`: Courses mapped to department and semester.
-5. `students`: Unique indexed `usn` (e.g., `1MS21CS001`), name, email, class association.
-6. `enrollments`: Enrolled students mapped to subjects.
-7. `attendance_sessions`: Live teacher coordinates, active code, start/expiration time, status.
-8. `attendance_records`: Individual marked attendance records with unique constraint on `(session_id, student_id)`.
+The application models data into 9 MongoDB collections:
+1. `teachers`: Faculty accounts, BCrypt passwords, unique email index, department reference.
+2. `departments`: Academic branches (`CSE`, `ISE`, `ECE`, `MECH`) with unique code index.
+3. `classes`: Specific semesters and sections with compound unique index on `{department: 1, semester: 1, section: 1}`.
+4. `subjects`: Courses mapped to department and semester with unique code index.
+5. `students`: Unique indexed `usn` (e.g., `1MS21CS001`), name, email, department & class references.
+6. `enrollments`: Enrolled students mapped to subjects with compound unique index on `{student: 1, subject: 1}`.
+7. `attendance_sessions`: Live teacher coordinates, active code index, start/expiration time, status.
+8. `attendance_records`: Marked attendance records with compound unique index on `{session: 1, student: 1}` (strictly preventing duplicate submissions).
 9. `attendance_attempt_logs`: Complete audit trail of all attendance attempts including GPS coordinates, accuracy, and failure reasons.
 
 ---
@@ -117,60 +121,64 @@ The database consists of 9 normalized tables:
    ```bash
    java -version
    ```
-2. **Apache Maven 3.9+**
+2. **Apache Maven 3.9+** (or use included `mvnw.cmd`)
    ```bash
-   mvn -version
+   .\mvnw.cmd -version
    ```
-3. **MySQL Server 8.x**
-   Ensure MySQL server is installed and running on port 3306.
+3. **MongoDB Atlas or Local MongoDB**
 
 ---
 
-### Step 1: Database Setup in MySQL
+### Step 1: Database Setup (MongoDB Atlas)
 
-Log in to your MySQL terminal or MySQL Workbench:
-```sql
-CREATE DATABASE renaissance_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+1. Create a free cluster on [MongoDB Atlas](https://cloud.mongodb.com).
+2. Create a database user and allow your IP address (or `0.0.0.0/0` for cloud deployment).
+3. Copy your connection string:
+   ```text
+   mongodb+srv://<username>:<password>@<cluster>.mongodb.net/renaissance_db?retryWrites=true&w=majority
+   ```
 
 ---
 
 ### Step 2: Configure Database Credentials
 
-Configure your database credentials in `src/main/resources/application.properties` or via environment variables:
+Configure `MONGODB_URI` via environment variable or in `application.properties`:
 
 ```bash
-# Optional: Set via environment variables
-set SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/renaissance_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-set SPRING_DATASOURCE_USERNAME=root
-set SPRING_DATASOURCE_PASSWORD=your_password
+set MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/renaissance_db?retryWrites=true&w=majority
 ```
 
-Hibernate will automatically generate all 9 tables on startup via `spring.jpa.hibernate.ddl-auto=update`.
+Spring Data MongoDB will automatically initialize collections and unique compound indexes on first startup.
 
 ---
 
-### Step 3: Build & Package the Application
+### Step 3: Build & Test the Application
 
 Run from the project root directory (`c:\Users\Shrio\Attendance-System`):
 
 ```bash
-mvn clean package
+.\mvnw.cmd clean test
 ```
 
-All 12 unit tests will execute, validating the 15-meter boundary, duplicate protection, expiration checks, and JPA repository mappings.
+All 12 unit and integration tests will execute against an in-memory MongoDB wire server (`mongo-java-server`), validating:
+- The 15-meter boundary condition
+- Outside-radius rejection
+- Duplicate attendance submission prevention
+- Expired session protection
+- MongoDB entity and repository mappings
 
 ---
 
 ### Step 4: Run the Application
 
-#### Option A: Run via Maven
+#### Option A: Run via Maven Wrapper
 ```bash
-mvn spring-boot:run
+.\mvnw.cmd spring-boot:run
 ```
 
-#### Option B: Run the standalone JAR
+#### Option B: Build and run the standalone JAR
 ```bash
+.\mvnw.cmd clean package -DskipTests
 java -jar target/renaissance-attendance-system-1.0.0.jar
 ```
 
@@ -180,7 +188,7 @@ The application will start on **http://localhost:8080**.
 
 ## 🔑 Default Provisioned Credentials & Sample Data
 
-Upon initial startup, the `DataInitializer` automatically provisions:
+Upon initial startup, `DataInitializer` automatically provisions:
 - **Default Faculty Administrator:**
   - **Email:** `teacher@renaissance.edu`
   - **Password:** `Admin@1234`
@@ -211,6 +219,7 @@ Upon initial startup, the `DataInitializer` automatically provisions:
 | **Student Roster** | `http://localhost:8080/students.html` | Roster management, student search, and CSV bulk import |
 | **Attendance Records** | `http://localhost:8080/attendance.html` | Table with <75% shortage alert & student profile modal |
 | **Reports & CSV Export**| `http://localhost:8080/reports.html` | Filtered attendance reports & CSV download |
+| **Health Check** | `http://localhost:8080/health` | Deployment health check for Render monitoring |
 
 ---
 

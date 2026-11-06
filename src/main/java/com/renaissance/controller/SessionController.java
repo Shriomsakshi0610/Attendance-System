@@ -29,13 +29,13 @@ public class SessionController {
     }
 
     @PostMapping("/{id}/end")
-    public ResponseEntity<ApiResponse<SessionDto>> endSession(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<SessionDto>> endSession(@PathVariable String id) {
         SessionDto session = sessionService.endSession(id);
         return ResponseEntity.ok(ApiResponse.ok("Session ended", session));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<SessionDto>> getSession(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<SessionDto>> getSession(@PathVariable String id) {
         SessionDto session = sessionService.getSessionById(id);
         return ResponseEntity.ok(ApiResponse.ok(session));
     }

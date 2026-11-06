@@ -1,7 +1,7 @@
 package com.renaissance.dto;
 
 public class AttendanceSummaryDto {
-    private Long studentId;
+    private String studentId;
     private String usn;
     private String studentName;
     private String department;
@@ -17,7 +17,7 @@ public class AttendanceSummaryDto {
     public AttendanceSummaryDto() {
     }
 
-    public AttendanceSummaryDto(Long studentId, String usn, String studentName, String department,
+    public AttendanceSummaryDto(String studentId, String usn, String studentName, String department,
                                 Integer semester, String section, String subject,
                                 long totalClasses, long attended, long absent, double percentage) {
         this.studentId = studentId;
@@ -34,11 +34,11 @@ public class AttendanceSummaryDto {
         this.below75 = this.percentage < 75.0;
     }
 
-    public Long getStudentId() {
+    public String getStudentId() {
         return studentId;
     }
 
-    public void setStudentId(Long studentId) {
+    public void setStudentId(String studentId) {
         this.studentId = studentId;
     }
 
@@ -119,8 +119,7 @@ public class AttendanceSummaryDto {
     }
 
     public void setPercentage(double percentage) {
-        this.percentage = Math.round(percentage * 100.0) / 100.0;
-        this.below75 = this.percentage < 75.0;
+        this.percentage = percentage;
     }
 
     public boolean isBelow75() {

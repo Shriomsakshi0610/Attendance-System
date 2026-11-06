@@ -1,60 +1,48 @@
 package com.renaissance.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "attendance_attempt_logs", indexes = {
-    @Index(name = "idx_attempt_usn", columnList = "usn"),
-    @Index(name = "idx_attempt_code", columnList = "session_code"),
-    @Index(name = "idx_attempt_time", columnList = "attempt_time")
-})
+@Document(collection = "attendance_attempt_logs")
 public class AttendanceAttemptLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(name = "session_id")
-    private Long sessionId;
+    private String sessionId;
 
-    @Column(name = "session_code", length = 20)
+    @Indexed
     private String sessionCode;
 
-    @Column(length = 30)
+    @Indexed
     private String usn;
 
-    @Column(name = "attempt_status", nullable = false, length = 20)
     private String attemptStatus; // SUCCESS, FAILED
 
-    @Column(name = "failure_reason", length = 100)
     private String failureReason; // OUTSIDE_RADIUS, INVALID_CODE, etc.
 
-    @Column(name = "student_latitude")
     private Double studentLatitude;
 
-    @Column(name = "student_longitude")
     private Double studentLongitude;
 
-    @Column(name = "student_accuracy")
     private Double studentAccuracy;
 
-    @Column(name = "calculated_distance")
     private Double calculatedDistance;
 
-    @Column(name = "ip_address", length = 50)
     private String ipAddress;
 
-    @Column(name = "user_agent", length = 255)
     private String userAgent;
 
-    @Column(name = "attempt_time", nullable = false)
-    private LocalDateTime attemptTime;
+    @Indexed
+    private LocalDateTime attemptTime = LocalDateTime.now();
 
     public AttendanceAttemptLog() {
     }
 
-    public AttendanceAttemptLog(Long sessionId, String sessionCode, String usn, String attemptStatus,
+    public AttendanceAttemptLog(String sessionId, String sessionCode, String usn, String attemptStatus,
                                 String failureReason, Double studentLatitude, Double studentLongitude,
                                 Double studentAccuracy, Double calculatedDistance,
                                 String ipAddress, String userAgent) {
@@ -72,26 +60,19 @@ public class AttendanceAttemptLog {
         this.attemptTime = LocalDateTime.now();
     }
 
-    @PrePersist
-    protected void onCreate() {
-        if (this.attemptTime == null) {
-            this.attemptTime = LocalDateTime.now();
-        }
-    }
-
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
-    public Long getSessionId() {
+    public String getSessionId() {
         return sessionId;
     }
 
-    public void setSessionId(Long sessionId) {
+    public void setSessionId(String sessionId) {
         this.sessionId = sessionId;
     }
 

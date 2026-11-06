@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const payload = {
                 usn: usn,
                 attendanceCode: code,
-                classId: parseInt(classId, 10),
+                classId: classId,
                 latitude: coords.latitude,
                 longitude: coords.longitude,
                 accuracy: coords.accuracy

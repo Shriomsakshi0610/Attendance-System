@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -50,7 +49,6 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     @Override
-    @Transactional
     public void run(String... args) {
         // 1. Seed Departments if missing
         Department cse = departmentRepository.findByCodeIgnoreCase("CSE")
@@ -122,7 +120,7 @@ public class DataInitializer implements CommandLineRunner {
 
             // Enroll CSE 5A students in DBMS and CN
             for (Student student : savedStudents) {
-                if (student.getCollegeClass().getId().equals(cse5A.getId())) {
+                if (student.getCollegeClass() != null && student.getCollegeClass().getId().equals(cse5A.getId())) {
                     enrollmentRepository.save(new Enrollment(student, cse5A, dbms, "2026-2027"));
                     enrollmentRepository.save(new Enrollment(student, cse5A, cn, "2026-2027"));
                     enrollmentRepository.save(new Enrollment(student, cse5A, se, "2026-2027"));

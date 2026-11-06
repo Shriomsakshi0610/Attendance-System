@@ -195,8 +195,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             usn: studentUsnInput.value.trim().toUpperCase(),
             name: studentNameInput.value.trim(),
             email: studentEmailInput.value.trim(),
-            departmentId: parseInt(studentDeptSelect.value, 10),
-            classId: parseInt(studentClassSelect.value, 10),
+            departmentId: studentDeptSelect.value,
+            classId: studentClassSelect.value,
             status: 'ACTIVE'
         };
 

@@ -24,15 +24,15 @@ public class StudentController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<StudentDto>>> getAllStudents(
-            @RequestParam(required = false) Long departmentId,
-            @RequestParam(required = false) Long classId,
+            @RequestParam(required = false) String departmentId,
+            @RequestParam(required = false) String classId,
             @RequestParam(required = false) String keyword) {
         List<StudentDto> students = studentService.getAllStudents(departmentId, classId, keyword);
         return ResponseEntity.ok(ApiResponse.ok(students));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<StudentDto>> getStudentById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<StudentDto>> getStudentById(@PathVariable String id) {
         StudentDto student = studentService.getStudentById(id);
         return ResponseEntity.ok(ApiResponse.ok(student));
     }
@@ -45,13 +45,13 @@ public class StudentController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<StudentDto>> updateStudent(@PathVariable Long id, @Valid @RequestBody StudentDto dto) {
+    public ResponseEntity<ApiResponse<StudentDto>> updateStudent(@PathVariable String id, @Valid @RequestBody StudentDto dto) {
         StudentDto updated = studentService.updateStudent(id, dto);
         return ResponseEntity.ok(ApiResponse.ok("Student updated successfully", updated));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteStudent(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteStudent(@PathVariable String id) {
         studentService.deleteStudent(id);
         return ResponseEntity.ok(ApiResponse.ok("Student deleted successfully", null));
     }

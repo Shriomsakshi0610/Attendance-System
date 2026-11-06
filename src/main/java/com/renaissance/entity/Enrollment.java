@@ -1,35 +1,31 @@
 package com.renaissance.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "enrollments", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_student_subject", columnNames = {"student_id", "subject_id"})
-})
+@Document(collection = "enrollments")
+@CompoundIndex(name = "uk_student_subject", def = "{'student': 1, 'subject': 1}", unique = true)
 public class Enrollment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "student_id", nullable = false)
+    @DBRef
     private Student student;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "class_id", nullable = false)
+    @DBRef
     private CollegeClass collegeClass;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "subject_id", nullable = false)
+    @DBRef
     private Subject subject;
 
-    @Column(name = "academic_year", length = 20)
     private String academicYear = "2026-2027";
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public Enrollment() {
     }
@@ -38,19 +34,15 @@ public class Enrollment {
         this.student = student;
         this.collegeClass = collegeClass;
         this.subject = subject;
-        this.academicYear = academicYear;
-    }
-
-    @PrePersist
-    protected void onCreate() {
+        this.academicYear = academicYear != null ? academicYear : "2026-2027";
         this.createdAt = LocalDateTime.now();
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

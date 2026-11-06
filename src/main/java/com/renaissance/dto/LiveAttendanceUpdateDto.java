@@ -3,7 +3,7 @@ package com.renaissance.dto;
 import java.time.LocalDateTime;
 
 public class LiveAttendanceUpdateDto {
-    private Long sessionId;
+    private String sessionId;
     private String sessionCode;
     private String usn;
     private String studentName;
@@ -17,7 +17,7 @@ public class LiveAttendanceUpdateDto {
     public LiveAttendanceUpdateDto() {
     }
 
-    public LiveAttendanceUpdateDto(Long sessionId, String sessionCode, String usn, String studentName,
+    public LiveAttendanceUpdateDto(String sessionId, String sessionCode, String usn, String studentName,
                                   String status, String distanceFromTeacher, long presentCount,
                                   long totalEnrolled, double currentPercentage, LocalDateTime markedAt) {
         this.sessionId = sessionId;
@@ -32,11 +32,11 @@ public class LiveAttendanceUpdateDto {
         this.markedAt = markedAt;
     }
 
-    public Long getSessionId() {
+    public String getSessionId() {
         return sessionId;
     }
 
-    public void setSessionId(Long sessionId) {
+    public void setSessionId(String sessionId) {
         this.sessionId = sessionId;
     }
 

@@ -35,22 +35,22 @@ public class ReportController {
 
     @GetMapping("/attendance-summary")
     public ResponseEntity<ApiResponse<List<AttendanceSummaryDto>>> getAttendanceSummary(
-            @RequestParam(required = false) Long classId,
-            @RequestParam(required = false) Long subjectId) {
+            @RequestParam(required = false) String classId,
+            @RequestParam(required = false) String subjectId) {
         List<AttendanceSummaryDto> summary = reportService.getAttendanceSummary(classId, subjectId);
         return ResponseEntity.ok(ApiResponse.ok(summary));
     }
 
     @GetMapping("/student-profile/{id}")
-    public ResponseEntity<ApiResponse<StudentProfileDto>> getStudentProfile(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<StudentProfileDto>> getStudentProfile(@PathVariable String id) {
         StudentProfileDto profile = reportService.getStudentProfile(id);
         return ResponseEntity.ok(ApiResponse.ok(profile));
     }
 
     @GetMapping("/export/summary-csv")
     public ResponseEntity<byte[]> exportSummaryCsv(
-            @RequestParam(required = false) Long classId,
-            @RequestParam(required = false) Long subjectId) {
+            @RequestParam(required = false) String classId,
+            @RequestParam(required = false) String subjectId) {
         byte[] csvData = csvExportService.exportAttendanceSummaryCsv(classId, subjectId);
         String filename = "renaissance_attendance_" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
 
@@ -61,7 +61,7 @@ public class ReportController {
     }
 
     @GetMapping("/export/student-csv/{id}")
-    public ResponseEntity<byte[]> exportStudentCsv(@PathVariable Long id) {
+    public ResponseEntity<byte[]> exportStudentCsv(@PathVariable String id) {
         byte[] csvData = csvExportService.exportStudentHistoryCsv(id);
         String filename = "renaissance_student_" + id + "_history.csv";
 

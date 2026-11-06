@@ -19,7 +19,7 @@ public class ClassController {
     }
 
     @GetMapping("/api/classes")
-    public ResponseEntity<ApiResponse<List<ClassDto>>> getClasses(@RequestParam(required = false) Long departmentId) {
+    public ResponseEntity<ApiResponse<List<ClassDto>>> getClasses(@RequestParam(required = false) String departmentId) {
         List<ClassDto> classes = teacherService.getClassesByDepartment(departmentId);
         return ResponseEntity.ok(ApiResponse.ok(classes));
     }
@@ -31,7 +31,7 @@ public class ClassController {
     }
 
     @GetMapping("/api/public/classes")
-    public ResponseEntity<ApiResponse<List<ClassDto>>> getPublicClasses(@RequestParam(required = false) Long departmentId) {
+    public ResponseEntity<ApiResponse<List<ClassDto>>> getPublicClasses(@RequestParam(required = false) String departmentId) {
         List<ClassDto> classes = teacherService.getClassesByDepartment(departmentId);
         return ResponseEntity.ok(ApiResponse.ok(classes));
     }

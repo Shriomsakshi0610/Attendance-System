@@ -1,10 +1,9 @@
 package com.renaissance.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 public class StudentDto {
-    private Long id;
+    private String id;
 
     @NotBlank(message = "USN is required")
     private String usn;
@@ -14,14 +13,14 @@ public class StudentDto {
 
     private String email;
 
-    @NotNull(message = "Department ID is required")
-    private Long departmentId;
+    @NotBlank(message = "Department ID is required")
+    private String departmentId;
 
     private String departmentCode;
     private String departmentName;
 
-    @NotNull(message = "Class ID is required")
-    private Long classId;
+    @NotBlank(message = "Class ID is required")
+    private String classId;
 
     private String className;
     private Integer semester;
@@ -31,9 +30,9 @@ public class StudentDto {
     public StudentDto() {
     }
 
-    public StudentDto(Long id, String usn, String name, String email,
-                      Long departmentId, String departmentCode, String departmentName,
-                      Long classId, String className, Integer semester, String section, String status) {
+    public StudentDto(String id, String usn, String name, String email,
+                      String departmentId, String departmentCode, String departmentName,
+                      String classId, String className, Integer semester, String section, String status) {
         this.id = id;
         this.usn = usn;
         this.name = name;
@@ -48,11 +47,11 @@ public class StudentDto {
         this.status = status;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -80,11 +79,11 @@ public class StudentDto {
         this.email = email;
     }
 
-    public Long getDepartmentId() {
+    public String getDepartmentId() {
         return departmentId;
     }
 
-    public void setDepartmentId(Long departmentId) {
+    public void setDepartmentId(String departmentId) {
         this.departmentId = departmentId;
     }
 
@@ -104,11 +103,11 @@ public class StudentDto {
         this.departmentName = departmentName;
     }
 
-    public Long getClassId() {
+    public String getClassId() {
         return classId;
     }
 
-    public void setClassId(Long classId) {
+    public void setClassId(String classId) {
         this.classId = classId;
     }
 

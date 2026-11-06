@@ -1,42 +1,35 @@
 package com.renaissance.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "teachers", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_teacher_email", columnNames = {"email"})
-})
+@Document(collection = "teachers")
 public class Teacher {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false, length = 100, unique = true)
+    @Indexed(unique = true)
     private String email;
 
-    @Column(nullable = false, length = 255)
     private String password;
 
-    @Column(name = "employee_id", length = 30)
     private String employeeId;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "department_id")
+    @DBRef
     private Department department;
 
-    @Column(nullable = false, length = 30)
     private String role = "ROLE_TEACHER";
 
-    @Column(nullable = false)
     private boolean active = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public Teacher() {
     }
@@ -49,18 +42,14 @@ public class Teacher {
         this.department = department;
         this.role = "ROLE_TEACHER";
         this.active = true;
-    }
-
-    @PrePersist
-    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

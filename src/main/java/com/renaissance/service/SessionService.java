@@ -12,7 +12,6 @@ import com.renaissance.util.AttendanceCodeGenerator;
 import com.renaissance.util.GeoLocationUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,7 +45,6 @@ public class SessionService {
         this.authService = authService;
     }
 
-    @Transactional
     public SessionDto createAndStartSession(CreateSessionRequest request) {
         Teacher teacher = authService.getCurrentTeacher();
 
@@ -105,8 +103,7 @@ public class SessionService {
         return toDto(saved);
     }
 
-    @Transactional
-    public SessionDto endSession(Long sessionId) {
+    public SessionDto endSession(String sessionId) {
         AttendanceSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with ID: " + sessionId));
 
@@ -116,30 +113,25 @@ public class SessionService {
         return toDto(saved);
     }
 
-    @Transactional(readOnly = true)
-    public SessionDto getSessionById(Long sessionId) {
+    public SessionDto getSessionById(String sessionId) {
         AttendanceSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with ID: " + sessionId));
         return toDto(session);
     }
 
-    @Transactional(readOnly = true)
     public SessionDto getSessionByCode(String sessionCode) {
         AttendanceSession session = sessionRepository.findBySessionCodeIgnoreCase(sessionCode.trim())
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with code: " + sessionCode));
         return toDto(session);
     }
 
-    @Transactional(readOnly = true)
     public List<SessionDto> getTeacherSessions() {
         Teacher teacher = authService.getCurrentTeacher();
         List<AttendanceSession> sessions = sessionRepository.findByTeacherIdOrderByCreatedAtDesc(teacher.getId());
         return sessions.stream().map(this::toDto).collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
     public List<SessionDto> getActiveSessions() {
-        LocalDateTime now = LocalDateTime.now();
         List<AttendanceSession> active = sessionRepository.findByStatus(AttendanceSession.SessionStatus.ACTIVE);
         return active.stream()
                 .filter(s -> !s.isExpired())
@@ -159,23 +151,31 @@ public class SessionService {
         Subject s = session.getSubject();
         Teacher t = session.getTeacher();
 
-        long enrolledCount = studentRepository.findByCollegeClassId(c.getId()).size();
+        long enrolledCount = c != null ? studentRepository.findByCollegeClassId(c.getId()).size() : 0;
         long presentCount = recordRepository.countBySessionId(session.getId());
 
         SessionDto dto = new SessionDto();
         dto.setId(session.getId());
         dto.setSessionCode(session.getSessionCode());
-        dto.setTeacherId(t.getId());
-        dto.setTeacherName(t.getName());
-        dto.setClassId(c.getId());
-        dto.setClassName(c.getDisplayName());
-        dto.setDepartmentName(c.getDepartment().getName());
-        dto.setDepartmentCode(c.getDepartment().getCode());
-        dto.setSemester(c.getSemester());
-        dto.setSection(c.getSection());
-        dto.setSubjectId(s.getId());
-        dto.setSubjectName(s.getName());
-        dto.setSubjectCode(s.getCode());
+        if (t != null) {
+            dto.setTeacherId(t.getId());
+            dto.setTeacherName(t.getName());
+        }
+        if (c != null) {
+            dto.setClassId(c.getId());
+            dto.setClassName(c.getDisplayName());
+            if (c.getDepartment() != null) {
+                dto.setDepartmentName(c.getDepartment().getName());
+                dto.setDepartmentCode(c.getDepartment().getCode());
+            }
+            dto.setSemester(c.getSemester());
+            dto.setSection(c.getSection());
+        }
+        if (s != null) {
+            dto.setSubjectId(s.getId());
+            dto.setSubjectName(s.getName());
+            dto.setSubjectCode(s.getCode());
+        }
         dto.setTeacherLatitude(session.getTeacherLatitude());
         dto.setTeacherLongitude(session.getTeacherLongitude());
         dto.setGeofenceRadiusMeters(session.getGeofenceRadiusMeters());

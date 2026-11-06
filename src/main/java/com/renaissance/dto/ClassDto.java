@@ -1,8 +1,8 @@
 package com.renaissance.dto;
 
 public class ClassDto {
-    private Long id;
-    private Long departmentId;
+    private String id;
+    private String departmentId;
     private String departmentCode;
     private String departmentName;
     private Integer semester;
@@ -13,7 +13,7 @@ public class ClassDto {
     public ClassDto() {
     }
 
-    public ClassDto(Long id, Long departmentId, String departmentCode, String departmentName,
+    public ClassDto(String id, String departmentId, String departmentCode, String departmentName,
                     Integer semester, String section, String batchYear) {
         this.id = id;
         this.departmentId = departmentId;
@@ -25,19 +25,19 @@ public class ClassDto {
         this.displayName = departmentCode + " - Sem " + semester + " (" + section + ")";
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
-    public Long getDepartmentId() {
+    public String getDepartmentId() {
         return departmentId;
     }
 
-    public void setDepartmentId(Long departmentId) {
+    public void setDepartmentId(String departmentId) {
         this.departmentId = departmentId;
     }
 

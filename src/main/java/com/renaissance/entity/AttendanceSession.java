@@ -1,15 +1,13 @@
 package com.renaissance.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "attendance_sessions", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_session_code", columnNames = {"session_code"})
-}, indexes = {
-    @Index(name = "idx_session_code", columnList = "session_code"),
-    @Index(name = "idx_session_status", columnList = "status")
-})
+@Document(collection = "attendance_sessions")
 public class AttendanceSession {
 
     public enum SessionStatus {
@@ -19,48 +17,36 @@ public class AttendanceSession {
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(name = "session_code", nullable = false, length = 10, unique = true)
+    @Indexed(unique = true)
     private String sessionCode;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "teacher_id", nullable = false)
+    @DBRef
     private Teacher teacher;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "class_id", nullable = false)
+    @DBRef
     private CollegeClass collegeClass;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "subject_id", nullable = false)
+    @DBRef
     private Subject subject;
 
-    @Column(name = "teacher_latitude", nullable = false)
     private Double teacherLatitude;
 
-    @Column(name = "teacher_longitude", nullable = false)
     private Double teacherLongitude;
 
-    @Column(name = "teacher_accuracy")
     private Double teacherAccuracy;
 
-    @Column(name = "geofence_radius_meters", nullable = false)
     private Double geofenceRadiusMeters = 15.0;
 
-    @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
 
-    @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Indexed
     private SessionStatus status = SessionStatus.ACTIVE;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public AttendanceSession() {
     }
@@ -77,17 +63,10 @@ public class AttendanceSession {
         this.teacherLongitude = teacherLongitude;
         this.teacherAccuracy = teacherAccuracy;
         this.geofenceRadiusMeters = geofenceRadiusMeters != null ? geofenceRadiusMeters : 15.0;
-        this.startTime = startTime;
+        this.startTime = startTime != null ? startTime : LocalDateTime.now();
         this.endTime = endTime;
         this.status = SessionStatus.ACTIVE;
-    }
-
-    @PrePersist
-    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        if (this.startTime == null) {
-            this.startTime = LocalDateTime.now();
-        }
     }
 
     public boolean isExpired() {
@@ -95,11 +74,11 @@ public class AttendanceSession {
                (this.status == SessionStatus.ACTIVE && LocalDateTime.now().isAfter(this.endTime));
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

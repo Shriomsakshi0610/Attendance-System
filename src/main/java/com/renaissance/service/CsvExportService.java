@@ -23,7 +23,7 @@ public class CsvExportService {
     /**
      * Generates a downloadable CSV of attendance summary records with UTF-8 encoding.
      */
-    public byte[] exportAttendanceSummaryCsv(Long classId, Long subjectId) {
+    public byte[] exportAttendanceSummaryCsv(String classId, String subjectId) {
         List<AttendanceSummaryDto> records = reportService.getAttendanceSummary(classId, subjectId);
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -72,7 +72,7 @@ public class CsvExportService {
     /**
      * Generates a downloadable CSV of an individual student's complete attendance history.
      */
-    public byte[] exportStudentHistoryCsv(Long studentId) {
+    public byte[] exportStudentHistoryCsv(String studentId) {
         StudentProfileDto profile = reportService.getStudentProfile(studentId);
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();

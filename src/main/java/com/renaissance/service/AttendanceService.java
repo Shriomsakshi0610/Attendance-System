@@ -9,7 +9,6 @@ import com.renaissance.repository.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -39,7 +38,6 @@ public class AttendanceService {
         this.messagingTemplate = messagingTemplate;
     }
 
-    @Transactional
     public AttendanceResultDto markAttendance(MarkAttendanceRequest request, HttpServletRequest httpRequest) {
         String clientIp = httpRequest != null ? httpRequest.getRemoteAddr() : "unknown";
         String userAgent = httpRequest != null ? httpRequest.getHeader("User-Agent") : "unknown";
@@ -84,7 +82,7 @@ public class AttendanceService {
         }
 
         // Check if student belongs to the session class
-        if (!student.getCollegeClass().getId().equals(session.getCollegeClass().getId())) {
+        if (student.getCollegeClass() == null || !student.getCollegeClass().getId().equals(session.getCollegeClass().getId())) {
             logAttempt(session.getId(), code, usn, "FAILED", "WRONG_CLASS", request, null, clientIp, userAgent);
             throw new AttendanceValidationException("You are not in the class.", "NOT_IN_CLASS");
         }
@@ -172,12 +170,11 @@ public class AttendanceService {
         );
     }
 
-    @Transactional(readOnly = true)
-    public List<AttendanceRecord> getSessionRecords(Long sessionId) {
+    public List<AttendanceRecord> getSessionRecords(String sessionId) {
         return recordRepository.findBySessionIdOrderByMarkedAtDesc(sessionId);
     }
 
-    private void logAttempt(Long sessionId, String sessionCode, String usn,
+    private void logAttempt(String sessionId, String sessionCode, String usn,
                             String status, String failureReason,
                             MarkAttendanceRequest req, Double distance,
                             String ip, String userAgent) {

@@ -1,7 +1,7 @@
 package com.renaissance.dto;
 
 public class TeacherDto {
-    private Long id;
+    private String id;
     private String name;
     private String email;
     private String employeeId;
@@ -12,7 +12,7 @@ public class TeacherDto {
     public TeacherDto() {
     }
 
-    public TeacherDto(Long id, String name, String email, String employeeId,
+    public TeacherDto(String id, String name, String email, String employeeId,
                       String departmentName, String departmentCode, String role) {
         this.id = id;
         this.name = name;
@@ -23,11 +23,11 @@ public class TeacherDto {
         this.role = role;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

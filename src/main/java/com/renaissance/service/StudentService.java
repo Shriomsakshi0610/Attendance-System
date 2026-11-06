@@ -12,7 +12,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
@@ -36,28 +35,24 @@ public class StudentService {
         this.classRepository = classRepository;
     }
 
-    @Transactional(readOnly = true)
-    public List<StudentDto> getAllStudents(Long departmentId, Long classId, String keyword) {
+    public List<StudentDto> getAllStudents(String departmentId, String classId, String keyword) {
         List<Student> students = studentRepository.searchStudents(departmentId, classId,
                 (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null);
         return students.stream().map(this::toDto).collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public StudentDto getStudentById(Long id) {
+    public StudentDto getStudentById(String id) {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
         return toDto(student);
     }
 
-    @Transactional(readOnly = true)
     public StudentDto getStudentByUsn(String usn) {
         Student student = studentRepository.findByUsnIgnoreCase(usn.trim())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with USN: " + usn));
         return toDto(student);
     }
 
-    @Transactional
     public StudentDto createStudent(StudentDto dto) {
         String cleanUsn = dto.getUsn().trim().toUpperCase();
         if (studentRepository.existsByUsnIgnoreCase(cleanUsn)) {
@@ -79,8 +74,7 @@ public class StudentService {
         return toDto(saved);
     }
 
-    @Transactional
-    public StudentDto updateStudent(Long id, StudentDto dto) {
+    public StudentDto updateStudent(String id, StudentDto dto) {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
 
@@ -108,15 +102,13 @@ public class StudentService {
         return toDto(updated);
     }
 
-    @Transactional
-    public void deleteStudent(Long id) {
+    public void deleteStudent(String id) {
         if (!studentRepository.existsById(id)) {
             throw new ResourceNotFoundException("Student not found with ID: " + id);
         }
         studentRepository.deleteById(id);
     }
 
-    @Transactional
     public Map<String, Object> importStudentsFromCsv(MultipartFile file) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Uploaded CSV file is empty");

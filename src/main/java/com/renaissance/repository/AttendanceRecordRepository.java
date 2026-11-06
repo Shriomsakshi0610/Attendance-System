@@ -1,49 +1,60 @@
 package com.renaissance.repository;
 
 import com.renaissance.entity.AttendanceRecord;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface AttendanceRecordRepository extends JpaRepository<AttendanceRecord, Long> {
+public interface AttendanceRecordRepository extends MongoRepository<AttendanceRecord, String>, AttendanceRecordRepositoryCustom {
 
-    List<AttendanceRecord> findBySessionIdOrderByMarkedAtDesc(Long sessionId);
+    List<AttendanceRecord> findBySession_IdOrderByMarkedAtDesc(String sessionId);
 
-    Optional<AttendanceRecord> findBySessionIdAndStudentId(Long sessionId, Long studentId);
+    default List<AttendanceRecord> findBySessionIdOrderByMarkedAtDesc(String sessionId) {
+        return findBySession_IdOrderByMarkedAtDesc(sessionId);
+    }
 
-    Optional<AttendanceRecord> findBySessionIdAndStudentUsnIgnoreCase(Long sessionId, String usn);
+    Optional<AttendanceRecord> findBySession_IdAndStudent_Id(String sessionId, String studentId);
 
-    boolean existsBySessionIdAndStudentId(Long sessionId, Long studentId);
+    default Optional<AttendanceRecord> findBySessionIdAndStudentId(String sessionId, String studentId) {
+        return findBySession_IdAndStudent_Id(sessionId, studentId);
+    }
 
-    boolean existsBySessionIdAndStudentUsnIgnoreCase(Long sessionId, String usn);
+    Optional<AttendanceRecord> findBySession_IdAndStudent_UsnIgnoreCase(String sessionId, String usn);
 
-    List<AttendanceRecord> findByStudentIdOrderByMarkedAtDesc(Long studentId);
+    default Optional<AttendanceRecord> findBySessionIdAndStudentUsnIgnoreCase(String sessionId, String usn) {
+        return findBySession_IdAndStudent_UsnIgnoreCase(sessionId, usn);
+    }
 
-    List<AttendanceRecord> findByStudentUsnIgnoreCaseOrderByMarkedAtDesc(String usn);
+    boolean existsBySession_IdAndStudent_Id(String sessionId, String studentId);
 
-    long countBySessionId(Long sessionId);
+    default boolean existsBySessionIdAndStudentId(String sessionId, String studentId) {
+        return existsBySession_IdAndStudent_Id(sessionId, studentId);
+    }
 
-    @Query("SELECT COUNT(r) FROM AttendanceRecord r WHERE r.markedAt >= :startOfDay AND r.markedAt <= :endOfDay")
-    long countRecordsToday(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay);
+    boolean existsBySession_IdAndStudent_UsnIgnoreCase(String sessionId, String usn);
 
-    @Query("SELECT COUNT(r) FROM AttendanceRecord r WHERE r.student.id = :studentId AND r.status = 'PRESENT'")
-    long countPresentByStudentId(@Param("studentId") Long studentId);
+    default boolean existsBySessionIdAndStudentUsnIgnoreCase(String sessionId, String usn) {
+        return existsBySession_IdAndStudent_UsnIgnoreCase(sessionId, usn);
+    }
 
-    @Query("SELECT COUNT(r) FROM AttendanceRecord r WHERE r.student.id = :studentId AND r.session.subject.id = :subjectId AND r.status = 'PRESENT'")
-    long countPresentByStudentIdAndSubjectId(@Param("studentId") Long studentId, @Param("subjectId") Long subjectId);
+    List<AttendanceRecord> findByStudent_IdOrderByMarkedAtDesc(String studentId);
 
-    @Query("SELECT r FROM AttendanceRecord r WHERE r.session.collegeClass.id = :classId " +
-           "AND (:subjectId IS NULL OR r.session.subject.id = :subjectId) " +
-           "AND (:startDate IS NULL OR r.markedAt >= :startDate) " +
-           "AND (:endDate IS NULL OR r.markedAt <= :endDate)")
-    List<AttendanceRecord> findFilteredRecords(@Param("classId") Long classId,
-                                              @Param("subjectId") Long subjectId,
-                                              @Param("startDate") LocalDateTime startDate,
-                                              @Param("endDate") LocalDateTime endDate);
+    default List<AttendanceRecord> findByStudentIdOrderByMarkedAtDesc(String studentId) {
+        return findByStudent_IdOrderByMarkedAtDesc(studentId);
+    }
+
+    List<AttendanceRecord> findByStudent_UsnIgnoreCaseOrderByMarkedAtDesc(String usn);
+
+    default List<AttendanceRecord> findByStudentUsnIgnoreCaseOrderByMarkedAtDesc(String usn) {
+        return findByStudent_UsnIgnoreCaseOrderByMarkedAtDesc(usn);
+    }
+
+    long countBySession_Id(String sessionId);
+
+    default long countBySessionId(String sessionId) {
+        return countBySession_Id(sessionId);
+    }
 }

@@ -1,15 +1,14 @@
 package com.renaissance.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "attendance_records", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_session_student", columnNames = {"session_id", "student_id"})
-}, indexes = {
-    @Index(name = "idx_record_session", columnList = "session_id"),
-    @Index(name = "idx_record_student", columnList = "student_id")
-})
+@Document(collection = "attendance_records")
+@CompoundIndex(name = "uk_session_student", def = "{'session': 1, 'student': 1}", unique = true)
 public class AttendanceRecord {
 
     public enum AttendanceStatus {
@@ -18,35 +17,31 @@ public class AttendanceRecord {
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "session_id", nullable = false)
+    @DBRef
     private AttendanceSession session;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "student_id", nullable = false)
+    @DBRef
     private Student student;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @DBRef
+    private CollegeClass collegeClass;
+
+    @DBRef
+    private Subject subject;
+
     private AttendanceStatus status = AttendanceStatus.PRESENT;
 
-    @Column(name = "student_latitude")
     private Double studentLatitude;
 
-    @Column(name = "student_longitude")
     private Double studentLongitude;
 
-    @Column(name = "student_accuracy")
     private Double studentAccuracy;
 
-    @Column(name = "distance_from_teacher")
     private Double distanceFromTeacher;
 
-    @Column(name = "marked_at", nullable = false)
-    private LocalDateTime markedAt;
+    private LocalDateTime markedAt = LocalDateTime.now();
 
     public AttendanceRecord() {
     }
@@ -56,6 +51,10 @@ public class AttendanceRecord {
                             Double distanceFromTeacher) {
         this.session = session;
         this.student = student;
+        if (session != null) {
+            this.collegeClass = session.getCollegeClass();
+            this.subject = session.getSubject();
+        }
         this.status = status;
         this.studentLatitude = studentLatitude;
         this.studentLongitude = studentLongitude;
@@ -64,18 +63,11 @@ public class AttendanceRecord {
         this.markedAt = LocalDateTime.now();
     }
 
-    @PrePersist
-    protected void onCreate() {
-        if (this.markedAt == null) {
-            this.markedAt = LocalDateTime.now();
-        }
-    }
-
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -85,6 +77,14 @@ public class AttendanceRecord {
 
     public void setSession(AttendanceSession session) {
         this.session = session;
+        if (session != null) {
+            if (this.collegeClass == null) {
+                this.collegeClass = session.getCollegeClass();
+            }
+            if (this.subject == null) {
+                this.subject = session.getSubject();
+            }
+        }
     }
 
     public Student getStudent() {
@@ -93,6 +93,22 @@ public class AttendanceRecord {
 
     public void setStudent(Student student) {
         this.student = student;
+    }
+
+    public CollegeClass getCollegeClass() {
+        return collegeClass;
+    }
+
+    public void setCollegeClass(CollegeClass collegeClass) {
+        this.collegeClass = collegeClass;
+    }
+
+    public Subject getSubject() {
+        return subject;
+    }
+
+    public void setSubject(Subject subject) {
+        this.subject = subject;
     }
 
     public AttendanceStatus getStatus() {

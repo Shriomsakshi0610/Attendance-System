@@ -1,26 +1,28 @@
 package com.renaissance.repository;
 
 import com.renaissance.entity.Student;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface StudentRepository extends JpaRepository<Student, Long> {
-    Optional<Student> findByUsnIgnoreCase(String usn);
-    boolean existsByUsnIgnoreCase(String usn);
-    List<Student> findByCollegeClassId(Long classId);
-    List<Student> findByDepartmentId(Long departmentId);
+public interface StudentRepository extends MongoRepository<Student, String>, StudentRepositoryCustom {
 
-    @Query("SELECT s FROM Student s WHERE " +
-           "(:deptId IS NULL OR s.department.id = :deptId) AND " +
-           "(:classId IS NULL OR s.collegeClass.id = :classId) AND " +
-           "(:keyword IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(s.usn) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    List<Student> searchStudents(@Param("deptId") Long deptId,
-                                @Param("classId") Long classId,
-                                @Param("keyword") String keyword);
+    Optional<Student> findByUsnIgnoreCase(String usn);
+
+    boolean existsByUsnIgnoreCase(String usn);
+
+    List<Student> findByCollegeClass_Id(String classId);
+
+    default List<Student> findByCollegeClassId(String classId) {
+        return findByCollegeClass_Id(classId);
+    }
+
+    List<Student> findByDepartment_Id(String departmentId);
+
+    default List<Student> findByDepartmentId(String departmentId) {
+        return findByDepartment_Id(departmentId);
+    }
 }

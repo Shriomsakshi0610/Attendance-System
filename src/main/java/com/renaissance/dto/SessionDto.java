@@ -3,17 +3,17 @@ package com.renaissance.dto;
 import java.time.LocalDateTime;
 
 public class SessionDto {
-    private Long id;
+    private String id;
     private String sessionCode;
-    private Long teacherId;
+    private String teacherId;
     private String teacherName;
-    private Long classId;
+    private String classId;
     private String className;
     private String departmentName;
     private String departmentCode;
     private Integer semester;
     private String section;
-    private Long subjectId;
+    private String subjectId;
     private String subjectName;
     private String subjectCode;
     private Double teacherLatitude;
@@ -29,11 +29,11 @@ public class SessionDto {
     public SessionDto() {
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -45,11 +45,11 @@ public class SessionDto {
         this.sessionCode = sessionCode;
     }
 
-    public Long getTeacherId() {
+    public String getTeacherId() {
         return teacherId;
     }
 
-    public void setTeacherId(Long teacherId) {
+    public void setTeacherId(String teacherId) {
         this.teacherId = teacherId;
     }
 
@@ -61,11 +61,11 @@ public class SessionDto {
         this.teacherName = teacherName;
     }
 
-    public Long getClassId() {
+    public String getClassId() {
         return classId;
     }
 
-    public void setClassId(Long classId) {
+    public void setClassId(String classId) {
         this.classId = classId;
     }
 
@@ -109,11 +109,11 @@ public class SessionDto {
         this.section = section;
     }
 
-    public Long getSubjectId() {
+    public String getSubjectId() {
         return subjectId;
     }
 
-    public void setSubjectId(Long subjectId) {
+    public void setSubjectId(String subjectId) {
         this.subjectId = subjectId;
     }
 

@@ -1,33 +1,29 @@
 package com.renaissance.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "classes", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_dept_sem_sec", columnNames = {"department_id", "semester", "section"})
-})
+@Document(collection = "classes")
+@CompoundIndex(name = "uk_dept_sem_sec", def = "{'department': 1, 'semester': 1, 'section': 1}", unique = true)
 public class CollegeClass {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "department_id", nullable = false)
+    @DBRef
     private Department department;
 
-    @Column(nullable = false)
     private Integer semester; // e.g. 1 to 8
 
-    @Column(nullable = false, length = 10)
     private String section; // e.g. "A", "B", "C"
 
-    @Column(name = "batch_year", length = 20)
     private String batchYear; // e.g. "2024-2028"
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public CollegeClass() {
     }
@@ -37,18 +33,14 @@ public class CollegeClass {
         this.semester = semester;
         this.section = section;
         this.batchYear = batchYear;
-    }
-
-    @PrePersist
-    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -93,6 +85,7 @@ public class CollegeClass {
     }
 
     public String getDisplayName() {
-        return department.getCode() + " - Sem " + semester + " (" + section + ")";
+        String deptCode = department != null ? department.getCode() : "DEPT";
+        return deptCode + " - Sem " + semester + " (" + section + ")";
     }
 }

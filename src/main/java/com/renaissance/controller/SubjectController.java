@@ -20,7 +20,7 @@ public class SubjectController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<SubjectDto>>> getSubjects(
-            @RequestParam(required = false) Long departmentId,
+            @RequestParam(required = false) String departmentId,
             @RequestParam(required = false) Integer semester) {
         List<SubjectDto> subjects = teacherService.getSubjects(departmentId, semester);
         return ResponseEntity.ok(ApiResponse.ok(subjects));

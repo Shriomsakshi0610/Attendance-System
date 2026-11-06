@@ -1,33 +1,29 @@
 package com.renaissance.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "subjects", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_subject_code", columnNames = {"code"})
-})
+@Document(collection = "subjects")
 public class Subject {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(nullable = false, length = 20, unique = true)
+    @Indexed(unique = true)
     private String code; // e.g. "21CS51", "21CS52"
 
-    @Column(nullable = false, length = 150)
     private String name; // e.g. "Database Management Systems"
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "department_id", nullable = false)
+    @DBRef
     private Department department;
 
-    @Column(nullable = false)
     private Integer semester;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public Subject() {
     }
@@ -37,18 +33,14 @@ public class Subject {
         this.name = name;
         this.department = department;
         this.semester = semester;
-    }
-
-    @PrePersist
-    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

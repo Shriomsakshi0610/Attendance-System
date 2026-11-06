@@ -1,14 +1,15 @@
 package com.renaissance.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public class CreateSessionRequest {
 
-    @NotNull(message = "Class ID is required")
-    private Long classId;
+    @NotBlank(message = "Class ID is required")
+    private String classId;
 
-    @NotNull(message = "Subject ID is required")
-    private Long subjectId;
+    @NotBlank(message = "Subject ID is required")
+    private String subjectId;
 
     @NotNull(message = "Teacher latitude is required")
     private Double latitude;
@@ -23,7 +24,7 @@ public class CreateSessionRequest {
     public CreateSessionRequest() {
     }
 
-    public CreateSessionRequest(Long classId, Long subjectId, Double latitude, Double longitude, Double accuracy, Integer durationMinutes) {
+    public CreateSessionRequest(String classId, String subjectId, Double latitude, Double longitude, Double accuracy, Integer durationMinutes) {
         this.classId = classId;
         this.subjectId = subjectId;
         this.latitude = latitude;
@@ -32,19 +33,19 @@ public class CreateSessionRequest {
         this.durationMinutes = durationMinutes != null ? durationMinutes : 15;
     }
 
-    public Long getClassId() {
+    public String getClassId() {
         return classId;
     }
 
-    public void setClassId(Long classId) {
+    public void setClassId(String classId) {
         this.classId = classId;
     }
 
-    public Long getSubjectId() {
+    public String getSubjectId() {
         return subjectId;
     }
 
-    public void setSubjectId(Long subjectId) {
+    public void setSubjectId(String subjectId) {
         this.subjectId = subjectId;
     }
 

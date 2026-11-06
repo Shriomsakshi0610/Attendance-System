@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
@@ -32,7 +32,7 @@ class AttendanceServiceTest {
     @Mock
     private AttendanceAttemptLogRepository attemptLogRepository;
     @Mock
-    private org.springframework.messaging.simp.SimpMessageSendingOperations messagingTemplate;
+    private SimpMessageSendingOperations messagingTemplate;
 
     private LocationVerificationService locationService;
     private AttendanceService attendanceService;
@@ -60,16 +60,16 @@ class AttendanceServiceTest {
         );
 
         testDept = new Department("CSE", "Computer Science");
-        testDept.setId(1L);
+        testDept.setId("dept-1");
 
         testClass = new CollegeClass(testDept, 5, "A", "2024-2028");
-        testClass.setId(10L);
+        testClass.setId("class-10");
 
         testSubject = new Subject("21CS51", "DBMS", testDept, 5);
-        testSubject.setId(100L);
+        testSubject.setId("sub-100");
 
         testTeacher = new Teacher("Teacher", "teacher@test.com", "pass", "EMP1", testDept);
-        testTeacher.setId(50L);
+        testTeacher.setId("teacher-50");
 
         activeSession = new AttendanceSession(
                 "RN1234",
@@ -83,10 +83,10 @@ class AttendanceServiceTest {
                 LocalDateTime.now().minusMinutes(5),
                 LocalDateTime.now().plusMinutes(10)
         );
-        activeSession.setId(500L);
+        activeSession.setId("sess-500");
 
         validStudent = new Student("1MS21CS001", "Aarav", "aarav@test.com", testDept, testClass);
-        validStudent.setId(1000L);
+        validStudent.setId("student-1000");
     }
 
     @Test
@@ -96,7 +96,7 @@ class AttendanceServiceTest {
         MarkAttendanceRequest req = new MarkAttendanceRequest(
                 "1MS21CS001",
                 "RN1234",
-                10L,
+                "class-10",
                 13.030520,
                 77.565010,
                 4.0
@@ -104,7 +104,7 @@ class AttendanceServiceTest {
 
         when(sessionRepository.findBySessionCodeIgnoreCase("RN1234")).thenReturn(Optional.of(activeSession));
         when(studentRepository.findByUsnIgnoreCase("1MS21CS001")).thenReturn(Optional.of(validStudent));
-        when(recordRepository.existsBySessionIdAndStudentId(500L, 1000L)).thenReturn(false);
+        when(recordRepository.existsBySessionIdAndStudentId("sess-500", "student-1000")).thenReturn(false);
         when(recordRepository.save(any(AttendanceRecord.class))).thenAnswer(i -> i.getArgument(0));
 
         var response = attendanceService.markAttendance(req, null);
@@ -122,7 +122,7 @@ class AttendanceServiceTest {
         MarkAttendanceRequest req = new MarkAttendanceRequest(
                 "1MS21CS001",
                 "WRONGCODE",
-                10L,
+                "class-10",
                 13.0305,
                 77.5650,
                 5.0
@@ -144,7 +144,7 @@ class AttendanceServiceTest {
         MarkAttendanceRequest req = new MarkAttendanceRequest(
                 "1MS21CS001",
                 "RN1234",
-                10L,
+                "class-10",
                 13.031200,
                 77.565000,
                 5.0
@@ -152,7 +152,7 @@ class AttendanceServiceTest {
 
         when(sessionRepository.findBySessionCodeIgnoreCase("RN1234")).thenReturn(Optional.of(activeSession));
         when(studentRepository.findByUsnIgnoreCase("1MS21CS001")).thenReturn(Optional.of(validStudent));
-        when(recordRepository.existsBySessionIdAndStudentId(500L, 1000L)).thenReturn(false);
+        when(recordRepository.existsBySessionIdAndStudentId("sess-500", "student-1000")).thenReturn(false);
 
         AttendanceValidationException ex = assertThrows(AttendanceValidationException.class, () ->
                 attendanceService.markAttendance(req, null)
@@ -169,7 +169,7 @@ class AttendanceServiceTest {
         MarkAttendanceRequest req = new MarkAttendanceRequest(
                 "1MS21CS001",
                 "RN1234",
-                10L,
+                "class-10",
                 13.0305,
                 77.5650,
                 5.0
@@ -177,7 +177,7 @@ class AttendanceServiceTest {
 
         when(sessionRepository.findBySessionCodeIgnoreCase("RN1234")).thenReturn(Optional.of(activeSession));
         when(studentRepository.findByUsnIgnoreCase("1MS21CS001")).thenReturn(Optional.of(validStudent));
-        when(recordRepository.existsBySessionIdAndStudentId(500L, 1000L)).thenReturn(true);
+        when(recordRepository.existsBySessionIdAndStudentId("sess-500", "student-1000")).thenReturn(true);
 
         AttendanceValidationException ex = assertThrows(AttendanceValidationException.class, () ->
                 attendanceService.markAttendance(req, null)
@@ -194,7 +194,7 @@ class AttendanceServiceTest {
         MarkAttendanceRequest req = new MarkAttendanceRequest(
                 "1MS21CS001",
                 "RN1234",
-                10L,
+                "class-10",
                 13.0305,
                 77.5650,
                 5.0

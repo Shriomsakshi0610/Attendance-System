@@ -1,17 +1,17 @@
 package com.renaissance.dto;
 
 public class SubjectDto {
-    private Long id;
+    private String id;
     private String code;
     private String name;
-    private Long departmentId;
+    private String departmentId;
     private String departmentCode;
     private Integer semester;
 
     public SubjectDto() {
     }
 
-    public SubjectDto(Long id, String code, String name, Long departmentId, String departmentCode, Integer semester) {
+    public SubjectDto(String id, String code, String name, String departmentId, String departmentCode, Integer semester) {
         this.id = id;
         this.code = code;
         this.name = name;
@@ -20,11 +20,11 @@ public class SubjectDto {
         this.semester = semester;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -44,11 +44,11 @@ public class SubjectDto {
         this.name = name;
     }
 
-    public Long getDepartmentId() {
+    public String getDepartmentId() {
         return departmentId;
     }
 
-    public void setDepartmentId(Long departmentId) {
+    public void setDepartmentId(String departmentId) {
         this.departmentId = departmentId;
     }
 

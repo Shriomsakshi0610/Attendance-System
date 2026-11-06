@@ -11,7 +11,7 @@ public class MarkAttendanceRequest {
     @NotBlank(message = "Attendance code is required")
     private String attendanceCode;
 
-    private Long classId;
+    private String classId;
 
     @NotNull(message = "Latitude is required")
     private Double latitude;
@@ -24,7 +24,7 @@ public class MarkAttendanceRequest {
     public MarkAttendanceRequest() {
     }
 
-    public MarkAttendanceRequest(String usn, String attendanceCode, Long classId, Double latitude, Double longitude, Double accuracy) {
+    public MarkAttendanceRequest(String usn, String attendanceCode, String classId, Double latitude, Double longitude, Double accuracy) {
         this.usn = usn;
         this.attendanceCode = attendanceCode;
         this.classId = classId;
@@ -49,11 +49,11 @@ public class MarkAttendanceRequest {
         this.attendanceCode = attendanceCode;
     }
 
-    public Long getClassId() {
+    public String getClassId() {
         return classId;
     }
 
-    public void setClassId(Long classId) {
+    public void setClassId(String classId) {
         this.classId = classId;
     }
 

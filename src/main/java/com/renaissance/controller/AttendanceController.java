@@ -41,7 +41,7 @@ public class AttendanceController {
     }
 
     @GetMapping("/session/{sessionId}/records")
-    public ResponseEntity<ApiResponse<List<AttendanceRecord>>> getSessionRecords(@PathVariable Long sessionId) {
+    public ResponseEntity<ApiResponse<List<AttendanceRecord>>> getSessionRecords(@PathVariable String sessionId) {
         List<AttendanceRecord> records = attendanceService.getSessionRecords(sessionId);
         return ResponseEntity.ok(ApiResponse.ok(records));
     }

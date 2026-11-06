@@ -3,7 +3,7 @@ package com.renaissance.dto;
 import java.util.List;
 
 public class StudentProfileDto {
-    private Long id;
+    private String id;
     private String usn;
     private String name;
     private String email;
@@ -18,7 +18,7 @@ public class StudentProfileDto {
     private List<HistoryRecordDto> attendanceHistory;
 
     public static class HistoryRecordDto {
-        private Long sessionId;
+        private String sessionId;
         private String sessionCode;
         private String subjectCode;
         private String subjectName;
@@ -31,7 +31,7 @@ public class StudentProfileDto {
         public HistoryRecordDto() {
         }
 
-        public HistoryRecordDto(Long sessionId, String sessionCode, String subjectCode, String subjectName,
+        public HistoryRecordDto(String sessionId, String sessionCode, String subjectCode, String subjectName,
                                 String sessionDate, String sessionTime, String status,
                                 String markedTime, String distanceFromTeacher) {
             this.sessionId = sessionId;
@@ -45,11 +45,11 @@ public class StudentProfileDto {
             this.distanceFromTeacher = distanceFromTeacher;
         }
 
-        public Long getSessionId() {
+        public String getSessionId() {
             return sessionId;
         }
 
-        public void setSessionId(Long sessionId) {
+        public void setSessionId(String sessionId) {
             this.sessionId = sessionId;
         }
 
@@ -121,11 +121,11 @@ public class StudentProfileDto {
     public StudentProfileDto() {
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -183,7 +183,6 @@ public class StudentProfileDto {
 
     public void setOverallPercentage(double overallPercentage) {
         this.overallPercentage = overallPercentage;
-        this.below75 = overallPercentage < 75.0;
     }
 
     public long getTotalConducted() {

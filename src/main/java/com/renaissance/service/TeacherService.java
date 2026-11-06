@@ -4,13 +4,11 @@ import com.renaissance.dto.ClassDto;
 import com.renaissance.dto.DepartmentDto;
 import com.renaissance.dto.SubjectDto;
 import com.renaissance.entity.CollegeClass;
-import com.renaissance.entity.Department;
 import com.renaissance.entity.Subject;
 import com.renaissance.repository.ClassRepository;
 import com.renaissance.repository.DepartmentRepository;
 import com.renaissance.repository.SubjectRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,36 +28,33 @@ public class TeacherService {
         this.subjectRepository = subjectRepository;
     }
 
-    @Transactional(readOnly = true)
     public List<DepartmentDto> getAllDepartments() {
         return departmentRepository.findAll().stream()
                 .map(d -> new DepartmentDto(d.getId(), d.getCode(), d.getName()))
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public List<ClassDto> getClassesByDepartment(Long departmentId) {
-        List<CollegeClass> classes = departmentId != null ?
+    public List<ClassDto> getClassesByDepartment(String departmentId) {
+        List<CollegeClass> classes = (departmentId != null && !departmentId.isBlank()) ?
                 classRepository.findByDepartmentId(departmentId) :
                 classRepository.findAll();
 
         return classes.stream().map(c -> new ClassDto(
                 c.getId(),
-                c.getDepartment().getId(),
-                c.getDepartment().getCode(),
-                c.getDepartment().getName(),
+                c.getDepartment() != null ? c.getDepartment().getId() : null,
+                c.getDepartment() != null ? c.getDepartment().getCode() : null,
+                c.getDepartment() != null ? c.getDepartment().getName() : null,
                 c.getSemester(),
                 c.getSection(),
                 c.getBatchYear()
         )).collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public List<SubjectDto> getSubjects(Long departmentId, Integer semester) {
+    public List<SubjectDto> getSubjects(String departmentId, Integer semester) {
         List<Subject> subjects;
-        if (departmentId != null && semester != null) {
+        if (departmentId != null && !departmentId.isBlank() && semester != null) {
             subjects = subjectRepository.findByDepartmentIdAndSemester(departmentId, semester);
-        } else if (departmentId != null) {
+        } else if (departmentId != null && !departmentId.isBlank()) {
             subjects = subjectRepository.findByDepartmentId(departmentId);
         } else {
             subjects = subjectRepository.findAll();
@@ -69,8 +64,8 @@ public class TeacherService {
                 s.getId(),
                 s.getCode(),
                 s.getName(),
-                s.getDepartment().getId(),
-                s.getDepartment().getCode(),
+                s.getDepartment() != null ? s.getDepartment().getId() : null,
+                s.getDepartment() != null ? s.getDepartment().getCode() : null,
                 s.getSemester()
         )).collect(Collectors.toList());
     }

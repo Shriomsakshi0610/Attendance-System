@@ -1,26 +1,23 @@
 package com.renaissance.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "departments", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"code"})
-})
+@Document(collection = "departments")
 public class Department {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(nullable = false, length = 20, unique = true)
+    @Indexed(unique = true)
     private String code; // e.g. "CSE", "ISE", "ECE", "MECH"
 
-    @Column(nullable = false, length = 100)
     private String name; // e.g. "Computer Science & Engineering"
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public Department() {
     }
@@ -28,18 +25,14 @@ public class Department {
     public Department(String code, String name) {
         this.code = code;
         this.name = name;
-    }
-
-    @PrePersist
-    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

@@ -11,7 +11,6 @@ import com.renaissance.entity.Student;
 import com.renaissance.exception.ResourceNotFoundException;
 import com.renaissance.repository.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,10 +40,9 @@ public class ReportService {
         this.sessionService = sessionService;
     }
 
-    @Transactional(readOnly = true)
-    public List<AttendanceSummaryDto> getAttendanceSummary(Long classId, Long subjectId) {
+    public List<AttendanceSummaryDto> getAttendanceSummary(String classId, String subjectId) {
         List<Student> students;
-        if (classId != null) {
+        if (classId != null && !classId.isBlank()) {
             students = studentRepository.findByCollegeClassId(classId);
         } else {
             students = studentRepository.findAll();
@@ -52,9 +50,9 @@ public class ReportService {
 
         // Conducted sessions for this class and optional subject
         List<AttendanceSession> conductedSessions;
-        if (classId != null && subjectId != null) {
+        if (classId != null && !classId.isBlank() && subjectId != null && !subjectId.isBlank()) {
             conductedSessions = sessionRepository.findByCollegeClassIdAndSubjectIdOrderByStartTimeAsc(classId, subjectId);
-        } else if (classId != null) {
+        } else if (classId != null && !classId.isBlank()) {
             conductedSessions = sessionRepository.findByCollegeClassIdOrderByStartTimeDesc(classId);
         } else {
             conductedSessions = sessionRepository.findAll();
@@ -67,7 +65,7 @@ public class ReportService {
         List<AttendanceSummaryDto> summaries = new ArrayList<>();
         for (Student student : students) {
             long attended;
-            if (subjectId != null) {
+            if (subjectId != null && !subjectId.isBlank()) {
                 attended = recordRepository.countPresentByStudentIdAndSubjectId(student.getId(), subjectId);
             } else {
                 attended = recordRepository.countPresentByStudentId(student.getId());
@@ -81,10 +79,11 @@ public class ReportService {
                     student.getId(),
                     student.getUsn(),
                     student.getName(),
-                    student.getDepartment().getCode(),
+                    student.getDepartment() != null ? student.getDepartment().getCode() : "N/A",
                     c != null ? c.getSemester() : 0,
                     c != null ? c.getSection() : "-",
-                    (subjectId != null && !conductedSessions.isEmpty()) ? conductedSessions.get(0).getSubject().getName() : "All Subjects",
+                    (subjectId != null && !conductedSessions.isEmpty() && conductedSessions.get(0).getSubject() != null)
+                            ? conductedSessions.get(0).getSubject().getName() : "All Subjects",
                     totalConducted,
                     attended,
                     absent,
@@ -95,13 +94,14 @@ public class ReportService {
         return summaries;
     }
 
-    @Transactional(readOnly = true)
-    public StudentProfileDto getStudentProfile(Long studentId) {
+    public StudentProfileDto getStudentProfile(String studentId) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + studentId));
 
         List<AttendanceRecord> records = recordRepository.findByStudentIdOrderByMarkedAtDesc(studentId);
-        List<AttendanceSession> classSessions = sessionRepository.findByCollegeClassIdOrderByStartTimeDesc(student.getCollegeClass().getId());
+        List<AttendanceSession> classSessions = (student.getCollegeClass() != null)
+                ? sessionRepository.findByCollegeClassIdOrderByStartTimeDesc(student.getCollegeClass().getId())
+                : Collections.emptyList();
 
         long totalConducted = classSessions.size();
         long totalPresent = records.stream().filter(r -> r.getStatus() == AttendanceRecord.AttendanceStatus.PRESENT).count();
@@ -114,14 +114,14 @@ public class ReportService {
         List<StudentProfileDto.HistoryRecordDto> history = records.stream().map(r -> {
             AttendanceSession s = r.getSession();
             return new StudentProfileDto.HistoryRecordDto(
-                    s.getId(),
-                    s.getSessionCode(),
-                    s.getSubject().getCode(),
-                    s.getSubject().getName(),
-                    s.getStartTime().format(dateFmt),
-                    s.getStartTime().format(timeFmt),
+                    s != null ? s.getId() : null,
+                    s != null ? s.getSessionCode() : "-",
+                    (s != null && s.getSubject() != null) ? s.getSubject().getCode() : "-",
+                    (s != null && s.getSubject() != null) ? s.getSubject().getName() : "-",
+                    (s != null && s.getStartTime() != null) ? s.getStartTime().format(dateFmt) : "-",
+                    (s != null && s.getStartTime() != null) ? s.getStartTime().format(timeFmt) : "-",
                     r.getStatus().name(),
-                    r.getMarkedAt().format(timeFmt),
+                    r.getMarkedAt() != null ? r.getMarkedAt().format(timeFmt) : "-",
                     r.getDistanceFromTeacher() != null ? String.format("%.1f m", r.getDistanceFromTeacher()) : "-"
             );
         }).collect(Collectors.toList());
@@ -131,9 +131,11 @@ public class ReportService {
         profile.setUsn(student.getUsn());
         profile.setName(student.getName());
         profile.setEmail(student.getEmail());
-        profile.setDepartment(student.getDepartment().getName());
-        profile.setSemester(student.getCollegeClass().getSemester());
-        profile.setSection(student.getCollegeClass().getSection());
+        profile.setDepartment(student.getDepartment() != null ? student.getDepartment().getName() : "General");
+        if (student.getCollegeClass() != null) {
+            profile.setSemester(student.getCollegeClass().getSemester());
+            profile.setSection(student.getCollegeClass().getSection());
+        }
         profile.setTotalConducted(totalConducted);
         profile.setTotalPresent(totalPresent);
         profile.setTotalAbsent(totalAbsent);
@@ -143,7 +145,6 @@ public class ReportService {
         return profile;
     }
 
-    @Transactional(readOnly = true)
     public DashboardStatsDto getDashboardStats() {
         long totalStudents = studentRepository.count();
         long totalClassesConducted = sessionRepository.count();
@@ -162,7 +163,9 @@ public class ReportService {
             double sumPercentage = 0.0;
             for (Student s : allStudents) {
                 long attended = recordRepository.countPresentByStudentId(s.getId());
-                long conducted = sessionRepository.findByCollegeClassIdOrderByStartTimeDesc(s.getCollegeClass().getId()).size();
+                long conducted = (s.getCollegeClass() != null)
+                        ? sessionRepository.findByCollegeClassIdOrderByStartTimeDesc(s.getCollegeClass().getId()).size()
+                        : 0;
                 double pct = conducted > 0 ? ((double) attended / conducted) * 100.0 : 100.0;
                 sumPercentage += pct;
             }
@@ -195,6 +198,7 @@ public class ReportService {
         Map<String, Double> subjectTrends = new HashMap<>();
         List<AttendanceSession> sessions = sessionRepository.findAll();
         Map<String, List<AttendanceSession>> bySubject = sessions.stream()
+                .filter(s -> s.getSubject() != null && s.getSubject().getName() != null)
                 .collect(Collectors.groupingBy(s -> s.getSubject().getName()));
 
         for (Map.Entry<String, List<AttendanceSession>> entry : bySubject.entrySet()) {
@@ -202,7 +206,9 @@ public class ReportService {
             long totalEnroll = 0;
             for (AttendanceSession s : entry.getValue()) {
                 totalRecs += recordRepository.countBySessionId(s.getId());
-                totalEnroll += studentRepository.findByCollegeClassId(s.getCollegeClass().getId()).size();
+                if (s.getCollegeClass() != null) {
+                    totalEnroll += studentRepository.findByCollegeClassId(s.getCollegeClass().getId()).size();
+                }
             }
             double pct = totalEnroll > 0 ? ((double) totalRecs / totalEnroll) * 100.0 : 80.0;
             subjectTrends.put(entry.getKey(), Math.round(pct * 10.0) / 10.0);
