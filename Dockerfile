@@ -43,5 +43,5 @@ EXPOSE 8080
 ENV PORT=8080
 ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
 
-# Launch Spring Boot with dynamic port binding provided by Render's $PORT
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT} -jar app.jar"]
+# Launch Spring Boot with dynamic port binding provided by Render's $PORT and production profile default
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT} -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-production} -jar app.jar"]

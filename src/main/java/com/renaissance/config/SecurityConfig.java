@@ -56,6 +56,7 @@ public class SecurityConfig {
                 // Static assets & public web pages
                 .requestMatchers(
                     "/",
+                    "/health",
                     "/index.html",
                     "/student-attendance.html",
                     "/teacher-login.html",
