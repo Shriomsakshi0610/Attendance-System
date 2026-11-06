@@ -6,7 +6,14 @@ public class SubjectDto {
     private String name;
     private String departmentId;
     private String departmentCode;
+    private String departmentName;
     private Integer semester;
+    private String classId;
+    private String className;
+    private String assignedTeacherId;
+    private String assignedTeacherName;
+    private Integer weeklyHours;
+    private String status;
 
     public SubjectDto() {
     }
@@ -18,6 +25,7 @@ public class SubjectDto {
         this.departmentId = departmentId;
         this.departmentCode = departmentCode;
         this.semester = semester;
+        this.status = "ACTIVE";
     }
 
     public String getId() {
@@ -60,11 +68,67 @@ public class SubjectDto {
         this.departmentCode = departmentCode;
     }
 
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
+    }
+
     public Integer getSemester() {
         return semester;
     }
 
     public void setSemester(Integer semester) {
         this.semester = semester;
+    }
+
+    public String getClassId() {
+        return classId;
+    }
+
+    public void setClassId(String classId) {
+        this.classId = classId;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public void setClassName(String className) {
+        this.className = className;
+    }
+
+    public String getAssignedTeacherId() {
+        return assignedTeacherId;
+    }
+
+    public void setAssignedTeacherId(String assignedTeacherId) {
+        this.assignedTeacherId = assignedTeacherId;
+    }
+
+    public String getAssignedTeacherName() {
+        return assignedTeacherName;
+    }
+
+    public void setAssignedTeacherName(String assignedTeacherName) {
+        this.assignedTeacherName = assignedTeacherName;
+    }
+
+    public Integer getWeeklyHours() {
+        return weeklyHours;
+    }
+
+    public void setWeeklyHours(Integer weeklyHours) {
+        this.weeklyHours = weeklyHours;
+    }
+
+    public String getStatus() {
+        return status != null ? status : "ACTIVE";
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

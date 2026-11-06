@@ -18,19 +18,26 @@ public class DataInitializer implements CommandLineRunner {
     private final SubjectRepository subjectRepository;
     private final StudentRepository studentRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final TimetableScheduleRepository timetableRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${renaissance.admin.email:teacher@renaissance.edu}")
+    @Value("${renaissance.admin.email:admin@renaissance.edu}")
     private String adminEmail;
 
     @Value("${renaissance.admin.password:Admin@1234}")
     private String adminPassword;
 
-    @Value("${renaissance.admin.name:Prof. Charles Babbage}")
+    @Value("${renaissance.admin.name:System Administrator}")
     private String adminName;
 
-    @Value("${renaissance.admin.employee-id:EMP001}")
+    @Value("${renaissance.admin.employee-id:ADM001}")
     private String adminEmpId;
+
+    @Value("${renaissance.teacher.email:teacher@renaissance.edu}")
+    private String teacherEmail;
+
+    @Value("${renaissance.teacher.password:Teacher@1234}")
+    private String teacherPassword;
 
     public DataInitializer(TeacherRepository teacherRepository,
                            DepartmentRepository departmentRepository,
@@ -38,6 +45,7 @@ public class DataInitializer implements CommandLineRunner {
                            SubjectRepository subjectRepository,
                            StudentRepository studentRepository,
                            EnrollmentRepository enrollmentRepository,
+                           TimetableScheduleRepository timetableRepository,
                            PasswordEncoder passwordEncoder) {
         this.teacherRepository = teacherRepository;
         this.departmentRepository = departmentRepository;
@@ -45,6 +53,7 @@ public class DataInitializer implements CommandLineRunner {
         this.subjectRepository = subjectRepository;
         this.studentRepository = studentRepository;
         this.enrollmentRepository = enrollmentRepository;
+        this.timetableRepository = timetableRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -52,57 +61,133 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         // 1. Seed Departments if missing
         Department cse = departmentRepository.findByCodeIgnoreCase("CSE")
-                .orElseGet(() -> departmentRepository.save(new Department("CSE", "Computer Science & Engineering")));
+                .orElseGet(() -> departmentRepository.save(new Department("CSE", "Computer Science & Engineering", "Department of CSE", "ACTIVE")));
 
         Department ise = departmentRepository.findByCodeIgnoreCase("ISE")
-                .orElseGet(() -> departmentRepository.save(new Department("ISE", "Information Science & Engineering")));
+                .orElseGet(() -> departmentRepository.save(new Department("ISE", "Information Science & Engineering", "Department of ISE", "ACTIVE")));
 
         Department ece = departmentRepository.findByCodeIgnoreCase("ECE")
-                .orElseGet(() -> departmentRepository.save(new Department("ECE", "Electronics & Communication Engineering")));
+                .orElseGet(() -> departmentRepository.save(new Department("ECE", "Electronics & Communication Engineering", "Department of ECE", "ACTIVE")));
 
         Department mech = departmentRepository.findByCodeIgnoreCase("MECH")
-                .orElseGet(() -> departmentRepository.save(new Department("MECH", "Mechanical Engineering")));
+                .orElseGet(() -> departmentRepository.save(new Department("MECH", "Mechanical Engineering", "Department of MECH", "ACTIVE")));
 
-        // 2. Provision Admin Teacher Account if none exists
+        // 2. Seed Dedicated Admin Account
         if (!teacherRepository.existsByEmailIgnoreCase(adminEmail)) {
-            Teacher adminTeacher = new Teacher(
+            Teacher adminUser = new Teacher(
                     adminName,
                     adminEmail,
                     passwordEncoder.encode(adminPassword),
                     adminEmpId,
-                    cse
+                    cse,
+                    "ROLE_ADMIN"
             );
-            adminTeacher.setRole("ROLE_TEACHER");
-            teacherRepository.save(adminTeacher);
+            adminUser.setPhone("+91 9876543200");
+            teacherRepository.save(adminUser);
         }
 
-        // 3. Seed College Classes if missing
+        // 3. Seed Faculty/Teacher Account
+        final Teacher assignedFaculty = teacherRepository.findByEmailIgnoreCase(teacherEmail)
+                .orElseGet(() -> {
+                    Teacher t = new Teacher(
+                            "Prof. Charles Babbage",
+                            teacherEmail,
+                            passwordEncoder.encode(teacherPassword),
+                            "EMP001",
+                            cse,
+                            "ROLE_TEACHER"
+                    );
+                    t.setPhone("+91 9876543210");
+                    return teacherRepository.save(t);
+                });
+
+        // 4. Seed College Classes if missing
         CollegeClass cse5A = classRepository.findByDepartmentAndSemesterAndSection(cse, 5, "A")
-                .orElseGet(() -> classRepository.save(new CollegeClass(cse, 5, "A", "2024-2028")));
+                .orElseGet(() -> {
+                    CollegeClass c = new CollegeClass(cse, 5, "A", "2024-2028");
+                    c.setClassName("CSE 5th Semester");
+                    c.setAcademicYear("2026-2027");
+                    c.setClassTeacher(assignedFaculty);
+                    return classRepository.save(c);
+                });
 
         CollegeClass cse5B = classRepository.findByDepartmentAndSemesterAndSection(cse, 5, "B")
-                .orElseGet(() -> classRepository.save(new CollegeClass(cse, 5, "B", "2024-2028")));
+                .orElseGet(() -> {
+                    CollegeClass c = new CollegeClass(cse, 5, "B", "2024-2028");
+                    c.setClassName("CSE 5th Semester");
+                    c.setAcademicYear("2026-2027");
+                    return classRepository.save(c);
+                });
 
         CollegeClass ise5A = classRepository.findByDepartmentAndSemesterAndSection(ise, 5, "A")
-                .orElseGet(() -> classRepository.save(new CollegeClass(ise, 5, "A", "2024-2028")));
+                .orElseGet(() -> {
+                    CollegeClass c = new CollegeClass(ise, 5, "A", "2024-2028");
+                    c.setClassName("ISE 5th Semester");
+                    c.setAcademicYear("2026-2027");
+                    return classRepository.save(c);
+                });
 
         CollegeClass ece3A = classRepository.findByDepartmentAndSemesterAndSection(ece, 3, "A")
-                .orElseGet(() -> classRepository.save(new CollegeClass(ece, 3, "A", "2025-2029")));
+                .orElseGet(() -> {
+                    CollegeClass c = new CollegeClass(ece, 3, "A", "2025-2029");
+                    c.setClassName("ECE 3rd Semester");
+                    c.setAcademicYear("2026-2027");
+                    return classRepository.save(c);
+                });
 
-        // 4. Seed Subjects if missing
+        // 5. Seed Subjects if missing
         Subject dbms = subjectRepository.findByCodeIgnoreCase("21CS51")
-                .orElseGet(() -> subjectRepository.save(new Subject("21CS51", "Database Management Systems", cse, 5)));
+                .orElseGet(() -> {
+                    Subject s = new Subject("21CS51", "Database Management Systems", cse, 5);
+                    s.setCollegeClass(cse5A);
+                    s.setAssignedTeacher(assignedFaculty);
+                    s.setWeeklyHours(4);
+                    return subjectRepository.save(s);
+                });
 
         Subject cn = subjectRepository.findByCodeIgnoreCase("21CS52")
-                .orElseGet(() -> subjectRepository.save(new Subject("21CS52", "Computer Networks", cse, 5)));
+                .orElseGet(() -> {
+                    Subject s = new Subject("21CS52", "Computer Networks", cse, 5);
+                    s.setCollegeClass(cse5A);
+                    s.setAssignedTeacher(assignedFaculty);
+                    s.setWeeklyHours(4);
+                    return subjectRepository.save(s);
+                });
 
         Subject se = subjectRepository.findByCodeIgnoreCase("21CS53")
-                .orElseGet(() -> subjectRepository.save(new Subject("21CS53", "Software Engineering", cse, 5)));
+                .orElseGet(() -> {
+                    Subject s = new Subject("21CS53", "Software Engineering", cse, 5);
+                    s.setCollegeClass(cse5A);
+                    s.setAssignedTeacher(assignedFaculty);
+                    s.setWeeklyHours(3);
+                    return subjectRepository.save(s);
+                });
 
         Subject atc = subjectRepository.findByCodeIgnoreCase("21CS54")
-                .orElseGet(() -> subjectRepository.save(new Subject("21CS54", "Automata Theory & Computability", cse, 5)));
+                .orElseGet(() -> {
+                    Subject s = new Subject("21CS54", "Automata Theory & Computability", cse, 5);
+                    s.setCollegeClass(cse5A);
+                    s.setWeeklyHours(4);
+                    return subjectRepository.save(s);
+                });
 
-        // 5. Seed Students if empty
+        // Link assigned classes and subjects to default faculty if not linked
+        if (assignedFaculty != null) {
+            boolean updated = false;
+            if (assignedFaculty.getAssignedClasses().isEmpty()) {
+                assignedFaculty.setAssignedClasses(List.of(cse5A, cse5B));
+                updated = true;
+            }
+            if (assignedFaculty.getAssignedSubjects().isEmpty()) {
+                assignedFaculty.setAssignedSubjects(List.of(dbms, cn, se));
+                updated = true;
+            }
+            if (updated) {
+                teacherRepository.save(assignedFaculty);
+            }
+        }
+
+        // 6. Seed Students if empty
         if (studentRepository.count() == 0) {
             List<Student> sampleStudents = List.of(
                     new Student("1MS21CS001", "Aarav Sharma", "aarav.sharma@example.com", cse, cse5A),
@@ -126,6 +211,25 @@ public class DataInitializer implements CommandLineRunner {
                     enrollmentRepository.save(new Enrollment(student, cse5A, se, "2026-2027"));
                 }
             }
+        }
+
+        // 7. Seed Sample Timetable Schedules if empty
+        if (timetableRepository.count() == 0 && assignedFaculty != null) {
+            List<TimetableSchedule> sampleSchedules = List.of(
+                    new TimetableSchedule(cse, cse5A, dbms, assignedFaculty, "MONDAY",
+                            java.time.LocalTime.of(9, 0), java.time.LocalTime.of(10, 0), "LH-101"),
+                    new TimetableSchedule(cse, cse5A, cn, assignedFaculty, "MONDAY",
+                            java.time.LocalTime.of(10, 0), java.time.LocalTime.of(11, 0), "LH-101"),
+                    new TimetableSchedule(cse, cse5A, se, assignedFaculty, "TUESDAY",
+                            java.time.LocalTime.of(11, 15), java.time.LocalTime.of(12, 15), "LH-102"),
+                    new TimetableSchedule(cse, cse5A, dbms, assignedFaculty, "WEDNESDAY",
+                            java.time.LocalTime.of(14, 0), java.time.LocalTime.of(15, 0), "LH-101"),
+                    new TimetableSchedule(cse, cse5A, cn, assignedFaculty, "THURSDAY",
+                            java.time.LocalTime.of(9, 0), java.time.LocalTime.of(10, 0), "LH-101"),
+                    new TimetableSchedule(cse, cse5A, se, assignedFaculty, "FRIDAY",
+                            java.time.LocalTime.of(10, 0), java.time.LocalTime.of(11, 0), "LH-102")
+            );
+            timetableRepository.saveAll(sampleSchedules);
         }
     }
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Faculty Login — Renaissance Attendance</title>
+    <title>Faculty Login — Renaissance Attendance System</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/responsive.css">
@@ -14,28 +14,30 @@
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
-            background: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.1) 0%, rgba(248, 250, 252, 1) 90%);
+            background: linear-gradient(135deg, #1e1b4b 0%, #31104b 100%);
         }
         .login-card {
+            background: var(--surface-card);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-xl);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
             width: 100%;
             max-width: 440px;
-            background-color: var(--surface-card);
-            border: 1px solid var(--surface-border);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
             overflow: hidden;
+            animation: fadeIn 0.4s ease-out;
         }
         .login-header {
-            padding: 2.25rem 2rem 1.5rem;
+            background: linear-gradient(135deg, var(--accent-700), var(--secondary-700));
+            color: #ffffff;
+            padding: 2.25rem 2rem 1.75rem;
             text-align: center;
-            border-bottom: 1px solid var(--surface-border-subtle);
         }
         .login-logo {
-            width: 52px;
-            height: 52px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--accent-600) 0%, var(--secondary-600) 100%);
-            color: #fff;
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -47,6 +49,28 @@
         .login-body {
             padding: 2rem;
         }
+        .password-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-toggle-btn {
+            position: absolute;
+            right: 0.75rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 0.35rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: color 0.15s ease;
+        }
+        .password-toggle-btn:hover {
+            color: var(--text-primary);
+        }
     </style>
 </head>
 <body>
@@ -55,7 +79,7 @@
             <div class="login-header">
                 <div class="login-logo">R</div>
                 <h2>Faculty Portal</h2>
-                <p style="font-size: 0.875rem; margin-top: 0.35rem;">Log in to manage attendance sessions and view analytics.</p>
+                <p style="font-size: 0.875rem; margin-top: 0.35rem; opacity: 0.9;">Log in to manage attendance sessions and view analytics.</p>
             </div>
 
             <div class="login-body">
@@ -64,12 +88,20 @@
                 <form id="teacher-login-form">
                     <div class="form-group">
                         <label class="form-label" for="login-email">Faculty Email Address</label>
-                        <input type="email" id="login-email" class="form-control" placeholder="teacher@renaissance.edu" required autocomplete="email" value="teacher@renaissance.edu">
+                        <input type="email" id="login-email" class="form-control" placeholder="name@renaissance.edu" required autocomplete="email">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="login-password">Password</label>
-                        <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password" value="Admin@1234">
+                        <div class="password-container">
+                            <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required autocomplete="current-password" style="padding-right: 2.75rem;">
+                            <button type="button" id="toggle-password-btn" class="password-toggle-btn" aria-label="Toggle password visibility">
+                                <svg id="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.5rem;">
@@ -77,13 +109,11 @@
                     </button>
                 </form>
 
-                <div style="margin-top: 1.75rem; padding: 0.85rem; background-color: var(--surface-bg); border: 1px dashed var(--accent-400); border-radius: var(--radius-md); font-size: 0.8rem; color: var(--text-secondary);">
-                    <strong>Default Provisioned Account:</strong><br>
-                    Email: <code>teacher@renaissance.edu</code><br>
-                    Password: <code>Admin@1234</code>
-                </div>
-
-                <div style="margin-top: 1.25rem; text-align: center;">
+                <div style="margin-top: 1.75rem; text-align: center; border-top: 1px solid var(--surface-border-subtle); padding-top: 1.25rem;">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        Are you an administrator?
+                        <a href="/admin-login.html" style="color: var(--accent-600); font-weight: 600;">Sign in to Admin Portal →</a>
+                    </p>
                     <a href="/index.html" style="font-size: 0.85rem; color: var(--text-muted);">← Back to Main Portal</a>
                 </div>
             </div>
@@ -98,8 +128,31 @@
             const form = document.getElementById('teacher-login-form');
             const emailInput = document.getElementById('login-email');
             const passInput = document.getElementById('login-password');
+            const togglePassBtn = document.getElementById('toggle-password-btn');
+            const eyeIcon = document.getElementById('eye-icon');
             const errorAlert = document.getElementById('login-error-alert');
             const submitBtn = document.getElementById('login-submit-btn');
+
+            // Ensure password is clear on load
+            passInput.value = '';
+
+            // Show / Hide Password Toggle
+            let passwordVisible = false;
+            togglePassBtn.addEventListener('click', () => {
+                passwordVisible = !passwordVisible;
+                passInput.type = passwordVisible ? 'text' : 'password';
+                if (passwordVisible) {
+                    eyeIcon.innerHTML = `
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                    `;
+                } else {
+                    eyeIcon.innerHTML = `
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    `;
+                }
+            });
 
             // Check if redirected due to unauthorized or logout
             const urlParams = new URLSearchParams(window.location.search);
@@ -117,6 +170,12 @@
                 const email = emailInput.value.trim();
                 const password = passInput.value;
 
+                if (!email || !password) {
+                    errorAlert.textContent = 'Please enter both email and password.';
+                    errorAlert.style.display = 'block';
+                    return;
+                }
+
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Signing in...';
 
@@ -124,8 +183,13 @@
                     const res = await Auth.login(email, password);
                     if (res && res.success) {
                         App.showToast('Login successful! Redirecting...', 'success');
+                        const user = res.data?.teacher || res.data;
                         setTimeout(() => {
-                            window.location.href = '/dashboard.html';
+                            if (user && user.role === 'ROLE_ADMIN') {
+                                window.location.href = '/admin-dashboard.html';
+                            } else {
+                                window.location.href = '/dashboard.html';
+                            }
                         }, 500);
                     }
                 } catch (err) {

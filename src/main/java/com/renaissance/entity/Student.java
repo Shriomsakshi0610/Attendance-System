@@ -99,6 +99,10 @@ public class Student {
         this.status = status;
     }
 
+    public boolean isActive() {
+        return "ACTIVE".equalsIgnoreCase(this.status);
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }

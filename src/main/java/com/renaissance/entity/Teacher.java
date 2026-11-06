@@ -6,6 +6,8 @@ import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Document(collection = "teachers")
 public class Teacher {
@@ -22,10 +24,18 @@ public class Teacher {
 
     private String employeeId;
 
+    private String phone;
+
     @DBRef
     private Department department;
 
-    private String role = "ROLE_TEACHER";
+    @DBRef
+    private List<CollegeClass> assignedClasses = new ArrayList<>();
+
+    @DBRef
+    private List<Subject> assignedSubjects = new ArrayList<>();
+
+    private String role = "ROLE_TEACHER"; // ROLE_TEACHER, ROLE_ADMIN
 
     private boolean active = true;
 
@@ -41,6 +51,17 @@ public class Teacher {
         this.employeeId = employeeId;
         this.department = department;
         this.role = "ROLE_TEACHER";
+        this.active = true;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public Teacher(String name, String email, String password, String employeeId, Department department, String role) {
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.employeeId = employeeId;
+        this.department = department;
+        this.role = role != null ? role : "ROLE_TEACHER";
         this.active = true;
         this.createdAt = LocalDateTime.now();
     }
@@ -85,12 +106,42 @@ public class Teacher {
         this.employeeId = employeeId;
     }
 
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
     public Department getDepartment() {
         return department;
     }
 
     public void setDepartment(Department department) {
         this.department = department;
+    }
+
+    public List<CollegeClass> getAssignedClasses() {
+        if (assignedClasses == null) {
+            assignedClasses = new ArrayList<>();
+        }
+        return assignedClasses;
+    }
+
+    public void setAssignedClasses(List<CollegeClass> assignedClasses) {
+        this.assignedClasses = assignedClasses;
+    }
+
+    public List<Subject> getAssignedSubjects() {
+        if (assignedSubjects == null) {
+            assignedSubjects = new ArrayList<>();
+        }
+        return assignedSubjects;
+    }
+
+    public void setAssignedSubjects(List<Subject> assignedSubjects) {
+        this.assignedSubjects = assignedSubjects;
     }
 
     public String getRole() {
@@ -107,6 +158,18 @@ public class Teacher {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public String getStatus() {
+        return active ? "ACTIVE" : "INACTIVE";
+    }
+
+    public void setStatus(String status) {
+        this.active = "ACTIVE".equalsIgnoreCase(status);
+    }
+
+    public boolean isAdmin() {
+        return "ROLE_ADMIN".equalsIgnoreCase(this.role);
     }
 
     public LocalDateTime getCreatedAt() {

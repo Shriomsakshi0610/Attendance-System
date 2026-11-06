@@ -82,7 +82,7 @@ public class AuthService {
 
     public TeacherDto toTeacherDto(Teacher teacher) {
         if (teacher == null) return null;
-        return new TeacherDto(
+        TeacherDto dto = new TeacherDto(
                 teacher.getId(),
                 teacher.getName(),
                 teacher.getEmail(),
@@ -91,5 +91,20 @@ public class AuthService {
                 teacher.getDepartment() != null ? teacher.getDepartment().getCode() : "GEN",
                 teacher.getRole()
         );
+        if (teacher.getDepartment() != null) {
+            dto.setDepartmentId(teacher.getDepartment().getId());
+        }
+        dto.setPhone(teacher.getPhone());
+        dto.setStatus(teacher.getStatus() != null ? teacher.getStatus() : "ACTIVE");
+
+        if (teacher.getAssignedClasses() != null) {
+            dto.setAssignedClassIds(teacher.getAssignedClasses().stream().map(c -> c.getId()).toList());
+            dto.setAssignedClassNames(teacher.getAssignedClasses().stream().map(c -> c.getDisplayName()).toList());
+        }
+        if (teacher.getAssignedSubjects() != null) {
+            dto.setAssignedSubjectIds(teacher.getAssignedSubjects().stream().map(s -> s.getId()).toList());
+            dto.setAssignedSubjectNames(teacher.getAssignedSubjects().stream().map(s -> s.getName()).toList());
+        }
+        return dto;
     }
 }

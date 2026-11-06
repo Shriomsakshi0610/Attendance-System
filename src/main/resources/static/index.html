@@ -10,7 +10,7 @@
     <style>
         .hero-section {
             text-align: center;
-            padding: 4rem 1rem 3rem;
+            padding: 3.5rem 1rem 2.5rem;
             max-width: 800px;
             margin: 0 auto;
         }
@@ -24,7 +24,7 @@
             border-radius: var(--radius-full);
             font-size: 0.85rem;
             font-weight: 700;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
@@ -41,26 +41,29 @@
             font-size: 1.15rem;
             color: var(--text-secondary);
             line-height: 1.6;
-            margin-bottom: 2.5rem;
+            margin-bottom: 2rem;
         }
         .portal-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            max-width: 880px;
-            margin: 0 auto 4rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.75rem;
+            max-width: 1040px;
+            margin: 0 auto 3.5rem;
             padding: 0 1rem;
         }
         .portal-card {
             background: var(--surface-card);
             border: 1px solid var(--surface-border);
             border-radius: var(--radius-lg);
-            padding: 2.25rem 2rem;
+            padding: 2.25rem 1.75rem;
             text-align: center;
             box-shadow: var(--shadow-md);
             transition: all var(--transition-base);
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
         .portal-card:hover {
             transform: translateY(-4px);
@@ -68,14 +71,14 @@
             border-color: var(--accent-400);
         }
         .portal-icon {
-            width: 64px;
-            height: 64px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            margin: 0 auto 1.5rem;
+            margin: 0 auto 1.25rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 1.85rem;
         }
         .portal-icon.student {
             background: var(--accent-light);
@@ -85,10 +88,14 @@
             background: #e0e7ff;
             color: var(--secondary-600);
         }
+        .portal-icon.admin {
+            background: #fef3c7;
+            color: #d97706;
+        }
     </style>
 </head>
 <body class="landing-body">
-    <header style="padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--surface-border-subtle);">
+    <header style="padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--surface-border-subtle); background: var(--surface-card);">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
             <div style="width: 38px; height: 38px; border-radius: 8px; background: linear-gradient(135deg, var(--accent-600), var(--secondary-600)); display: flex; align-items: center; justify-content: center; color:#fff; font-weight:800; font-size:1.25rem;">
                 R
@@ -98,8 +105,9 @@
                 <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Smart Attendance System</span>
             </div>
         </div>
-        <div>
+        <div style="display: flex; gap: 0.75rem;">
             <a href="/teacher-login.html" class="btn btn-secondary btn-sm">Faculty Login</a>
+            <a href="/admin-login.html" class="btn btn-primary btn-sm">Admin Portal</a>
         </div>
     </header>
 
@@ -108,34 +116,52 @@
             <div class="hero-badge">
                 <span>📍 Precision 15-Meter GPS Geofencing</span>
             </div>
-            <h1 class="hero-title">Intelligent College Classroom Attendance</h1>
+            <h1 class="hero-title">Intelligent College Attendance & Academic Control</h1>
             <p class="hero-subtitle">
-                Renaissance eliminates proxy attendance through cryptographic session codes and strict server-side Haversine GPS verification.
+                Eliminate proxy attendance with cryptographic session codes, precision Haversine GPS verification, and complete institutional academic management.
             </p>
         </section>
 
         <section class="portal-grid">
             <!-- Student Attendance Portal -->
             <div class="portal-card">
-                <div class="portal-icon student">📱</div>
-                <h2>Student Portal</h2>
-                <p style="margin: 0.75rem 0 1.75rem; font-size: 0.95rem;">
-                    Mark attendance for your ongoing class session. Requires browser GPS permission within the 15m radius.
-                </p>
-                <a href="/student-attendance.html" class="btn btn-primary btn-block btn-lg">
-                    <span>Enter Student Attendance →</span>
+                <div>
+                    <div class="portal-icon student">📱</div>
+                    <h2>Student Portal</h2>
+                    <p style="margin: 0.75rem 0 1.75rem; font-size: 0.9rem; color: var(--text-secondary);">
+                        Mark attendance for active class sessions. Validates device coordinates within the strict 15-meter classroom radius.
+                    </p>
+                </div>
+                <a href="/student-attendance.html" class="btn btn-primary btn-block">
+                    <span>Mark Attendance →</span>
                 </a>
             </div>
 
             <!-- Teacher Portal -->
             <div class="portal-card">
-                <div class="portal-icon teacher">🎓</div>
-                <h2>Faculty / Admin</h2>
-                <p style="margin: 0.75rem 0 1.75rem; font-size: 0.95rem;">
-                    Launch attendance sessions, view live real-time headcounts, manage student rosters, and download CSV reports.
-                </p>
-                <a href="/teacher-login.html" class="btn btn-secondary btn-block btn-lg">
-                    <span>Teacher Dashboard Login →</span>
+                <div>
+                    <div class="portal-icon teacher">🎓</div>
+                    <h2>Faculty Portal</h2>
+                    <p style="margin: 0.75rem 0 1.75rem; font-size: 0.9rem; color: var(--text-secondary);">
+                        Activate attendance sessions with GPS anchor, monitor real-time headcounts, check weekly schedules, and export reports.
+                    </p>
+                </div>
+                <a href="/teacher-login.html" class="btn btn-secondary btn-block">
+                    <span>Teacher Login →</span>
+                </a>
+            </div>
+
+            <!-- Admin Portal -->
+            <div class="portal-card" style="border-top: 3px solid #d97706;">
+                <div>
+                    <div class="portal-icon admin">🛡️</div>
+                    <h2>Admin Portal</h2>
+                    <p style="margin: 0.75rem 0 1.75rem; font-size: 0.9rem; color: var(--text-secondary);">
+                        Complete control over departments, classes, sections, subjects, students, faculty assignments, and weekly timetables.
+                    </p>
+                </div>
+                <a href="/admin-login.html" class="btn btn-primary btn-block" style="background: #4338ca; border-color: #4338ca;">
+                    <span>Admin Control Center →</span>
                 </a>
             </div>
         </section>

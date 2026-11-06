@@ -17,6 +17,10 @@ public class Department {
 
     private String name; // e.g. "Computer Science & Engineering"
 
+    private String description;
+
+    private String status = "ACTIVE"; // ACTIVE, INACTIVE
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public Department() {
@@ -25,6 +29,23 @@ public class Department {
     public Department(String code, String name) {
         this.code = code;
         this.name = name;
+        this.status = "ACTIVE";
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public Department(String code, String name, String description) {
+        this.code = code;
+        this.name = name;
+        this.description = description;
+        this.status = "ACTIVE";
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public Department(String code, String name, String description, String status) {
+        this.code = code;
+        this.name = name;
+        this.description = description;
+        this.status = status != null ? status : "ACTIVE";
         this.createdAt = LocalDateTime.now();
     }
 
@@ -50,6 +71,26 @@ public class Department {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public boolean isActive() {
+        return "ACTIVE".equalsIgnoreCase(this.status);
     }
 
     public LocalDateTime getCreatedAt() {

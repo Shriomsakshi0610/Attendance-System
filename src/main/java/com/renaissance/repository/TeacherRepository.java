@@ -19,4 +19,12 @@ public interface TeacherRepository extends MongoRepository<Teacher, String> {
     default List<Teacher> findByDepartmentId(String departmentId) {
         return findByDepartment_Id(departmentId);
     }
+
+    long countByDepartment_Id(String departmentId);
+
+    List<Teacher> findByRole(String role);
+
+    long countByRole(String role);
+
+    List<Teacher> findByStatus(String status);
 }

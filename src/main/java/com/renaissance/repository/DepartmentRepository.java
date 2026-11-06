@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface DepartmentRepository extends MongoRepository<Department, String> {
     Optional<Department> findByCodeIgnoreCase(String code);
     boolean existsByCodeIgnoreCase(String code);
+    java.util.List<Department> findByStatus(String status);
 }

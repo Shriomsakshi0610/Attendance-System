@@ -31,4 +31,12 @@ public interface AttendanceSessionRepository extends MongoRepository<AttendanceS
     default List<AttendanceSession> findByCollegeClassIdOrderByStartTimeDesc(String classId) {
         return findByCollegeClass_IdOrderByStartTimeDesc(classId);
     }
+
+    long countByCollegeClass_Id(String classId);
+
+    long countBySubject_Id(String subjectId);
+
+    long countByTeacher_Id(String teacherId);
+
+    long countByStatus(AttendanceSession.SessionStatus status);
 }

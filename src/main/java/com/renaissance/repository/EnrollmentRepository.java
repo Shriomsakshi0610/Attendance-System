@@ -45,4 +45,10 @@ public interface EnrollmentRepository extends MongoRepository<Enrollment, String
     default List<Enrollment> findByStudentId(String studentId) {
         return findByStudent_Id(studentId);
     }
+
+    long countByCollegeClass_Id(String classId);
+
+    long countBySubject_Id(String subjectId);
+
+    long countByStudent_Id(String studentId);
 }

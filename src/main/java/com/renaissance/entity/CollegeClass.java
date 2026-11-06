@@ -21,7 +21,16 @@ public class CollegeClass {
 
     private String section; // e.g. "A", "B", "C"
 
+    private String className; // e.g. "ISE 4th Semester"
+
     private String batchYear; // e.g. "2024-2028"
+
+    private String academicYear = "2026-2027";
+
+    @DBRef
+    private Teacher classTeacher; // Optional assigned faculty mentor / class teacher
+
+    private String status = "ACTIVE"; // ACTIVE, INACTIVE
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -33,6 +42,19 @@ public class CollegeClass {
         this.semester = semester;
         this.section = section;
         this.batchYear = batchYear;
+        this.academicYear = "2026-2027";
+        this.status = "ACTIVE";
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public CollegeClass(Department department, Integer semester, String section, String batchYear, String academicYear, Teacher classTeacher) {
+        this.department = department;
+        this.semester = semester;
+        this.section = section;
+        this.batchYear = batchYear;
+        this.academicYear = academicYear != null ? academicYear : "2026-2027";
+        this.classTeacher = classTeacher;
+        this.status = "ACTIVE";
         this.createdAt = LocalDateTime.now();
     }
 
@@ -68,12 +90,48 @@ public class CollegeClass {
         this.section = section;
     }
 
+    public String getClassName() {
+        return className;
+    }
+
+    public void setClassName(String className) {
+        this.className = className;
+    }
+
     public String getBatchYear() {
         return batchYear;
     }
 
     public void setBatchYear(String batchYear) {
         this.batchYear = batchYear;
+    }
+
+    public String getAcademicYear() {
+        return academicYear;
+    }
+
+    public void setAcademicYear(String academicYear) {
+        this.academicYear = academicYear;
+    }
+
+    public Teacher getClassTeacher() {
+        return classTeacher;
+    }
+
+    public void setClassTeacher(Teacher classTeacher) {
+        this.classTeacher = classTeacher;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public boolean isActive() {
+        return "ACTIVE".equalsIgnoreCase(this.status);
     }
 
     public LocalDateTime getCreatedAt() {
@@ -86,6 +144,9 @@ public class CollegeClass {
 
     public String getDisplayName() {
         String deptCode = department != null ? department.getCode() : "DEPT";
+        if (className != null && !className.isBlank()) {
+            return className + " (" + section + ")";
+        }
         return deptCode + " - Sem " + semester + " (" + section + ")";
     }
 }

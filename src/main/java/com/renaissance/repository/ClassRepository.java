@@ -30,4 +30,12 @@ public interface ClassRepository extends MongoRepository<CollegeClass, String> {
     default Optional<CollegeClass> findByDepartmentIdAndSemesterAndSection(String departmentId, Integer semester, String section) {
         return findByDepartment_IdAndSemesterAndSection(departmentId, semester, section);
     }
+
+    boolean existsByDepartment_IdAndSemesterAndSectionIgnoreCase(String departmentId, Integer semester, String section);
+
+    long countByDepartment_Id(String departmentId);
+
+    long countByClassTeacher_Id(String teacherId);
+
+    List<CollegeClass> findByStatus(String status);
 }

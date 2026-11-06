@@ -23,6 +23,16 @@ public class Subject {
 
     private Integer semester;
 
+    @DBRef
+    private CollegeClass collegeClass; // Optional specific class/section assignment
+
+    @DBRef
+    private Teacher assignedTeacher; // Faculty member assigned to instruct this course
+
+    private Integer weeklyHours = 4;
+
+    private String status = "ACTIVE"; // ACTIVE, INACTIVE
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public Subject() {
@@ -33,6 +43,19 @@ public class Subject {
         this.name = name;
         this.department = department;
         this.semester = semester;
+        this.status = "ACTIVE";
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public Subject(String code, String name, Department department, Integer semester, CollegeClass collegeClass, Teacher assignedTeacher, Integer weeklyHours) {
+        this.code = code;
+        this.name = name;
+        this.department = department;
+        this.semester = semester;
+        this.collegeClass = collegeClass;
+        this.assignedTeacher = assignedTeacher;
+        this.weeklyHours = weeklyHours != null ? weeklyHours : 4;
+        this.status = "ACTIVE";
         this.createdAt = LocalDateTime.now();
     }
 
@@ -74,6 +97,42 @@ public class Subject {
 
     public void setSemester(Integer semester) {
         this.semester = semester;
+    }
+
+    public CollegeClass getCollegeClass() {
+        return collegeClass;
+    }
+
+    public void setCollegeClass(CollegeClass collegeClass) {
+        this.collegeClass = collegeClass;
+    }
+
+    public Teacher getAssignedTeacher() {
+        return assignedTeacher;
+    }
+
+    public void setAssignedTeacher(Teacher assignedTeacher) {
+        this.assignedTeacher = assignedTeacher;
+    }
+
+    public Integer getWeeklyHours() {
+        return weeklyHours;
+    }
+
+    public void setWeeklyHours(Integer weeklyHours) {
+        this.weeklyHours = weeklyHours;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public boolean isActive() {
+        return "ACTIVE".equalsIgnoreCase(this.status);
     }
 
     public LocalDateTime getCreatedAt() {

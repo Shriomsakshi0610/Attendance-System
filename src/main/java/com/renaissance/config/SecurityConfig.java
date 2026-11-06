@@ -60,6 +60,7 @@ public class SecurityConfig {
                     "/index.html",
                     "/student-attendance.html",
                     "/teacher-login.html",
+                    "/admin-login.html",
                     "/css/**",
                     "/js/**",
                     "/images/**",
@@ -76,6 +77,12 @@ public class SecurityConfig {
                     "/ws/**"
                 ).permitAll()
 
+                // Admin dashboard HTML page
+                .requestMatchers("/admin-dashboard.html").hasRole("ADMIN")
+
+                // Dedicated Admin API endpoints
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
                 // Teacher dashboard HTML pages
                 .requestMatchers(
                     "/dashboard.html",
@@ -83,17 +90,18 @@ public class SecurityConfig {
                     "/attendance.html",
                     "/sessions.html",
                     "/reports.html"
-                ).authenticated()
+                ).hasAnyRole("TEACHER", "ADMIN")
 
                 // Protected Teacher API endpoints
-                .requestMatchers("/api/teacher/**").hasRole("TEACHER")
-                .requestMatchers("/api/sessions/**").hasRole("TEACHER")
-                .requestMatchers("/api/students/**").hasRole("TEACHER")
-                .requestMatchers("/api/reports/**").hasRole("TEACHER")
-                .requestMatchers("/api/classes/**").hasRole("TEACHER")
-                .requestMatchers("/api/subjects/**").hasRole("TEACHER")
-                .requestMatchers("/api/attendance/session/**").hasRole("TEACHER")
-                .requestMatchers("/api/attendance/records/**").hasRole("TEACHER")
+                .requestMatchers("/api/teacher/**").hasAnyRole("TEACHER", "ADMIN")
+                .requestMatchers("/api/timetable/**").hasAnyRole("TEACHER", "ADMIN")
+                .requestMatchers("/api/sessions/**").hasAnyRole("TEACHER", "ADMIN")
+                .requestMatchers("/api/students/**").hasAnyRole("TEACHER", "ADMIN")
+                .requestMatchers("/api/reports/**").hasAnyRole("TEACHER", "ADMIN")
+                .requestMatchers("/api/classes/**").hasAnyRole("TEACHER", "ADMIN")
+                .requestMatchers("/api/subjects/**").hasAnyRole("TEACHER", "ADMIN")
+                .requestMatchers("/api/attendance/session/**").hasAnyRole("TEACHER", "ADMIN")
+                .requestMatchers("/api/attendance/records/**").hasAnyRole("TEACHER", "ADMIN")
 
                 .anyRequest().authenticated()
             )
@@ -103,7 +111,9 @@ public class SecurityConfig {
                     if (uri.startsWith("/api/")) {
                         response.setContentType("application/json");
                         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                        response.getWriter().write("{\"success\":false,\"message\":\"Unauthorized: Please log in as a teacher\",\"errorCode\":\"UNAUTHORIZED\"}");
+                        response.getWriter().write("{\"success\":false,\"message\":\"Unauthorized: Authentication required\",\"errorCode\":\"UNAUTHORIZED\"}");
+                    } else if (uri.startsWith("/admin")) {
+                        response.sendRedirect("/admin-login.html?error=unauthorized");
                     } else {
                         response.sendRedirect("/teacher-login.html?error=unauthorized");
                     }
@@ -113,7 +123,9 @@ public class SecurityConfig {
                     if (uri.startsWith("/api/")) {
                         response.setContentType("application/json");
                         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                        response.getWriter().write("{\"success\":false,\"message\":\"Access Denied: Teacher privilege required\",\"errorCode\":\"FORBIDDEN\"}");
+                        response.getWriter().write("{\"success\":false,\"message\":\"Access Denied: Insufficient privileges\",\"errorCode\":\"FORBIDDEN\"}");
+                    } else if (uri.startsWith("/admin")) {
+                        response.sendRedirect("/admin-login.html?error=forbidden");
                     } else {
                         response.sendRedirect("/teacher-login.html?error=forbidden");
                     }

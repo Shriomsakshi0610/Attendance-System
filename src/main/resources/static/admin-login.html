@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator Login — Renaissance Attendance System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+    <style>
+        .login-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        }
+        .login-card {
+            background: var(--surface-card);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-xl);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 440px;
+            overflow: hidden;
+            animation: fadeIn 0.4s ease-out;
+        }
+        .login-header {
+            background: linear-gradient(135deg, #4338ca, #312e81);
+            color: #ffffff;
+            padding: 2.25rem 2rem 1.75rem;
+            text-align: center;
+        }
+        .login-logo {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin: 0 auto 1rem;
+            box-shadow: 0 4px 12px rgba(67, 56, 202, 0.4);
+        }
+        .login-body {
+            padding: 2rem;
+        }
+        .password-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-toggle-btn {
+            position: absolute;
+            right: 0.75rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 0.35rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: color 0.15s ease;
+        }
+        .password-toggle-btn:hover {
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">🛡️</div>
+                <h2>Administrator Portal</h2>
+                <p style="font-size: 0.875rem; margin-top: 0.35rem; opacity: 0.9;">Sign in to configure academic structure, users, and schedules.</p>
+            </div>
+
+            <div class="login-body">
+                <div id="login-error-alert" class="alert alert-danger" style="display: none;"></div>
+
+                <form id="admin-login-form">
+                    <div class="form-group">
+                        <label class="form-label" for="admin-email">Administrator Email</label>
+                        <input type="email" id="admin-email" class="form-control" placeholder="admin@renaissance.edu" required autocomplete="email">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="admin-password">Password</label>
+                        <div class="password-container">
+                            <input type="password" id="admin-password" class="form-control" placeholder="Enter administrator password" required autocomplete="current-password" style="padding-right: 2.75rem;">
+                            <button type="button" id="toggle-password-btn" class="password-toggle-btn" aria-label="Toggle password visibility">
+                                <svg id="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="admin-submit-btn" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.5rem; background: #4338ca; border-color: #4338ca;">
+                        Enter Admin Control Center →
+                    </button>
+                </form>
+
+                <div style="margin-top: 1.75rem; text-align: center; border-top: 1px solid var(--surface-border-subtle); padding-top: 1.25rem;">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        Faculty member?
+                        <a href="/teacher-login.html" style="color: var(--accent-600); font-weight: 600;">Sign in to Faculty Portal →</a>
+                    </p>
+                    <a href="/index.html" style="font-size: 0.85rem; color: var(--text-muted);">← Back to Main Portal</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('admin-login-form');
+            const emailInput = document.getElementById('admin-email');
+            const passInput = document.getElementById('admin-password');
+            const togglePassBtn = document.getElementById('toggle-password-btn');
+            const eyeIcon = document.getElementById('eye-icon');
+            const errorAlert = document.getElementById('login-error-alert');
+            const submitBtn = document.getElementById('admin-submit-btn');
+
+            passInput.value = '';
+
+            let passwordVisible = false;
+            togglePassBtn.addEventListener('click', () => {
+                passwordVisible = !passwordVisible;
+                passInput.type = passwordVisible ? 'text' : 'password';
+                if (passwordVisible) {
+                    eyeIcon.innerHTML = `
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                    `;
+                } else {
+                    eyeIcon.innerHTML = `
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    `;
+                }
+            });
+
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('error') === 'unauthorized') {
+                errorAlert.textContent = 'Please log in as an authorized administrator to access the portal.';
+                errorAlert.style.display = 'block';
+            } else if (urlParams.get('error') === 'forbidden') {
+                errorAlert.textContent = 'Access Denied: Administrator privilege is required for this area.';
+                errorAlert.style.display = 'block';
+            } else if (urlParams.get('logout') === 'true') {
+                App.showToast('You have been logged out successfully.', 'info');
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errorAlert.style.display = 'none';
+
+                const email = emailInput.value.trim();
+                const password = passInput.value;
+
+                if (!email || !password) {
+                    errorAlert.textContent = 'Please enter both email and password.';
+                    errorAlert.style.display = 'block';
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Authenticating...';
+
+                try {
+                    const res = await Auth.login(email, password);
+                    if (res && res.success) {
+                        const user = res.data?.teacher || res.data;
+                        if (user && user.role === 'ROLE_ADMIN') {
+                            App.showToast('Admin authorized! Opening control center...', 'success');
+                            setTimeout(() => {
+                                window.location.href = '/admin-dashboard.html';
+                            }, 500);
+                        } else {
+                            // User is valid teacher but not admin
+                            errorAlert.textContent = 'Access Denied: Your account does not have Administrator privileges. Please use the Faculty Portal.';
+                            errorAlert.style.display = 'block';
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = 'Enter Admin Control Center →';
+                        }
+                    }
+                } catch (err) {
+                    errorAlert.textContent = err.message || 'Invalid administrator credentials.';
+                    errorAlert.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Enter Admin Control Center →';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

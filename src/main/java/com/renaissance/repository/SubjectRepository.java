@@ -23,4 +23,16 @@ public interface SubjectRepository extends MongoRepository<Subject, String> {
     default List<Subject> findByDepartmentIdAndSemester(String departmentId, Integer semester) {
         return findByDepartment_IdAndSemester(departmentId, semester);
     }
+
+    long countByDepartment_Id(String departmentId);
+
+    long countByAssignedTeacher_Id(String teacherId);
+
+    long countByCollegeClass_Id(String classId);
+
+    List<Subject> findByAssignedTeacher_Id(String teacherId);
+
+    List<Subject> findByCollegeClass_Id(String classId);
+
+    List<Subject> findByStatus(String status);
 }

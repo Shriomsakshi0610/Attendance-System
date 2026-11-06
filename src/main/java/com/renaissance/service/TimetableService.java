@@ -1,0 +1,240 @@
+package com.renaissance.service;
+
+import com.renaissance.dto.CreateTimetableScheduleRequest;
+import com.renaissance.dto.TimetableScheduleDto;
+import com.renaissance.entity.CollegeClass;
+import com.renaissance.entity.Department;
+import com.renaissance.entity.Subject;
+import com.renaissance.entity.Teacher;
+import com.renaissance.entity.TimetableSchedule;
+import com.renaissance.exception.ResourceNotFoundException;
+import com.renaissance.repository.ClassRepository;
+import com.renaissance.repository.SubjectRepository;
+import com.renaissance.repository.TeacherRepository;
+import com.renaissance.repository.TimetableScheduleRepository;
+import org.springframework.stereotype.Service;
+
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class TimetableService {
+
+    private final TimetableScheduleRepository timetableRepository;
+    private final ClassRepository classRepository;
+    private final SubjectRepository subjectRepository;
+    private final TeacherRepository teacherRepository;
+
+    public TimetableService(TimetableScheduleRepository timetableRepository,
+                            ClassRepository classRepository,
+                            SubjectRepository subjectRepository,
+                            TeacherRepository teacherRepository) {
+        this.timetableRepository = timetableRepository;
+        this.classRepository = classRepository;
+        this.subjectRepository = subjectRepository;
+        this.teacherRepository = teacherRepository;
+    }
+
+    public List<TimetableScheduleDto> getAllSchedules() {
+        return timetableRepository.findAll().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<TimetableScheduleDto> getSchedulesByClass(String classId) {
+        return timetableRepository.findByCollegeClass_Id(classId).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<TimetableScheduleDto> getSchedulesByTeacher(String teacherId) {
+        return timetableRepository.findByTeacher_Id(teacherId).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<TimetableScheduleDto> getSchedulesByDepartment(String departmentId) {
+        return timetableRepository.findByDepartment_Id(departmentId).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public TimetableScheduleDto createSchedule(CreateTimetableScheduleRequest request) {
+        CollegeClass collegeClass = classRepository.findById(request.getClassId())
+                .orElseThrow(() -> new ResourceNotFoundException("Class not found with ID: " + request.getClassId()));
+
+        Subject subject = subjectRepository.findById(request.getSubjectId())
+                .orElseThrow(() -> new ResourceNotFoundException("Subject not found with ID: " + request.getSubjectId()));
+
+        Teacher teacher = teacherRepository.findById(request.getTeacherId())
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found with ID: " + request.getTeacherId()));
+
+        Department department = collegeClass.getDepartment();
+
+        LocalTime startTime = parseTime(request.getStartTime());
+        LocalTime endTime = parseTime(request.getEndTime());
+
+        validateTimeAndConflicts(null, collegeClass, teacher, request.getDayOfWeek(), startTime, endTime, request.getRoomNumber());
+
+        TimetableSchedule schedule = new TimetableSchedule(
+                department,
+                collegeClass,
+                subject,
+                teacher,
+                request.getDayOfWeek().trim().toUpperCase(),
+                startTime,
+                endTime,
+                request.getRoomNumber()
+        );
+
+        TimetableSchedule saved = timetableRepository.save(schedule);
+        return toDto(saved);
+    }
+
+    public TimetableScheduleDto updateSchedule(String id, CreateTimetableScheduleRequest request) {
+        TimetableSchedule schedule = timetableRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found with ID: " + id));
+
+        CollegeClass collegeClass = classRepository.findById(request.getClassId())
+                .orElseThrow(() -> new ResourceNotFoundException("Class not found with ID: " + request.getClassId()));
+
+        Subject subject = subjectRepository.findById(request.getSubjectId())
+                .orElseThrow(() -> new ResourceNotFoundException("Subject not found with ID: " + request.getSubjectId()));
+
+        Teacher teacher = teacherRepository.findById(request.getTeacherId())
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found with ID: " + request.getTeacherId()));
+
+        LocalTime startTime = parseTime(request.getStartTime());
+        LocalTime endTime = parseTime(request.getEndTime());
+
+        validateTimeAndConflicts(id, collegeClass, teacher, request.getDayOfWeek(), startTime, endTime, request.getRoomNumber());
+
+        schedule.setCollegeClass(collegeClass);
+        schedule.setDepartment(collegeClass.getDepartment());
+        schedule.setSubject(subject);
+        schedule.setTeacher(teacher);
+        schedule.setDayOfWeek(request.getDayOfWeek().trim().toUpperCase());
+        schedule.setStartTime(startTime);
+        schedule.setEndTime(endTime);
+        schedule.setRoomNumber(request.getRoomNumber() != null ? request.getRoomNumber().trim() : null);
+
+        TimetableSchedule updated = timetableRepository.save(schedule);
+        return toDto(updated);
+    }
+
+    public void deleteSchedule(String id) {
+        if (!timetableRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Schedule not found with ID: " + id);
+        }
+        timetableRepository.deleteById(id);
+    }
+
+    private void validateTimeAndConflicts(String currentScheduleId, CollegeClass collegeClass,
+                                          Teacher teacher, String dayOfWeekStr,
+                                          LocalTime startTime, LocalTime endTime, String roomNumber) {
+        if (!startTime.isBefore(endTime)) {
+            throw new IllegalArgumentException("Schedule start time (" + startTime + ") must be before end time (" + endTime + ").");
+        }
+
+        String dayUpper = dayOfWeekStr != null ? dayOfWeekStr.trim().toUpperCase() : "";
+        if (dayUpper.isEmpty()) {
+            throw new IllegalArgumentException("Day of week is required.");
+        }
+
+        List<TimetableSchedule> existingDaySchedules = timetableRepository.findByDayOfWeek(dayUpper);
+
+        for (TimetableSchedule existing : existingDaySchedules) {
+            // Ignore self if updating
+            if (currentScheduleId != null && currentScheduleId.equals(existing.getId())) {
+                continue;
+            }
+
+            // Check if time intervals overlap: start1 < end2 && end1 > start2
+            boolean overlaps = startTime.isBefore(existing.getEndTime()) && endTime.isAfter(existing.getStartTime());
+            if (!overlaps) {
+                continue;
+            }
+
+            // Conflict 1: Teacher overlap
+            if (existing.getTeacher() != null && teacher.getId().equals(existing.getTeacher().getId())) {
+                throw new IllegalArgumentException("Scheduling Conflict: Teacher " + teacher.getName() +
+                        " is already scheduled for " +
+                        (existing.getSubject() != null ? existing.getSubject().getName() : "another subject") +
+                        " on " + dayUpper + " from " + existing.getStartTime() + " to " + existing.getEndTime() + ".");
+            }
+
+            // Conflict 2: Class/Section overlap
+            if (existing.getCollegeClass() != null && collegeClass.getId().equals(existing.getCollegeClass().getId())) {
+                throw new IllegalArgumentException("Scheduling Conflict: Class " + collegeClass.getDisplayName() +
+                        " already has " +
+                        (existing.getSubject() != null ? existing.getSubject().getName() : "another class") +
+                        " scheduled on " + dayUpper + " from " + existing.getStartTime() + " to " + existing.getEndTime() + ".");
+            }
+
+            // Conflict 3: Room overlap
+            if (roomNumber != null && !roomNumber.isBlank() &&
+                    roomNumber.trim().equalsIgnoreCase(existing.getRoomNumber())) {
+                throw new IllegalArgumentException("Scheduling Conflict: Room " + roomNumber.trim() +
+                        " is already occupied on " + dayUpper + " from " + existing.getStartTime() +
+                        " to " + existing.getEndTime() + ".");
+            }
+        }
+    }
+
+    private LocalTime parseTime(String timeStr) {
+        if (timeStr == null || timeStr.isBlank()) {
+            throw new IllegalArgumentException("Time string is required.");
+        }
+        try {
+            timeStr = timeStr.trim();
+            if (timeStr.length() == 5) { // "HH:mm"
+                return LocalTime.parse(timeStr);
+            } else if (timeStr.length() == 8) { // "HH:mm:ss"
+                return LocalTime.parse(timeStr);
+            }
+            return LocalTime.parse(timeStr);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid time format: '" + timeStr + "'. Expected format: HH:mm (e.g. 09:30)");
+        }
+    }
+
+    public TimetableScheduleDto toDto(TimetableSchedule schedule) {
+        if (schedule == null) return null;
+        TimetableScheduleDto dto = new TimetableScheduleDto();
+        dto.setId(schedule.getId());
+        if (schedule.getDepartment() != null) {
+            dto.setDepartmentId(schedule.getDepartment().getId());
+            dto.setDepartmentName(schedule.getDepartment().getName());
+        }
+        if (schedule.getCollegeClass() != null) {
+            dto.setClassId(schedule.getCollegeClass().getId());
+            dto.setClassName(schedule.getCollegeClass().getDisplayName());
+            dto.setSemester(schedule.getCollegeClass().getSemester());
+            dto.setSection(schedule.getCollegeClass().getSection());
+        }
+        if (schedule.getSubject() != null) {
+            dto.setSubjectId(schedule.getSubject().getId());
+            dto.setSubjectCode(schedule.getSubject().getCode());
+            dto.setSubjectName(schedule.getSubject().getName());
+        }
+        if (schedule.getTeacher() != null) {
+            dto.setTeacherId(schedule.getTeacher().getId());
+            dto.setTeacherName(schedule.getTeacher().getName());
+        }
+        try {
+            if (schedule.getDayOfWeek() != null) {
+                dto.setDayOfWeek(DayOfWeek.valueOf(schedule.getDayOfWeek().toUpperCase()));
+            }
+        } catch (Exception ignored) {
+            dto.setDayName(schedule.getDayOfWeek());
+        }
+        dto.setStartTime(schedule.getStartTime());
+        dto.setEndTime(schedule.getEndTime());
+        dto.setRoomNumber(schedule.getRoomNumber());
+        dto.setStatus(schedule.getStatus());
+        return dto;
+    }
+}

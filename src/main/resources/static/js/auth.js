@@ -1,5 +1,5 @@
 /**
- * Renaissance - Authentication Module for Teacher/Admin
+ * Renaissance - Authentication Module for Teacher & Administrator
  */
 
 const Auth = (() => {
@@ -16,27 +16,54 @@ const Auth = (() => {
         }
     };
 
-    // Ensure user is authenticated on protected pages
+    // Ensure teacher/admin is authenticated on faculty pages
     const requireAuth = async () => {
-        const teacher = await checkAuthStatus();
-        if (!teacher) {
+        const user = await checkAuthStatus();
+        if (!user) {
             window.location.href = '/teacher-login.html?expired=true';
             return null;
         }
 
-        // Populate teacher info in sidebar/topbar if elements exist
+        // Populate user info in sidebar/topbar if elements exist
         const nameEl = document.getElementById('teacher-name-display');
         const roleEl = document.getElementById('teacher-role-display');
         const avatarEl = document.getElementById('teacher-avatar-display');
 
-        if (nameEl) nameEl.textContent = teacher.name;
-        if (roleEl) roleEl.textContent = `${teacher.departmentCode || 'CSE'} Department`;
+        if (nameEl) nameEl.textContent = user.name;
+        if (roleEl) roleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Administrator' : `${user.departmentCode || 'CSE'} Faculty`;
         if (avatarEl) {
-            const initials = teacher.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
             avatarEl.textContent = initials;
         }
 
-        return teacher;
+        return user;
+    };
+
+    // Ensure administrator is authenticated on admin portal pages
+    const requireAdminAuth = async () => {
+        const user = await checkAuthStatus();
+        if (!user) {
+            window.location.href = '/admin-login.html?error=unauthorized';
+            return null;
+        }
+
+        if (user.role !== 'ROLE_ADMIN') {
+            window.location.href = '/admin-login.html?error=forbidden';
+            return null;
+        }
+
+        const nameEl = document.getElementById('admin-name-display');
+        const roleEl = document.getElementById('admin-role-display');
+        const avatarEl = document.getElementById('admin-avatar-display');
+
+        if (nameEl) nameEl.textContent = user.name;
+        if (roleEl) roleEl.textContent = 'System Administrator';
+        if (avatarEl) {
+            const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            avatarEl.textContent = initials;
+        }
+
+        return user;
     };
 
     // Login function
@@ -45,13 +72,14 @@ const Auth = (() => {
     };
 
     // Logout function
-    const logout = async () => {
+    const logout = async (targetLoginUrl) => {
         try {
             await API.post('/api/auth/logout');
         } catch (e) {
             // ignore
         } finally {
-            window.location.href = '/teacher-login.html?logout=true';
+            const redirectUrl = targetLoginUrl || (window.location.pathname.includes('admin') ? '/admin-login.html?logout=true' : '/teacher-login.html?logout=true');
+            window.location.href = redirectUrl;
         }
     };
 
@@ -68,6 +96,7 @@ const Auth = (() => {
     return {
         checkAuthStatus,
         requireAuth,
+        requireAdminAuth,
         login,
         logout,
         bindLogoutButtons

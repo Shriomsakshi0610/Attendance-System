@@ -8,6 +8,11 @@ public class ClassDto {
     private Integer semester;
     private String section;
     private String batchYear;
+    private String academicYear;
+    private String className;
+    private String classTeacherId;
+    private String classTeacherName;
+    private String status;
     private String displayName;
 
     public ClassDto() {
@@ -22,6 +27,9 @@ public class ClassDto {
         this.semester = semester;
         this.section = section;
         this.batchYear = batchYear;
+        this.academicYear = batchYear;
+        this.className = departmentCode + " Sem " + semester + " (" + section + ")";
+        this.status = "ACTIVE";
         this.displayName = departmentCode + " - Sem " + semester + " (" + section + ")";
     }
 
@@ -81,8 +89,48 @@ public class ClassDto {
         this.batchYear = batchYear;
     }
 
+    public String getAcademicYear() {
+        return academicYear != null ? academicYear : batchYear;
+    }
+
+    public void setAcademicYear(String academicYear) {
+        this.academicYear = academicYear;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public void setClassName(String className) {
+        this.className = className;
+    }
+
+    public String getClassTeacherId() {
+        return classTeacherId;
+    }
+
+    public void setClassTeacherId(String classTeacherId) {
+        this.classTeacherId = classTeacherId;
+    }
+
+    public String getClassTeacherName() {
+        return classTeacherName;
+    }
+
+    public void setClassTeacherName(String classTeacherName) {
+        this.classTeacherName = classTeacherName;
+    }
+
+    public String getStatus() {
+        return status != null ? status : "ACTIVE";
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public String getDisplayName() {
-        return displayName;
+        return displayName != null ? displayName : (departmentCode + " - Sem " + semester + " (" + section + ")");
     }
 
     public void setDisplayName(String displayName) {

@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal — Renaissance Attendance System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="admin-sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">👑</div>
+                <div>
+                    <div class="brand-title">RENAISSANCE</div>
+                    <div class="brand-sub" style="color: #fbbf24;">Admin Portal</div>
+                </div>
+            </div>
+
+            <div style="padding: 0.75rem 1.25rem 0.25rem;">
+                <span class="admin-badge">Institutional Admin</span>
+            </div>
+
+            <ul class="sidebar-nav">
+                <li class="nav-item">
+                    <a href="javascript:void(0)" class="nav-link active" data-tab="tab-overview">
+                        <span class="nav-icon">📊</span>
+                        <span>Overview</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" class="nav-link" data-tab="tab-departments">
+                        <span class="nav-icon">🏛️</span>
+                        <span>Departments</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" class="nav-link" data-tab="tab-classes">
+                        <span class="nav-icon">🏫</span>
+                        <span>Classes & Sections</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" class="nav-link" data-tab="tab-subjects">
+                        <span class="nav-icon">📚</span>
+                        <span>Subjects</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" class="nav-link" data-tab="tab-teachers">
+                        <span class="nav-icon">👨‍🏫</span>
+                        <span>Faculty / Teachers</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" class="nav-link" data-tab="tab-students">
+                        <span class="nav-icon">👨‍🎓</span>
+                        <span>Students</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" class="nav-link" data-tab="tab-timetable">
+                        <span class="nav-icon">🗓️</span>
+                        <span>Class Timetable</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" class="nav-link" data-tab="tab-sessions">
+                        <span class="nav-icon">🎯</span>
+                        <span>Active Sessions</span>
+                        <span id="sidebar-active-sessions-count" class="badge" style="background:#ef4444; color:#fff; font-size:0.7rem; padding: 2px 6px; border-radius: 999px; margin-left: auto; display: none;">0</span>
+                    </a>
+                </li>
+                <li class="nav-item" style="margin-top: 2rem;">
+                    <a href="javascript:void(0)" class="nav-link" id="btn-admin-logout" style="color: #f87171;">
+                        <span class="nav-icon">🚪</span>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-profile-badge">
+                    <div class="user-avatar" id="admin-avatar-display" style="background: #d97706;">A</div>
+                    <div class="user-info">
+                        <div class="user-name" id="admin-name-display">Administrator</div>
+                        <div class="user-role" id="admin-email-display">admin@renaissance.edu</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Wrapper -->
+        <div class="main-wrapper">
+            <!-- Topbar -->
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="menu-toggle-btn" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+                    <div class="page-title">
+                        <h2 id="current-page-title">Institution Management Dashboard</h2>
+                    </div>
+                </div>
+
+                <div class="topbar-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="AdminApp.refreshAllData()">
+                        <span>🔄 Refresh</span>
+                    </button>
+                    <a href="/teacher-login.html" class="btn btn-outline btn-sm">
+                        <span>Faculty Portal ↗</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Main Content Container -->
+            <main class="content-area">
+                <!-- TAB 1: OVERVIEW -->
+                <section id="tab-overview" class="tab-pane active">
+                    <div class="admin-overview-grid">
+                        <div class="stat-card-admin">
+                            <div class="stat-icon-wrapper icon-purple">🏛️</div>
+                            <div>
+                                <div class="stat-value" id="stat-departments">0</div>
+                                <div class="stat-label">Departments</div>
+                            </div>
+                        </div>
+                        <div class="stat-card-admin">
+                            <div class="stat-icon-wrapper icon-blue">🏫</div>
+                            <div>
+                                <div class="stat-value" id="stat-classes">0</div>
+                                <div class="stat-label">Classes & Sections</div>
+                            </div>
+                        </div>
+                        <div class="stat-card-admin">
+                            <div class="stat-icon-wrapper icon-indigo">📚</div>
+                            <div>
+                                <div class="stat-value" id="stat-subjects">0</div>
+                                <div class="stat-label">Total Subjects</div>
+                            </div>
+                        </div>
+                        <div class="stat-card-admin">
+                            <div class="stat-icon-wrapper icon-amber">👨‍🏫</div>
+                            <div>
+                                <div class="stat-value" id="stat-teachers">0</div>
+                                <div class="stat-label">Faculty Members</div>
+                            </div>
+                        </div>
+                        <div class="stat-card-admin">
+                            <div class="stat-icon-wrapper icon-emerald">👨‍🎓</div>
+                            <div>
+                                <div class="stat-value" id="stat-students">0</div>
+                                <div class="stat-label">Enrolled Students</div>
+                            </div>
+                        </div>
+                        <div class="stat-card-admin">
+                            <div class="stat-icon-wrapper icon-rose">🎯</div>
+                            <div>
+                                <div class="stat-value" id="stat-active-sessions">0</div>
+                                <div class="stat-label">Active GPS Sessions</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Campus Monitoring Banner -->
+                    <div class="card" style="margin-bottom: 2rem;">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <span class="pulsing-dot"></span>
+                                <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0;">Live Campus Attendance Sessions</h3>
+                            </div>
+                            <span class="badge" style="background:#e0e7ff; color:#3730a3; padding: 4px 10px; border-radius: 999px; font-weight: 600; font-size: 0.8rem;">
+                                15m GPS Geofence Active
+                            </span>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Class & Section</th>
+                                            <th>Subject</th>
+                                            <th>Faculty</th>
+                                            <th>Started At</th>
+                                            <th>Attendance Progress</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="overview-live-sessions-tbody">
+                                        <tr>
+                                            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                                No active attendance sessions currently running on campus.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Academic Controls -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 style="font-size: 1.05rem; font-weight: 700;">Academic Quick Actions</h3>
+                            </div>
+                            <div class="card-body" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <button class="btn btn-outline" onclick="AdminApp.switchTab('tab-departments'); AdminApp.openDepartmentModal();">
+                                    ➕ Create New Department
+                                </button>
+                                <button class="btn btn-outline" onclick="AdminApp.switchTab('tab-classes'); AdminApp.openClassModal();">
+                                    ➕ Create Class & Section
+                                </button>
+                                <button class="btn btn-outline" onclick="AdminApp.switchTab('tab-subjects'); AdminApp.openSubjectModal();">
+                                    ➕ Add Course / Subject
+                                </button>
+                                <button class="btn btn-outline" onclick="AdminApp.switchTab('tab-teachers'); AdminApp.openTeacherModal();">
+                                    ➕ Register Faculty Member
+                                </button>
+                                <button class="btn btn-outline" onclick="AdminApp.switchTab('tab-timetable'); AdminApp.openTimetableModal();">
+                                    🗓️ Schedule Class Timetable Slot
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 style="font-size: 1.05rem; font-weight: 700;">System Security & Policy</h3>
+                            </div>
+                            <div class="card-body">
+                                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.9rem; color: var(--text-secondary);">
+                                    <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                                        <span style="color: #10b981;">✔</span>
+                                        <span><strong>Strict 15m Geofence:</strong> Enforced at backend level for student verification.</span>
+                                    </li>
+                                    <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                                        <span style="color: #10b981;">✔</span>
+                                        <span><strong>Dynamic Code Rotation:</strong> Ephemeral attendance codes with automatic expiration.</span>
+                                    </li>
+                                    <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                                        <span style="color: #10b981;">✔</span>
+                                        <span><strong>Timetable Conflict Prevention:</strong> Automatic validation of teacher, section, and room overlaps.</span>
+                                    </li>
+                                    <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                                        <span style="color: #10b981;">✔</span>
+                                        <span><strong>Integrity Protection:</strong> Deletion blocked for entities with historical attendance records.</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 2: DEPARTMENTS -->
+                <section id="tab-departments" class="tab-pane">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                        <div>
+                            <h3 style="font-size: 1.2rem; font-weight: 700;">Academic Departments</h3>
+                            <p style="color: var(--text-muted); font-size: 0.875rem;">Manage academic departments, faculty allocations, and branch codes.</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="AdminApp.openDepartmentModal()">
+                            ➕ Add Department
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Department Name</th>
+                                            <th>Description</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="departments-tbody">
+                                        <tr><td colspan="5" style="text-align:center; padding: 2rem;">Loading departments...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 3: CLASSES & SECTIONS -->
+                <section id="tab-classes" class="tab-pane">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h3 style="font-size: 1.2rem; font-weight: 700;">Classes & Sections</h3>
+                            <p style="color: var(--text-muted); font-size: 0.875rem;">Configure semesters, sections, academic years, and assign faculty mentors.</p>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; align-items: center;">
+                            <select id="filter-class-department" class="form-control" style="width: auto;" onchange="AdminApp.loadClasses()">
+                                <option value="">All Departments</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="AdminApp.openClassModal()">
+                                ➕ Add Class / Section
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Department</th>
+                                            <th>Class / Semester</th>
+                                            <th>Section</th>
+                                            <th>Academic Year</th>
+                                            <th>Class Teacher / Mentor</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="classes-tbody">
+                                        <tr><td colspan="7" style="text-align:center; padding: 2rem;">Loading classes...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 4: SUBJECTS -->
+                <section id="tab-subjects" class="tab-pane">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h3 style="font-size: 1.2rem; font-weight: 700;">Subject & Course Management</h3>
+                            <p style="color: var(--text-muted); font-size: 0.875rem;">Configure courses, map them to semesters and classes, and assign teaching faculty.</p>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; align-items: center;">
+                            <select id="filter-subject-dept" class="form-control" style="width: auto;" onchange="AdminApp.loadSubjects()">
+                                <option value="">All Departments</option>
+                            </select>
+                            <select id="filter-subject-sem" class="form-control" style="width: auto;" onchange="AdminApp.loadSubjects()">
+                                <option value="">All Semesters</option>
+                                <option value="1">Sem 1</option>
+                                <option value="2">Sem 2</option>
+                                <option value="3">Sem 3</option>
+                                <option value="4">Sem 4</option>
+                                <option value="5">Sem 5</option>
+                                <option value="6">Sem 6</option>
+                                <option value="7">Sem 7</option>
+                                <option value="8">Sem 8</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="AdminApp.openSubjectModal()">
+                                ➕ Add Subject
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Subject Code</th>
+                                            <th>Subject Name</th>
+                                            <th>Department</th>
+                                            <th>Semester</th>
+                                            <th>Assigned Class</th>
+                                            <th>Assigned Faculty</th>
+                                            <th>Weekly Hrs</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="subjects-tbody">
+                                        <tr><td colspan="9" style="text-align:center; padding: 2rem;">Loading subjects...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 5: FACULTY / TEACHERS -->
+                <section id="tab-teachers" class="tab-pane">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                        <div>
+                            <h3 style="font-size: 1.2rem; font-weight: 700;">Faculty & Teacher Directory</h3>
+                            <p style="color: var(--text-muted); font-size: 0.875rem;">Manage teacher credentials, departmental postings, and class/subject assignments.</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="AdminApp.openTeacherModal()">
+                            ➕ Register Faculty Member
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Faculty Name</th>
+                                            <th>Email</th>
+                                            <th>Emp ID</th>
+                                            <th>Department</th>
+                                            <th>Phone</th>
+                                            <th>Assigned Subjects</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="teachers-tbody">
+                                        <tr><td colspan="8" style="text-align:center; padding: 2rem;">Loading teachers...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 6: STUDENTS -->
+                <section id="tab-students" class="tab-pane">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h3 style="font-size: 1.2rem; font-weight: 700;">Student Roster Management</h3>
+                            <p style="color: var(--text-muted); font-size: 0.875rem;">Manage student enrollments, USN identifiers, section assignments, and batch imports.</p>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; align-items: center;">
+                            <button class="btn btn-secondary" onclick="AdminApp.openCsvImportModal()">
+                                📥 Import CSV
+                            </button>
+                            <button class="btn btn-primary" onclick="AdminApp.openStudentModal()">
+                                ➕ Add Student
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filters Bar -->
+                    <div class="card" style="margin-bottom: 1.25rem; padding: 1rem;">
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <input type="text" id="search-student-keyword" class="form-control" placeholder="Search by USN or Name..." oninput="AdminApp.debouncedLoadStudents()">
+                            </div>
+                            <div style="width: 200px;">
+                                <select id="filter-student-dept" class="form-control" onchange="AdminApp.onStudentDeptFilterChange()">
+                                    <option value="">All Departments</option>
+                                </select>
+                            </div>
+                            <div style="width: 220px;">
+                                <select id="filter-student-class" class="form-control" onchange="AdminApp.loadStudents()">
+                                    <option value="">All Classes & Sections</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>USN</th>
+                                            <th>Full Name</th>
+                                            <th>Email</th>
+                                            <th>Department</th>
+                                            <th>Class & Section</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="students-tbody">
+                                        <tr><td colspan="7" style="text-align:center; padding: 2rem;">Loading students...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 7: TIMETABLE & SCHEDULING -->
+                <section id="tab-timetable" class="tab-pane">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h3 style="font-size: 1.2rem; font-weight: 700;">Academic Timetable & Conflict Control</h3>
+                            <p style="color: var(--text-muted); font-size: 0.875rem;">Interactive weekly timetable with real-time collision detection for faculty, sections, and lecture halls.</p>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; align-items: center;">
+                            <select id="filter-timetable-class" class="form-control" style="width: auto;" onchange="AdminApp.loadTimetable()">
+                                <option value="">Filter by Class...</option>
+                            </select>
+                            <select id="filter-timetable-teacher" class="form-control" style="width: auto;" onchange="AdminApp.loadTimetable()">
+                                <option value="">Filter by Faculty...</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="AdminApp.openTimetableModal()">
+                                ➕ Schedule Slot
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Conflict alert placeholder -->
+                    <div id="timetable-conflict-banner" class="conflict-alert">
+                        <strong>⚠️ Schedule Conflict Detected:</strong> <span id="timetable-conflict-msg"></span>
+                    </div>
+
+                    <!-- Weekly Timetable Grid View -->
+                    <div class="card" style="margin-bottom: 2rem;">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="font-size: 1.05rem; font-weight: 700; margin: 0;">Weekly Class Schedule Grid</h3>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">Monday through Saturday</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="timetable-container">
+                                <div class="timetable-grid" id="timetable-weekly-grid">
+                                    <!-- Populated dynamically via JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timetable Schedule List Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 style="font-size: 1.05rem; font-weight: 700; margin: 0;">All Scheduled Slots</h3>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Day</th>
+                                            <th>Time Slot</th>
+                                            <th>Class & Section</th>
+                                            <th>Subject</th>
+                                            <th>Faculty</th>
+                                            <th>Room / Hall</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="timetable-list-tbody">
+                                        <tr><td colspan="7" style="text-align:center; padding: 2rem;">Loading schedule...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 8: ACTIVE SESSIONS MONITOR -->
+                <section id="tab-sessions" class="tab-pane">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                        <div>
+                            <h3 style="font-size: 1.2rem; font-weight: 700;">Live Attendance Sessions Monitoring</h3>
+                            <p style="color: var(--text-muted); font-size: 0.875rem;">Monitor ongoing GPS sessions campus-wide and terminate unauthorized sessions in real time.</p>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="AdminApp.loadActiveSessions()">
+                            🔄 Refresh Sessions
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Session Code</th>
+                                            <th>Class & Section</th>
+                                            <th>Subject</th>
+                                            <th>Faculty In-Charge</th>
+                                            <th>Start Time</th>
+                                            <th>Expires At</th>
+                                            <th>Present / Enrolled</th>
+                                            <th>GPS Anchor</th>
+                                            <th>Admin Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="active-sessions-tbody">
+                                        <tr><td colspan="9" style="text-align:center; padding: 2rem;">Loading active sessions...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- ========================================================
+         MODALS
+         ======================================================== -->
+
+    <!-- Department Modal -->
+    <div id="modal-department" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modal-dept-title">Add Department</h3>
+                <button class="modal-close-btn" onclick="AdminApp.closeModal('modal-department')">&times;</button>
+            </div>
+            <form id="form-department" onsubmit="AdminApp.saveDepartment(event)">
+                <input type="hidden" id="dept-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Department Code *</label>
+                        <input type="text" id="dept-code" class="form-control" placeholder="e.g. CSE, ISE, ECE, MECH" required maxlength="10" style="text-transform: uppercase;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Department Name *</label>
+                        <input type="text" id="dept-name" class="form-control" placeholder="e.g. Computer Science & Engineering" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea id="dept-desc" class="form-control" rows="3" placeholder="Optional department notes or summary..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="AdminApp.closeModal('modal-department')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-dept">Save Department</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Class Modal -->
+    <div id="modal-class" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modal-class-title">Add Class & Section</h3>
+                <button class="modal-close-btn" onclick="AdminApp.closeModal('modal-class')">&times;</button>
+            </div>
+            <form id="form-class" onsubmit="AdminApp.saveClass(event)">
+                <input type="hidden" id="class-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Department *</label>
+                        <select id="class-dept-select" class="form-control" required>
+                            <option value="">Select Department...</option>
+                        </select>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Semester *</label>
+                            <select id="class-semester" class="form-control" required>
+                                <option value="1">Semester 1</option>
+                                <option value="2">Semester 2</option>
+                                <option value="3">Semester 3</option>
+                                <option value="4">Semester 4</option>
+                                <option value="5" selected>Semester 5</option>
+                                <option value="6">Semester 6</option>
+                                <option value="7">Semester 7</option>
+                                <option value="8">Semester 8</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Section *</label>
+                            <input type="text" id="class-section" class="form-control" placeholder="e.g. A, B, C" required maxlength="5" style="text-transform: uppercase;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Academic Year / Batch</label>
+                        <input type="text" id="class-year" class="form-control" placeholder="e.g. 2026-2027" value="2026-2027">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Display / Class Name</label>
+                        <input type="text" id="class-name-custom" class="form-control" placeholder="e.g. CSE 5th Semester">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Class Teacher / Mentor</label>
+                        <select id="class-teacher-select" class="form-control">
+                            <option value="">None / Unassigned</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="AdminApp.closeModal('modal-class')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-class">Save Class</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Class Roster Modal -->
+    <div id="modal-class-roster" class="modal-overlay">
+        <div class="modal-container" style="max-width: 700px;">
+            <div class="modal-header">
+                <div>
+                    <h3 id="roster-class-title">Enrolled Students Roster</h3>
+                    <p id="roster-class-sub" style="font-size: 0.85rem; color: var(--text-muted); margin: 0;"></p>
+                </div>
+                <button class="modal-close-btn" onclick="AdminApp.closeModal('modal-class-roster')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>USN</th>
+                                <th>Student Name</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="class-roster-tbody">
+                            <tr><td colspan="5" style="text-align:center; padding: 2rem;">Loading roster...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="AdminApp.closeModal('modal-class-roster')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject Modal -->
+    <div id="modal-subject" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modal-subject-title">Add Course / Subject</h3>
+                <button class="modal-close-btn" onclick="AdminApp.closeModal('modal-subject')">&times;</button>
+            </div>
+            <form id="form-subject" onsubmit="AdminApp.saveSubject(event)">
+                <input type="hidden" id="subject-id">
+                <div class="modal-body">
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Subject Code *</label>
+                            <input type="text" id="subject-code" class="form-control" placeholder="e.g. 21CS51" required style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Subject Name *</label>
+                            <input type="text" id="subject-name" class="form-control" placeholder="e.g. Database Systems" required>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Department *</label>
+                            <select id="subject-dept-select" class="form-control" required onchange="AdminApp.onSubjectDeptChange()">
+                                <option value="">Select Department...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Semester *</label>
+                            <select id="subject-semester" class="form-control" required>
+                                <option value="1">Semester 1</option>
+                                <option value="2">Semester 2</option>
+                                <option value="3">Semester 3</option>
+                                <option value="4">Semester 4</option>
+                                <option value="5" selected>Semester 5</option>
+                                <option value="6">Semester 6</option>
+                                <option value="7">Semester 7</option>
+                                <option value="8">Semester 8</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Map to Specific Class / Section (Optional)</label>
+                        <select id="subject-class-select" class="form-control">
+                            <option value="">All Sections / General</option>
+                        </select>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Assigned Faculty (Optional)</label>
+                            <select id="subject-teacher-select" class="form-control">
+                                <option value="">None / Unassigned</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Weekly Hours</label>
+                            <input type="number" id="subject-weekly-hours" class="form-control" min="1" max="15" value="4">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="AdminApp.closeModal('modal-subject')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-subject">Save Subject</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Teacher Modal -->
+    <div id="modal-teacher" class="modal-overlay">
+        <div class="modal-container" style="max-width: 620px;">
+            <div class="modal-header">
+                <h3 id="modal-teacher-title">Register Faculty Member</h3>
+                <button class="modal-close-btn" onclick="AdminApp.closeModal('modal-teacher')">&times;</button>
+            </div>
+            <form id="form-teacher" onsubmit="AdminApp.saveTeacher(event)">
+                <input type="hidden" id="teacher-id">
+                <div class="modal-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" id="teacher-name" class="form-control" placeholder="e.g. Dr. Alan Turing" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Employee ID *</label>
+                            <input type="text" id="teacher-empid" class="form-control" placeholder="e.g. EMP042" required style="text-transform: uppercase;">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Email Address *</label>
+                            <input type="email" id="teacher-email" class="form-control" placeholder="e.g. turing@renaissance.edu" required autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Department *</label>
+                            <select id="teacher-dept-select" class="form-control" required>
+                                <option value="">Select Department...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" id="teacher-phone" class="form-control" placeholder="+91 9876543210">
+                        </div>
+                        <div class="form-group" id="teacher-password-group">
+                            <label class="form-label">Initial Password</label>
+                            <input type="password" id="teacher-password" class="form-control" placeholder="Default: Teacher@123" autocomplete="new-password">
+                        </div>
+                    </div>
+
+                    <!-- Assigned Classes -->
+                    <div class="form-group">
+                        <label class="form-label">Assign Classes (Hold Ctrl to select multiple)</label>
+                        <select id="teacher-classes-select" class="form-control" multiple style="height: 100px;">
+                        </select>
+                    </div>
+
+                    <!-- Assigned Subjects -->
+                    <div class="form-group">
+                        <label class="form-label">Assign Subjects (Hold Ctrl to select multiple)</label>
+                        <select id="teacher-subjects-select" class="form-control" multiple style="height: 100px;">
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="AdminApp.closeModal('modal-teacher')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-teacher">Save Faculty</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div id="modal-reset-password" class="modal-overlay">
+        <div class="modal-container" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3>Reset Faculty Password</h3>
+                <button class="modal-close-btn" onclick="AdminApp.closeModal('modal-reset-password')">&times;</button>
+            </div>
+            <form id="form-reset-password" onsubmit="AdminApp.submitPasswordReset(event)">
+                <input type="hidden" id="reset-teacher-id">
+                <div class="modal-body">
+                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        Reset credentials for <strong id="reset-teacher-name"></strong>.
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label">New Password *</label>
+                        <input type="password" id="reset-new-password" class="form-control" placeholder="Minimum 6 characters" required minlength="6" autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm New Password *</label>
+                        <input type="password" id="reset-confirm-password" class="form-control" placeholder="Re-enter new password" required minlength="6" autocomplete="new-password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="AdminApp.closeModal('modal-reset-password')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Student Modal -->
+    <div id="modal-student" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modal-student-title">Add Student</h3>
+                <button class="modal-close-btn" onclick="AdminApp.closeModal('modal-student')">&times;</button>
+            </div>
+            <form id="form-student" onsubmit="AdminApp.saveStudent(event)">
+                <input type="hidden" id="student-id">
+                <div class="modal-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">USN *</label>
+                            <input type="text" id="student-usn" class="form-control" placeholder="e.g. 1MS21CS001" required style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" id="student-name" class="form-control" placeholder="e.g. Aarav Sharma" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" id="student-email" class="form-control" placeholder="e.g. aarav@example.com">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Department *</label>
+                            <select id="student-dept-select" class="form-control" required onchange="AdminApp.onStudentModalDeptChange()">
+                                <option value="">Select Department...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Class & Section *</label>
+                            <select id="student-class-select" class="form-control" required>
+                                <option value="">Select Class...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="AdminApp.closeModal('modal-student')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-student">Save Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CSV Import Modal -->
+    <div id="modal-csv-import" class="modal-overlay">
+        <div class="modal-container" style="max-width: 540px;">
+            <div class="modal-header">
+                <h3>Batch Student CSV Import</h3>
+                <button class="modal-close-btn" onclick="AdminApp.closeModal('modal-csv-import')">&times;</button>
+            </div>
+            <form id="form-csv-import" onsubmit="AdminApp.submitCsvImport(event)">
+                <div class="modal-body">
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        Upload a CSV file containing student records. The CSV file must include headers:
+                        <br><code>USN, Name, Email, Department, Semester, Section</code>
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label">Select CSV File *</label>
+                        <input type="file" id="csv-file-input" class="form-control" accept=".csv" required>
+                    </div>
+                    <div id="csv-import-results" style="display: none; margin-top: 1rem; padding: 1rem; background: #f8fafc; border-radius: var(--radius-md); font-size: 0.875rem;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="AdminApp.closeModal('modal-csv-import')">Close</button>
+                    <button type="submit" class="btn btn-primary" id="btn-upload-csv">Upload & Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Timetable Schedule Modal -->
+    <div id="modal-timetable" class="modal-overlay">
+        <div class="modal-container" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="modal-timetable-title">Schedule Timetable Slot</h3>
+                <button class="modal-close-btn" onclick="AdminApp.closeModal('modal-timetable')">&times;</button>
+            </div>
+            <form id="form-timetable" onsubmit="AdminApp.saveTimetableSchedule(event)">
+                <input type="hidden" id="timetable-id">
+                <div class="modal-body">
+                    <div id="modal-timetable-conflict-box" class="conflict-alert"></div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Class & Section *</label>
+                            <select id="tt-class-select" class="form-control" required onchange="AdminApp.onTimetableClassChange()">
+                                <option value="">Select Class...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Course / Subject *</label>
+                            <select id="tt-subject-select" class="form-control" required>
+                                <option value="">Select Subject...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Assigned Faculty *</label>
+                            <select id="tt-teacher-select" class="form-control" required>
+                                <option value="">Select Faculty...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Room / Hall</label>
+                            <input type="text" id="tt-room" class="form-control" placeholder="e.g. LH-101">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Day of Week *</label>
+                            <select id="tt-day" class="form-control" required>
+                                <option value="MONDAY">Monday</option>
+                                <option value="TUESDAY">Tuesday</option>
+                                <option value="WEDNESDAY">Wednesday</option>
+                                <option value="THURSDAY">Thursday</option>
+                                <option value="FRIDAY">Friday</option>
+                                <option value="SATURDAY">Saturday</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Start Time *</label>
+                            <input type="time" id="tt-start-time" class="form-control" required value="09:00">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">End Time *</label>
+                            <input type="time" id="tt-end-time" class="form-control" required value="10:00">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="AdminApp.closeModal('modal-timetable')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-timetable">Save Schedule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="modal-confirm" class="modal-overlay">
+        <div class="modal-container" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 id="confirm-modal-title">Confirm Action</h3>
+                <button class="modal-close-btn" onclick="AdminApp.closeModal('modal-confirm')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-modal-msg" style="color: var(--text-secondary); font-size: 0.95rem; margin: 0;"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="AdminApp.closeModal('modal-confirm')">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-modal-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/admin.js"></script>
+</body>
+</html>
