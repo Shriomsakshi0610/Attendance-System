@@ -10,41 +10,43 @@
     <style>
         .login-wrapper {
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
-            background: linear-gradient(135deg, #1e1b4b 0%, #31104b 100%);
+            background: radial-gradient(circle at 10% 10%, #2e1065 0%, #0f172a 100%);
         }
         .login-card {
             background: var(--surface-card);
             border: 1px solid var(--surface-border);
             border-radius: var(--radius-xl);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
             width: 100%;
             max-width: 440px;
             overflow: hidden;
-            animation: fadeIn 0.4s ease-out;
+            animation: fadeIn 0.3s ease-out;
         }
         .login-header {
-            background: linear-gradient(135deg, var(--accent-700), var(--secondary-700));
+            background: linear-gradient(135deg, #3730a3 0%, #1e0847 100%);
             color: #ffffff;
-            padding: 2.25rem 2rem 1.75rem;
+            padding: 2.25rem 2rem 1.85rem;
             text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
         .login-logo {
             width: 56px;
             height: 56px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(8px);
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, var(--secondary-500) 0%, var(--accent-600) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.75rem;
+            font-size: 1.65rem;
             font-weight: 800;
+            color: #ffffff;
             margin: 0 auto 1rem;
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
         }
         .login-body {
             padding: 2rem;
@@ -60,16 +62,16 @@
             background: transparent;
             border: none;
             cursor: pointer;
-            color: var(--text-muted);
+            color: var(--slate-400);
             padding: 0.35rem;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 4px;
-            transition: color 0.15s ease;
+            transition: color var(--transition-fast);
         }
         .password-toggle-btn:hover {
-            color: var(--text-primary);
+            color: var(--slate-800);
         }
     </style>
 </head>
@@ -78,8 +80,8 @@
         <div class="login-card">
             <div class="login-header">
                 <div class="login-logo">R</div>
-                <h2>Faculty Portal</h2>
-                <p style="font-size: 0.875rem; margin-top: 0.35rem; opacity: 0.9;">Log in to manage attendance sessions and view analytics.</p>
+                <h2 style="color: #ffffff; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.01em;">Faculty Portal</h2>
+                <p style="font-size: 0.875rem; margin-top: 0.35rem; color: rgba(255, 255, 255, 0.75);">Smart GPS &amp; BLE Attendance Verification</p>
             </div>
 
             <div class="login-body">
@@ -109,18 +111,18 @@
                     </button>
                 </form>
 
-                <div style="margin-top: 1.75rem; text-align: center; border-top: 1px solid var(--surface-border-subtle); padding-top: 1.25rem;">
-                    <div style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(79, 70, 229, 0.08); border-radius: 8px; border: 1px solid rgba(79, 70, 229, 0.2); display: flex; align-items: center; justify-content: space-between;">
+                <div style="margin-top: 1.75rem; text-align: center; border-top: 1px solid var(--slate-150); padding-top: 1.25rem;">
+                    <div style="margin-bottom: 1.15rem; padding: 0.85rem; background: var(--secondary-50); border-radius: var(--radius-md); border: 1px solid var(--secondary-200); display: flex; align-items: center; justify-content: space-between;">
                         <div style="text-align: left;">
-                            <div style="font-size: 0.825rem; font-weight: 700; color: var(--accent-700);">📱 Android Teacher App</div>
+                            <div style="font-size: 0.825rem; font-weight: 700; color: var(--secondary-700);">📱 Android Teacher App</div>
                             <div style="font-size: 0.75rem; color: var(--text-muted);">With 40m GPS &amp; BLE Verification</div>
                         </div>
-                        <a href="/api/public/app/download" class="btn btn-sm" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; font-weight: 600; background: var(--accent-600); color: white; border-radius: 6px; text-decoration: none;">Download APK</a>
+                        <a href="/api/public/app/download" class="btn btn-primary btn-sm" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; text-decoration: none;">Download APK</a>
                     </div>
 
                     <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
                         Are you an administrator?
-                        <a href="/admin-login.html" style="color: var(--accent-600); font-weight: 600;">Sign in to Admin Portal →</a>
+                        <a href="/admin-login.html" style="color: var(--secondary-600); font-weight: 600;">Sign in to Admin Portal →</a>
                     </p>
                     <a href="/index.html" style="font-size: 0.85rem; color: var(--text-muted);">← Back to Main Portal</a>
                 </div>

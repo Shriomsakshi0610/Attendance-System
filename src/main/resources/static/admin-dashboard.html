@@ -15,10 +15,10 @@
         <!-- Sidebar Navigation -->
         <aside class="sidebar" id="admin-sidebar">
             <div class="sidebar-brand">
-                <div class="brand-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">👑</div>
+                <div class="brand-icon" style="background: linear-gradient(135deg, var(--admin-gold) 0%, var(--admin-gold-hover) 100%);">👑</div>
                 <div>
                     <div class="brand-title">RENAISSANCE</div>
-                    <div class="brand-sub" style="color: #fbbf24;">Admin Portal</div>
+                    <div class="brand-sub" style="color: var(--admin-gold);">Admin Portal</div>
                 </div>
             </div>
 
@@ -27,12 +27,24 @@
             </div>
 
             <ul class="sidebar-nav">
+                <!-- Group 1: CORE MONITORING -->
+                <li class="nav-group-title">Core Monitoring</li>
                 <li class="nav-item">
                     <a href="javascript:void(0)" class="nav-link active" data-tab="tab-overview">
                         <span class="nav-icon">📊</span>
                         <span>Overview</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" class="nav-link" data-tab="tab-sessions">
+                        <span class="nav-icon">🎯</span>
+                        <span>Active Sessions</span>
+                        <span id="sidebar-active-sessions-count" class="badge" style="background:#ef4444; color:#fff; font-size:0.7rem; padding: 2px 7px; border-radius: 999px; margin-left: auto; display: none;">0</span>
+                    </a>
+                </li>
+
+                <!-- Group 2: ACADEMIC STRUCTURE -->
+                <li class="nav-group-title">Academic Structure</li>
                 <li class="nav-item">
                     <a href="javascript:void(0)" class="nav-link" data-tab="tab-departments">
                         <span class="nav-icon">🏛️</span>
@@ -51,6 +63,9 @@
                         <span>Subjects</span>
                     </a>
                 </li>
+
+                <!-- Group 3: PEOPLE & ROSTER -->
+                <li class="nav-group-title">People & Roster</li>
                 <li class="nav-item">
                     <a href="javascript:void(0)" class="nav-link" data-tab="tab-teachers">
                         <span class="nav-icon">👨‍🏫</span>
@@ -63,20 +78,19 @@
                         <span>Students</span>
                     </a>
                 </li>
+
+                <!-- Group 4: SCHEDULE & TIMETABLE -->
+                <li class="nav-group-title">Schedule & Timetable</li>
                 <li class="nav-item">
                     <a href="javascript:void(0)" class="nav-link" data-tab="tab-timetable">
                         <span class="nav-icon">🗓️</span>
                         <span>Class Timetable</span>
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a href="javascript:void(0)" class="nav-link" data-tab="tab-sessions">
-                        <span class="nav-icon">🎯</span>
-                        <span>Active Sessions</span>
-                        <span id="sidebar-active-sessions-count" class="badge" style="background:#ef4444; color:#fff; font-size:0.7rem; padding: 2px 6px; border-radius: 999px; margin-left: auto; display: none;">0</span>
-                    </a>
-                </li>
-                <li class="nav-item" style="margin-top: 2rem;">
+
+                <!-- Group 5: ACCOUNT & SYSTEM -->
+                <li class="nav-group-title">Account</li>
+                <li class="nav-item" style="margin-bottom: 1rem;">
                     <a href="javascript:void(0)" class="nav-link" id="btn-admin-logout" style="color: #f87171;">
                         <span class="nav-icon">🚪</span>
                         <span>Logout</span>
@@ -86,7 +100,7 @@
 
             <div class="sidebar-footer">
                 <div class="user-profile-badge">
-                    <div class="user-avatar" id="admin-avatar-display" style="background: #d97706;">A</div>
+                    <div class="user-avatar" id="admin-avatar-display" style="background: linear-gradient(135deg, var(--admin-gold) 0%, var(--admin-gold-hover) 100%);">A</div>
                     <div class="user-info">
                         <div class="user-name" id="admin-name-display">Administrator</div>
                         <div class="user-role" id="admin-email-display">admin@renaissance.edu</div>
@@ -99,16 +113,22 @@
         <div class="main-wrapper">
             <!-- Topbar -->
             <header class="topbar">
-                <div style="display: flex; align-items: center; gap: 1rem;">
+                <div class="topbar-left">
                     <button class="menu-toggle-btn" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
-                    <div class="page-title">
-                        <h2 id="current-page-title">Institution Management Dashboard</h2>
-                    </div>
+                    <nav class="admin-breadcrumb" aria-label="Breadcrumb">
+                        <span class="breadcrumb-item">Renaissance Admin</span>
+                        <span class="breadcrumb-separator">/</span>
+                        <span class="breadcrumb-item active" id="current-page-title">Institution Management Dashboard</span>
+                    </nav>
                 </div>
 
                 <div class="topbar-actions">
+                    <span class="connectivity-pill">
+                        <span class="pulsing-dot" style="width: 7px; height: 7px;"></span>
+                        <span>MongoDB Atlas Connected</span>
+                    </span>
                     <button class="btn btn-secondary btn-sm" onclick="AdminApp.refreshAllData()">
-                        <span>🔄 Refresh</span>
+                        <span>🔄 Refresh Data</span>
                     </button>
                     <a href="/teacher-login.html" class="btn btn-outline btn-sm">
                         <span>Faculty Portal ↗</span>
@@ -167,7 +187,7 @@
 
                     <!-- Campus Monitoring Banner -->
                     <div class="card" style="margin-bottom: 2rem;">
-                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="card-header">
                             <div style="display: flex; align-items: center; gap: 0.75rem;">
                                 <span class="pulsing-dot"></span>
                                 <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0;">Live Campus Attendance Sessions</h3>
@@ -192,8 +212,10 @@
                                     </thead>
                                     <tbody id="overview-live-sessions-tbody">
                                         <tr>
-                                            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                                                No active attendance sessions currently running on campus.
+                                            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
+                                                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎯</div>
+                                                <div style="font-weight: 600; color: var(--slate-700);">No active attendance sessions currently running on campus.</div>
+                                                <div style="font-size: 0.85rem; color: var(--slate-400); margin-top: 0.25rem;">Active sessions initiated by faculty will appear here in real time.</div>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -202,27 +224,27 @@
                         </div>
                     </div>
 
-                    <!-- Quick Academic Controls -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                    <!-- Quick Academic Controls & System Security Policy -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
                         <div class="card">
                             <div class="card-header">
                                 <h3 style="font-size: 1.05rem; font-weight: 700;">Academic Quick Actions</h3>
                             </div>
                             <div class="card-body" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                                <button class="btn btn-outline" onclick="AdminApp.switchTab('tab-departments'); AdminApp.openDepartmentModal();">
-                                    ➕ Create New Department
+                                <button class="btn btn-outline" style="justify-content: flex-start;" onclick="AdminApp.switchTab('tab-departments'); AdminApp.openDepartmentModal();">
+                                    <span>🏛️</span> <span>Create New Department</span>
                                 </button>
-                                <button class="btn btn-outline" onclick="AdminApp.switchTab('tab-classes'); AdminApp.openClassModal();">
-                                    ➕ Create Class & Section
+                                <button class="btn btn-outline" style="justify-content: flex-start;" onclick="AdminApp.switchTab('tab-classes'); AdminApp.openClassModal();">
+                                    <span>🏫</span> <span>Create Class & Section</span>
                                 </button>
-                                <button class="btn btn-outline" onclick="AdminApp.switchTab('tab-subjects'); AdminApp.openSubjectModal();">
-                                    ➕ Add Course / Subject
+                                <button class="btn btn-outline" style="justify-content: flex-start;" onclick="AdminApp.switchTab('tab-subjects'); AdminApp.openSubjectModal();">
+                                    <span>📚</span> <span>Add Course / Subject</span>
                                 </button>
-                                <button class="btn btn-outline" onclick="AdminApp.switchTab('tab-teachers'); AdminApp.openTeacherModal();">
-                                    ➕ Register Faculty Member
+                                <button class="btn btn-outline" style="justify-content: flex-start;" onclick="AdminApp.switchTab('tab-teachers'); AdminApp.openTeacherModal();">
+                                    <span>👨‍🏫</span> <span>Register Faculty Member</span>
                                 </button>
-                                <button class="btn btn-outline" onclick="AdminApp.switchTab('tab-timetable'); AdminApp.openTimetableModal();">
-                                    🗓️ Schedule Class Timetable Slot
+                                <button class="btn btn-outline" style="justify-content: flex-start;" onclick="AdminApp.switchTab('tab-timetable'); AdminApp.openTimetableModal();">
+                                    <span>🗓️</span> <span>Schedule Class Timetable Slot</span>
                                 </button>
                             </div>
                         </div>
@@ -232,21 +254,21 @@
                                 <h3 style="font-size: 1.05rem; font-weight: 700;">System Security & Policy</h3>
                             </div>
                             <div class="card-body">
-                                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.9rem; color: var(--text-secondary);">
-                                    <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
-                                        <span style="color: #10b981;">✔</span>
-                                        <span><strong>Strict 40m Geofence:</strong> Enforced at backend level for student verification.</span>
+                                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.9rem; font-size: 0.9rem; color: var(--text-secondary);">
+                                    <li style="display: flex; align-items: flex-start; gap: 0.65rem;">
+                                        <span style="color: #10b981; font-size: 1.1rem; line-height: 1.2;">✔</span>
+                                        <span><strong>Strict 40m Geofence:</strong> Enforced authoritatively by backend for anti-proxy verification.</span>
                                     </li>
-                                    <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
-                                        <span style="color: #10b981;">✔</span>
-                                        <span><strong>Dynamic Code Rotation:</strong> Ephemeral attendance codes with automatic expiration.</span>
+                                    <li style="display: flex; align-items: flex-start; gap: 0.65rem;">
+                                        <span style="color: #10b981; font-size: 1.1rem; line-height: 1.2;">✔</span>
+                                        <span><strong>Dynamic Code Rotation:</strong> Ephemeral attendance codes with automatic TTL expiration.</span>
                                     </li>
-                                    <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
-                                        <span style="color: #10b981;">✔</span>
-                                        <span><strong>Timetable Conflict Prevention:</strong> Automatic validation of teacher, section, and room overlaps.</span>
+                                    <li style="display: flex; align-items: flex-start; gap: 0.65rem;">
+                                        <span style="color: #10b981; font-size: 1.1rem; line-height: 1.2;">✔</span>
+                                        <span><strong>Timetable Conflict Prevention:</strong> Automatic validation of teacher, section, and room collisions.</span>
                                     </li>
-                                    <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
-                                        <span style="color: #10b981;">✔</span>
+                                    <li style="display: flex; align-items: flex-start; gap: 0.65rem;">
+                                        <span style="color: #10b981; font-size: 1.1rem; line-height: 1.2;">✔</span>
                                         <span><strong>Integrity Protection:</strong> Deletion blocked for entities with historical attendance records.</span>
                                     </li>
                                 </ul>
@@ -257,14 +279,16 @@
 
                 <!-- TAB 2: DEPARTMENTS -->
                 <section id="tab-departments" class="tab-pane">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-                        <div>
-                            <h3 style="font-size: 1.2rem; font-weight: 700;">Academic Departments</h3>
-                            <p style="color: var(--text-muted); font-size: 0.875rem;">Manage academic departments, faculty allocations, and branch codes.</p>
+                    <div class="tab-header">
+                        <div class="tab-header-info">
+                            <h3>Academic Departments</h3>
+                            <p>Manage academic departments, faculty allocations, and branch codes.</p>
                         </div>
-                        <button class="btn btn-primary" onclick="AdminApp.openDepartmentModal()">
-                            ➕ Add Department
-                        </button>
+                        <div class="tab-header-actions">
+                            <button class="btn btn-primary" onclick="AdminApp.openDepartmentModal()">
+                                <span>➕</span> <span>Add Department</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="card">
@@ -291,17 +315,17 @@
 
                 <!-- TAB 3: CLASSES & SECTIONS -->
                 <section id="tab-classes" class="tab-pane">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
-                        <div>
-                            <h3 style="font-size: 1.2rem; font-weight: 700;">Classes & Sections</h3>
-                            <p style="color: var(--text-muted); font-size: 0.875rem;">Configure semesters, sections, academic years, and assign faculty mentors.</p>
+                    <div class="tab-header">
+                        <div class="tab-header-info">
+                            <h3>Classes & Sections</h3>
+                            <p>Configure semesters, sections, academic years, and assign faculty mentors.</p>
                         </div>
-                        <div style="display: flex; gap: 0.75rem; align-items: center;">
-                            <select id="filter-class-department" class="form-control" style="width: auto;" onchange="AdminApp.loadClasses()">
+                        <div class="tab-header-actions">
+                            <select id="filter-class-department" class="form-control" style="width: auto; min-width: 180px;" onchange="AdminApp.loadClasses()">
                                 <option value="">All Departments</option>
                             </select>
                             <button class="btn btn-primary" onclick="AdminApp.openClassModal()">
-                                ➕ Add Class / Section
+                                <span>➕</span> <span>Add Class / Section</span>
                             </button>
                         </div>
                     </div>
@@ -332,16 +356,16 @@
 
                 <!-- TAB 4: SUBJECTS -->
                 <section id="tab-subjects" class="tab-pane">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
-                        <div>
-                            <h3 style="font-size: 1.2rem; font-weight: 700;">Subject & Course Management</h3>
-                            <p style="color: var(--text-muted); font-size: 0.875rem;">Configure courses, map them to semesters and classes, and assign teaching faculty.</p>
+                    <div class="tab-header">
+                        <div class="tab-header-info">
+                            <h3>Subject & Course Management</h3>
+                            <p>Configure courses, map them to semesters and classes, and assign teaching faculty.</p>
                         </div>
-                        <div style="display: flex; gap: 0.75rem; align-items: center;">
-                            <select id="filter-subject-dept" class="form-control" style="width: auto;" onchange="AdminApp.loadSubjects()">
+                        <div class="tab-header-actions">
+                            <select id="filter-subject-dept" class="form-control" style="width: auto; min-width: 180px;" onchange="AdminApp.loadSubjects()">
                                 <option value="">All Departments</option>
                             </select>
-                            <select id="filter-subject-sem" class="form-control" style="width: auto;" onchange="AdminApp.loadSubjects()">
+                            <select id="filter-subject-sem" class="form-control" style="width: auto; min-width: 140px;" onchange="AdminApp.loadSubjects()">
                                 <option value="">All Semesters</option>
                                 <option value="1">Sem 1</option>
                                 <option value="2">Sem 2</option>
@@ -353,7 +377,7 @@
                                 <option value="8">Sem 8</option>
                             </select>
                             <button class="btn btn-primary" onclick="AdminApp.openSubjectModal()">
-                                ➕ Add Subject
+                                <span>➕</span> <span>Add Subject</span>
                             </button>
                         </div>
                     </div>
@@ -386,14 +410,16 @@
 
                 <!-- TAB 5: FACULTY / TEACHERS -->
                 <section id="tab-teachers" class="tab-pane">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-                        <div>
-                            <h3 style="font-size: 1.2rem; font-weight: 700;">Faculty & Teacher Directory</h3>
-                            <p style="color: var(--text-muted); font-size: 0.875rem;">Manage teacher credentials, departmental postings, and class/subject assignments.</p>
+                    <div class="tab-header">
+                        <div class="tab-header-info">
+                            <h3>Faculty & Teacher Directory</h3>
+                            <p>Manage teacher credentials, departmental postings, and class/subject assignments.</p>
                         </div>
-                        <button class="btn btn-primary" onclick="AdminApp.openTeacherModal()">
-                            ➕ Register Faculty Member
-                        </button>
+                        <div class="tab-header-actions">
+                            <button class="btn btn-primary" onclick="AdminApp.openTeacherModal()">
+                                <span>➕</span> <span>Register Faculty Member</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="card">
@@ -423,26 +449,26 @@
 
                 <!-- TAB 6: STUDENTS -->
                 <section id="tab-students" class="tab-pane">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
-                        <div>
-                            <h3 style="font-size: 1.2rem; font-weight: 700;">Student Roster Management</h3>
-                            <p style="color: var(--text-muted); font-size: 0.875rem;">Manage student enrollments, USN identifiers, section assignments, and batch imports.</p>
+                    <div class="tab-header">
+                        <div class="tab-header-info">
+                            <h3>Student Roster Management</h3>
+                            <p>Manage student enrollments, USN identifiers, section assignments, and batch imports.</p>
                         </div>
-                        <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <div class="tab-header-actions">
                             <button class="btn btn-secondary" onclick="AdminApp.openCsvImportModal()">
-                                📥 Import CSV
+                                <span>📥</span> <span>Import CSV</span>
                             </button>
                             <button class="btn btn-primary" onclick="AdminApp.openStudentModal()">
-                                ➕ Add Student
+                                <span>➕</span> <span>Add Student</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- Search and Filters Bar -->
-                    <div class="card" style="margin-bottom: 1.25rem; padding: 1rem;">
-                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                            <div style="flex: 1; min-width: 200px;">
-                                <input type="text" id="search-student-keyword" class="form-control" placeholder="Search by USN or Name..." oninput="AdminApp.debouncedLoadStudents()">
+                    <div class="filter-card">
+                        <div class="filter-toolbar">
+                            <div style="flex: 1; min-width: 220px;">
+                                <input type="text" id="search-student-keyword" class="form-control" placeholder="🔍 Search by USN or Name..." oninput="AdminApp.debouncedLoadStudents()">
                             </div>
                             <div style="width: 200px;">
                                 <select id="filter-student-dept" class="form-control" onchange="AdminApp.onStudentDeptFilterChange()">
@@ -483,20 +509,20 @@
 
                 <!-- TAB 7: TIMETABLE & SCHEDULING -->
                 <section id="tab-timetable" class="tab-pane">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
-                        <div>
-                            <h3 style="font-size: 1.2rem; font-weight: 700;">Academic Timetable & Conflict Control</h3>
-                            <p style="color: var(--text-muted); font-size: 0.875rem;">Interactive weekly timetable with real-time collision detection for faculty, sections, and lecture halls.</p>
+                    <div class="tab-header">
+                        <div class="tab-header-info">
+                            <h3>Academic Timetable & Conflict Control</h3>
+                            <p>Interactive weekly timetable with real-time collision detection for faculty, sections, and lecture halls.</p>
                         </div>
-                        <div style="display: flex; gap: 0.75rem; align-items: center;">
-                            <select id="filter-timetable-class" class="form-control" style="width: auto;" onchange="AdminApp.loadTimetable()">
+                        <div class="tab-header-actions">
+                            <select id="filter-timetable-class" class="form-control" style="width: auto; min-width: 180px;" onchange="AdminApp.loadTimetable()">
                                 <option value="">Filter by Class...</option>
                             </select>
-                            <select id="filter-timetable-teacher" class="form-control" style="width: auto;" onchange="AdminApp.loadTimetable()">
+                            <select id="filter-timetable-teacher" class="form-control" style="width: auto; min-width: 180px;" onchange="AdminApp.loadTimetable()">
                                 <option value="">Filter by Faculty...</option>
                             </select>
                             <button class="btn btn-primary" onclick="AdminApp.openTimetableModal()">
-                                ➕ Schedule Slot
+                                <span>➕</span> <span>Schedule Slot</span>
                             </button>
                         </div>
                     </div>
@@ -508,7 +534,7 @@
 
                     <!-- Weekly Timetable Grid View -->
                     <div class="card" style="margin-bottom: 2rem;">
-                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="card-header">
                             <h3 style="font-size: 1.05rem; font-weight: 700; margin: 0;">Weekly Class Schedule Grid</h3>
                             <span style="font-size: 0.85rem; color: var(--text-muted);">Monday through Saturday</span>
                         </div>
@@ -551,14 +577,16 @@
 
                 <!-- TAB 8: ACTIVE SESSIONS MONITOR -->
                 <section id="tab-sessions" class="tab-pane">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-                        <div>
-                            <h3 style="font-size: 1.2rem; font-weight: 700;">Live Attendance Sessions Monitoring</h3>
-                            <p style="color: var(--text-muted); font-size: 0.875rem;">Monitor ongoing GPS sessions campus-wide and terminate unauthorized sessions in real time.</p>
+                    <div class="tab-header">
+                        <div class="tab-header-info">
+                            <h3>Live Attendance Sessions Monitoring</h3>
+                            <p>Monitor ongoing GPS sessions campus-wide and terminate unauthorized sessions in real time.</p>
                         </div>
-                        <button class="btn btn-secondary btn-sm" onclick="AdminApp.loadActiveSessions()">
-                            🔄 Refresh Sessions
-                        </button>
+                        <div class="tab-header-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="AdminApp.loadActiveSessions()">
+                                <span>🔄</span> <span>Refresh Sessions</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="card">
@@ -641,7 +669,7 @@
                             <option value="">Select Department...</option>
                         </select>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Semester *</label>
                             <select id="class-semester" class="form-control" required>
@@ -685,7 +713,7 @@
 
     <!-- View Class Roster Modal -->
     <div id="modal-class-roster" class="modal-overlay">
-        <div class="modal-container" style="max-width: 700px;">
+        <div class="modal-container" style="max-width: 720px;">
             <div class="modal-header">
                 <div>
                     <h3 id="roster-class-title">Enrolled Students Roster</h3>
@@ -694,7 +722,7 @@
                 <button class="modal-close-btn" onclick="AdminApp.closeModal('modal-class-roster')">&times;</button>
             </div>
             <div class="modal-body" style="padding: 0;">
-                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
                     <table class="table">
                         <thead>
                             <tr>
@@ -737,7 +765,7 @@
                             <input type="text" id="subject-name" class="form-control" placeholder="e.g. Database Systems" required>
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Department *</label>
                             <select id="subject-dept-select" class="form-control" required onchange="AdminApp.onSubjectDeptChange()">
@@ -795,7 +823,7 @@
             <form id="form-teacher" onsubmit="AdminApp.saveTeacher(event)">
                 <input type="hidden" id="teacher-id">
                 <div class="modal-body">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Full Name *</label>
                             <input type="text" id="teacher-name" class="form-control" placeholder="e.g. Dr. Alan Turing" required>
@@ -805,7 +833,7 @@
                             <input type="text" id="teacher-empid" class="form-control" placeholder="e.g. EMP042" required style="text-transform: uppercase;">
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Email Address *</label>
                             <input type="email" id="teacher-email" class="form-control" placeholder="e.g. turing@renaissance.edu" required autocomplete="off">
@@ -817,7 +845,7 @@
                             </select>
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Phone Number</label>
                             <input type="tel" id="teacher-phone" class="form-control" placeholder="+91 9876543210">
@@ -904,7 +932,7 @@
                         <label class="form-label">Email Address</label>
                         <input type="email" id="student-email" class="form-control" placeholder="e.g. aarav@example.com">
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Department *</label>
                             <select id="student-dept-select" class="form-control" required onchange="AdminApp.onStudentModalDeptChange()">
@@ -938,13 +966,13 @@
                 <div class="modal-body">
                     <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem;">
                         Upload a CSV file containing student records. The CSV file must include headers:
-                        <br><code>USN, Name, Email, Department, Semester, Section</code>
+                        <br><code style="background: var(--slate-100); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem;">USN, Name, Email, Department, Semester, Section</code>
                     </p>
                     <div class="form-group">
                         <label class="form-label">Select CSV File *</label>
                         <input type="file" id="csv-file-input" class="form-control" accept=".csv" required>
                     </div>
-                    <div id="csv-import-results" style="display: none; margin-top: 1rem; padding: 1rem; background: #f8fafc; border-radius: var(--radius-md); font-size: 0.875rem;">
+                    <div id="csv-import-results" style="display: none; margin-top: 1rem; padding: 1rem; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); font-size: 0.875rem;">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -967,7 +995,7 @@
                 <div class="modal-body">
                     <div id="modal-timetable-conflict-box" class="conflict-alert"></div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Class & Section *</label>
                             <select id="tt-class-select" class="form-control" required onchange="AdminApp.onTimetableClassChange()">

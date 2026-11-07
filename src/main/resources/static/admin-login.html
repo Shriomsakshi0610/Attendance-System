@@ -10,41 +10,43 @@
     <style>
         .login-wrapper {
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            background: radial-gradient(circle at 10% 10%, #1e1b4b 0%, #0f172a 100%);
         }
         .login-card {
             background: var(--surface-card);
             border: 1px solid var(--surface-border);
             border-radius: var(--radius-xl);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
             width: 100%;
             max-width: 440px;
             overflow: hidden;
-            animation: fadeIn 0.4s ease-out;
+            animation: fadeIn 0.3s ease-out;
         }
         .login-header {
-            background: linear-gradient(135deg, #4338ca, #312e81);
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
             color: #ffffff;
-            padding: 2.25rem 2rem 1.75rem;
+            padding: 2.25rem 2rem 1.85rem;
             text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
         .login-logo {
             width: 56px;
             height: 56px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(8px);
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, var(--admin-gold) 0%, var(--admin-gold-hover) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.75rem;
+            font-size: 1.65rem;
             font-weight: 800;
+            color: #ffffff;
             margin: 0 auto 1rem;
-            box-shadow: 0 4px 12px rgba(67, 56, 202, 0.4);
+            box-shadow: 0 4px 14px var(--admin-gold-glow);
         }
         .login-body {
             padding: 2rem;
@@ -60,16 +62,16 @@
             background: transparent;
             border: none;
             cursor: pointer;
-            color: var(--text-muted);
+            color: var(--slate-400);
             padding: 0.35rem;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 4px;
-            transition: color 0.15s ease;
+            transition: color var(--transition-fast);
         }
         .password-toggle-btn:hover {
-            color: var(--text-primary);
+            color: var(--slate-800);
         }
     </style>
 </head>
@@ -77,9 +79,9 @@
     <div class="login-wrapper">
         <div class="login-card">
             <div class="login-header">
-                <div class="login-logo">🛡️</div>
-                <h2>Administrator Portal</h2>
-                <p style="font-size: 0.875rem; margin-top: 0.35rem; opacity: 0.9;">Sign in to configure academic structure, users, and schedules.</p>
+                <div class="login-logo">👑</div>
+                <h2 style="color: #ffffff; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.01em;">Administrator Portal</h2>
+                <p style="font-size: 0.875rem; margin-top: 0.35rem; color: rgba(255, 255, 255, 0.75);">Institutional Academic & Infrastructure Control</p>
             </div>
 
             <div class="login-body">
@@ -104,15 +106,15 @@
                         </div>
                     </div>
 
-                    <button type="submit" id="admin-submit-btn" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.5rem; background: #4338ca; border-color: #4338ca;">
+                    <button type="submit" id="admin-submit-btn" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.5rem; background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);">
                         Enter Admin Control Center →
                     </button>
                 </form>
 
-                <div style="margin-top: 1.75rem; text-align: center; border-top: 1px solid var(--surface-border-subtle); padding-top: 1.25rem;">
+                <div style="margin-top: 1.75rem; text-align: center; border-top: 1px solid var(--slate-150); padding-top: 1.25rem;">
                     <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
                         Faculty member?
-                        <a href="/teacher-login.html" style="color: var(--accent-600); font-weight: 600;">Sign in to Faculty Portal →</a>
+                        <a href="/teacher-login.html" style="color: var(--secondary-600); font-weight: 600;">Sign in to Faculty Portal →</a>
                     </p>
                     <a href="/index.html" style="font-size: 0.85rem; color: var(--text-muted);">← Back to Main Portal</a>
                 </div>
@@ -189,7 +191,6 @@
                                 window.location.href = '/admin-dashboard.html';
                             }, 500);
                         } else {
-                            // User is valid teacher but not admin
                             errorAlert.textContent = 'Access Denied: Your account does not have Administrator privileges. Please use the Faculty Portal.';
                             errorAlert.style.display = 'block';
                             submitBtn.disabled = false;
