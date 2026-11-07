@@ -14,7 +14,7 @@ public class CollegeClass {
     @Id
     private String id;
 
-    @DBRef
+    @DBRef(lazy = true)
     private Department department;
 
     private Integer semester; // e.g. 1 to 8
@@ -27,7 +27,7 @@ public class CollegeClass {
 
     private String academicYear = "2026-2027";
 
-    @DBRef
+    @DBRef(lazy = true)
     private Teacher classTeacher; // Optional assigned faculty mentor / class teacher
 
     private String status = "ACTIVE"; // ACTIVE, INACTIVE

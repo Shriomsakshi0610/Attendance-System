@@ -1,6 +1,8 @@
 package com.renaissance.entity;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -8,21 +10,26 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Document(collection = "timetable_schedules")
+@CompoundIndexes({
+    @CompoundIndex(name = "idx_timetable_teacher_day", def = "{'teacher': 1, 'dayOfWeek': 1}"),
+    @CompoundIndex(name = "idx_timetable_class_day", def = "{'collegeClass': 1, 'dayOfWeek': 1}"),
+    @CompoundIndex(name = "idx_timetable_dept_day", def = "{'department': 1, 'dayOfWeek': 1}")
+})
 public class TimetableSchedule {
 
     @Id
     private String id;
 
-    @DBRef
+    @DBRef(lazy = true)
     private Department department;
 
-    @DBRef
+    @DBRef(lazy = true)
     private CollegeClass collegeClass;
 
-    @DBRef
+    @DBRef(lazy = true)
     private Subject subject;
 
-    @DBRef
+    @DBRef(lazy = true)
     private Teacher teacher;
 
     private String dayOfWeek; // MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY

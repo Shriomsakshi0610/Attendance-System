@@ -26,13 +26,13 @@ public class Teacher {
 
     private String phone;
 
-    @DBRef
+    @DBRef(lazy = true)
     private Department department;
 
-    @DBRef
+    @DBRef(lazy = true)
     private List<CollegeClass> assignedClasses = new ArrayList<>();
 
-    @DBRef
+    @DBRef(lazy = true)
     private List<Subject> assignedSubjects = new ArrayList<>();
 
     private String role = "ROLE_TEACHER"; // ROLE_TEACHER, ROLE_ADMIN

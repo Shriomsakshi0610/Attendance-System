@@ -249,6 +249,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    await loadMetadata();
-    await loadAttendanceData();
+    // Load filter dropdown metadata and initial attendance summary concurrently in parallel
+    await Promise.all([loadMetadata(), loadAttendanceData()]);
 });

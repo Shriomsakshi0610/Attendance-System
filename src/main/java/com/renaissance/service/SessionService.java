@@ -159,7 +159,7 @@ public class SessionService {
         Subject s = session.getSubject();
         Teacher t = session.getTeacher();
 
-        long enrolledCount = c != null ? studentRepository.findByCollegeClassId(c.getId()).size() : 0;
+        long enrolledCount = c != null ? studentRepository.countByCollegeClassId(c.getId()) : 0;
         long presentCount = recordRepository.countBySessionId(session.getId());
 
         SessionDto dto = new SessionDto();

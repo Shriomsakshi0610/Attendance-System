@@ -1,9 +1,12 @@
 package com.renaissance.service;
 
+import com.renaissance.config.CacheConfig;
 import com.renaissance.dto.*;
 import com.renaissance.entity.*;
 import com.renaissance.exception.ResourceNotFoundException;
 import com.renaissance.repository.*;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -74,9 +77,8 @@ public class AdminService {
         stats.setActiveSessionsCount(activeSessions.size());
 
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
-        long todayCount = recordRepository.findAll().stream()
-                .filter(r -> r.getMarkedAt() != null && r.getMarkedAt().isAfter(startOfDay))
-                .count();
+        LocalDateTime endOfDay = LocalDate.now().atTime(java.time.LocalTime.MAX);
+        long todayCount = recordRepository.countRecordsToday(startOfDay, endOfDay);
         stats.setTodayAttendanceCount(todayCount);
 
         return stats;
@@ -98,6 +100,7 @@ public class AdminService {
         return new DepartmentDto(d.getId(), d.getCode(), d.getName(), d.getDescription(), d.getStatus());
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_DEPARTMENTS, allEntries = true)
     public DepartmentDto createDepartment(CreateDepartmentRequest req) {
         String code = req.getCode().trim().toUpperCase();
         if (departmentRepository.existsByCodeIgnoreCase(code)) {
@@ -109,6 +112,7 @@ public class AdminService {
         return new DepartmentDto(saved.getId(), saved.getCode(), saved.getName(), saved.getDescription(), saved.getStatus());
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_DEPARTMENTS, allEntries = true)
     public DepartmentDto updateDepartment(String id, CreateDepartmentRequest req) {
         Department dept = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with ID: " + id));
@@ -125,6 +129,7 @@ public class AdminService {
         return new DepartmentDto(updated.getId(), updated.getCode(), updated.getName(), updated.getDescription(), updated.getStatus());
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_DEPARTMENTS, allEntries = true)
     public DepartmentDto toggleDepartmentStatus(String id) {
         Department dept = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with ID: " + id));
@@ -133,6 +138,7 @@ public class AdminService {
         return new DepartmentDto(updated.getId(), updated.getCode(), updated.getName(), updated.getDescription(), updated.getStatus());
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_DEPARTMENTS, allEntries = true)
     public void deleteDepartment(String id) {
         Department dept = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with ID: " + id));
@@ -169,6 +175,7 @@ public class AdminService {
         return toClassDto(c);
     }
 
+    @CacheEvict(value = {CacheConfig.CACHE_CLASSES, CacheConfig.CACHE_DEPARTMENTS}, allEntries = true)
     public ClassDto createClass(CreateClassRequest req) {
         Department dept = departmentRepository.findById(req.getDepartmentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with ID: " + req.getDepartmentId()));
@@ -199,6 +206,7 @@ public class AdminService {
         return toClassDto(saved);
     }
 
+    @CacheEvict(value = {CacheConfig.CACHE_CLASSES, CacheConfig.CACHE_DEPARTMENTS}, allEntries = true)
     public ClassDto updateClass(String id, CreateClassRequest req) {
         CollegeClass c = classRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found with ID: " + id));
@@ -228,6 +236,7 @@ public class AdminService {
         return toClassDto(updated);
     }
 
+    @CacheEvict(value = {CacheConfig.CACHE_CLASSES, CacheConfig.CACHE_DEPARTMENTS}, allEntries = true)
     public ClassDto toggleClassStatus(String id) {
         CollegeClass c = classRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found with ID: " + id));
@@ -236,6 +245,7 @@ public class AdminService {
         return toClassDto(updated);
     }
 
+    @CacheEvict(value = {CacheConfig.CACHE_CLASSES, CacheConfig.CACHE_DEPARTMENTS}, allEntries = true)
     public void deleteClass(String id) {
         CollegeClass c = classRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found with ID: " + id));
@@ -302,6 +312,7 @@ public class AdminService {
         return toSubjectDto(s);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_SUBJECTS, allEntries = true)
     public SubjectDto createSubject(CreateSubjectRequest req) {
         String code = req.getCode().trim().toUpperCase();
         if (subjectRepository.findByCodeIgnoreCase(code).isPresent()) {
@@ -331,6 +342,7 @@ public class AdminService {
         return toSubjectDto(saved);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_SUBJECTS, allEntries = true)
     public SubjectDto updateSubject(String id, CreateSubjectRequest req) {
         Subject s = subjectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Subject not found with ID: " + id));
@@ -365,6 +377,7 @@ public class AdminService {
         return toSubjectDto(updated);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_SUBJECTS, allEntries = true)
     public SubjectDto toggleSubjectStatus(String id) {
         Subject s = subjectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Subject not found with ID: " + id));
@@ -373,6 +386,7 @@ public class AdminService {
         return toSubjectDto(updated);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_SUBJECTS, allEntries = true)
     public void deleteSubject(String id) {
         Subject s = subjectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Subject not found with ID: " + id));

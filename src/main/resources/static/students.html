@@ -143,6 +143,16 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination & Record Count Bar -->
+                <div id="students-pagination" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem 0.25rem; font-size:0.875rem; color:var(--text-secondary);">
+                    <div id="students-count-display">Showing 0 students</div>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <button type="button" id="students-prev-page" class="btn btn-secondary btn-sm" disabled>&larr; Previous</button>
+                        <span id="students-page-display" style="font-weight:600; padding:0 0.5rem;">Page 1</span>
+                        <button type="button" id="students-next-page" class="btn btn-secondary btn-sm" disabled>Next &rarr;</button>
+                    </div>
+                </div>
             </main>
         </div>
     </div>

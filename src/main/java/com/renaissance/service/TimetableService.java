@@ -1,5 +1,6 @@
 package com.renaissance.service;
 
+import com.renaissance.config.CacheConfig;
 import com.renaissance.dto.CreateTimetableScheduleRequest;
 import com.renaissance.dto.TimetableScheduleDto;
 import com.renaissance.entity.CollegeClass;
@@ -12,6 +13,8 @@ import com.renaissance.repository.ClassRepository;
 import com.renaissance.repository.SubjectRepository;
 import com.renaissance.repository.TeacherRepository;
 import com.renaissance.repository.TimetableScheduleRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
@@ -44,12 +47,14 @@ public class TimetableService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = CacheConfig.CACHE_TIMETABLE, key = "'CLASS_' + #classId", unless = "#result == null")
     public List<TimetableScheduleDto> getSchedulesByClass(String classId) {
         return timetableRepository.findByCollegeClass_Id(classId).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = CacheConfig.CACHE_TIMETABLE, key = "'TEACHER_' + #teacherId", unless = "#result == null")
     public List<TimetableScheduleDto> getSchedulesByTeacher(String teacherId) {
         return timetableRepository.findByTeacher_Id(teacherId).stream()
                 .map(this::toDto)
@@ -62,6 +67,7 @@ public class TimetableService {
                 .collect(Collectors.toList());
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_TIMETABLE, allEntries = true)
     public TimetableScheduleDto createSchedule(CreateTimetableScheduleRequest request) {
         CollegeClass collegeClass = classRepository.findById(request.getClassId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found with ID: " + request.getClassId()));
@@ -94,6 +100,7 @@ public class TimetableService {
         return toDto(saved);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_TIMETABLE, allEntries = true)
     public TimetableScheduleDto updateSchedule(String id, CreateTimetableScheduleRequest request) {
         TimetableSchedule schedule = timetableRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Schedule not found with ID: " + id));
@@ -125,6 +132,7 @@ public class TimetableService {
         return toDto(updated);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_TIMETABLE, allEntries = true)
     public void deleteSchedule(String id) {
         if (!timetableRepository.existsById(id)) {
             throw new ResourceNotFoundException("Schedule not found with ID: " + id);

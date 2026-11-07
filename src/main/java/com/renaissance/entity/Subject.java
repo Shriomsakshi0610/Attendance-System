@@ -18,15 +18,15 @@ public class Subject {
 
     private String name; // e.g. "Database Management Systems"
 
-    @DBRef
+    @DBRef(lazy = true)
     private Department department;
 
     private Integer semester;
 
-    @DBRef
+    @DBRef(lazy = true)
     private CollegeClass collegeClass; // Optional specific class/section assignment
 
-    @DBRef
+    @DBRef(lazy = true)
     private Teacher assignedTeacher; // Faculty member assigned to instruct this course
 
     private Integer weeklyHours = 4;

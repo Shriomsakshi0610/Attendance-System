@@ -30,6 +30,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const csvFileInput = document.getElementById('csv-file-input');
     const uploadCsvBtn = document.getElementById('upload-csv-btn');
 
+    // Pagination elements
+    const countDisplay = document.getElementById('students-count-display');
+    const pageDisplay = document.getElementById('students-page-display');
+    const prevPageBtn = document.getElementById('students-prev-page');
+    const nextPageBtn = document.getElementById('students-next-page');
+
+    let allStudentsData = [];
+    let currentPage = 0;
+    const PAGE_SIZE = 25;
+    let searchDebounceTimer = null;
+
     // Load dropdown options
     const loadMetadata = async () => {
         try {
@@ -69,6 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Filter class options when department changes
     filterDept.addEventListener('change', () => {
         renderClassSelects(filterDept.value);
+        currentPage = 0;
         loadStudents();
     });
 
@@ -79,11 +91,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             filtered.map(c => `<option value="${c.id}">${c.displayName}</option>`).join('');
     });
 
-    filterClass.addEventListener('change', () => loadStudents());
-    searchInput.addEventListener('input', () => loadStudents());
+    filterClass.addEventListener('change', () => {
+        currentPage = 0;
+        loadStudents();
+    });
+
+    // Debounced search to prevent rapid queries on keystroke
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            currentPage = 0;
+            loadStudents();
+        }, 250);
+    });
 
     // Load Students List
     const loadStudents = async () => {
+        // Show loading spinner
+        studentsTableBody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center; padding: 2.5rem; color: var(--text-muted);">
+                    <div style="display:inline-block; width: 22px; height: 22px; border: 3px solid rgba(99, 102, 241, 0.2); border-radius: 50%; border-top-color: var(--primary-600); animation: spin 0.8s linear infinite; margin-bottom: 0.5rem;"></div>
+                    <div>Loading students list...</div>
+                </td>
+            </tr>
+        `;
+
         try {
             const deptId = filterDept.value;
             const classId = filterClass.value;
@@ -96,13 +129,69 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const res = await API.get(url);
             if (res && res.data) {
-                renderStudents(res.data);
+                allStudentsData = res.data;
+                renderPaginatedStudents();
             }
         } catch (e) {
             console.error('Failed to load students', e);
             App.showToast('Failed to load students: ' + e.message, 'danger');
+            studentsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align:center; padding: 2rem; color: var(--danger-accent);">
+                        Failed to load students: ${App.escapeHtml(e.message)}
+                    </td>
+                </tr>
+            `;
         }
     };
+
+    const renderPaginatedStudents = () => {
+        const total = allStudentsData.length;
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        if (currentPage >= totalPages) currentPage = totalPages - 1;
+        if (currentPage < 0) currentPage = 0;
+
+        const startIdx = currentPage * PAGE_SIZE;
+        const endIdx = Math.min(startIdx + PAGE_SIZE, total);
+        const pagedList = allStudentsData.slice(startIdx, endIdx);
+
+        renderStudents(pagedList);
+
+        // Update pagination bar
+        if (countDisplay) {
+            countDisplay.textContent = total > 0
+                ? `Showing ${startIdx + 1}–${endIdx} of ${total} students`
+                : 'Showing 0 students';
+        }
+        if (pageDisplay) {
+            pageDisplay.textContent = `Page ${currentPage + 1} of ${totalPages}`;
+        }
+        if (prevPageBtn) {
+            prevPageBtn.disabled = currentPage <= 0;
+        }
+        if (nextPageBtn) {
+            nextPageBtn.disabled = currentPage >= totalPages - 1;
+        }
+    };
+
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 0) {
+                currentPage--;
+                renderPaginatedStudents();
+            }
+        });
+    }
+
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(allStudentsData.length / PAGE_SIZE);
+            if (currentPage < totalPages - 1) {
+                currentPage++;
+                renderPaginatedStudents();
+            }
+        });
+    }
 
     const renderStudents = (students) => {
         if (!students || students.length === 0) {
@@ -257,6 +346,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    await loadMetadata();
-    await loadStudents();
+    // Run metadata loading and initial student retrieval in parallel
+    await Promise.all([loadMetadata(), loadStudents()]);
 });

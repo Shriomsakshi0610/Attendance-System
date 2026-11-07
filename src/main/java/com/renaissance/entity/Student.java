@@ -1,6 +1,8 @@
 package com.renaissance.entity;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -8,6 +10,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
 @Document(collection = "students")
+@CompoundIndexes({
+    @CompoundIndex(name = "idx_student_class_status", def = "{'collegeClass': 1, 'status': 1}"),
+    @CompoundIndex(name = "idx_student_dept_status", def = "{'department': 1, 'status': 1}")
+})
 public class Student {
 
     @Id
@@ -16,16 +22,18 @@ public class Student {
     @Indexed(unique = true)
     private String usn; // e.g. "1MS21CS001"
 
+    @Indexed
     private String name;
 
     private String email;
 
-    @DBRef
+    @DBRef(lazy = true)
     private Department department;
 
-    @DBRef
+    @DBRef(lazy = true)
     private CollegeClass collegeClass;
 
+    @Indexed
     private String status = "ACTIVE"; // ACTIVE, INACTIVE
 
     private LocalDateTime createdAt = LocalDateTime.now();

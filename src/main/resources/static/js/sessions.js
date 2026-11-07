@@ -264,6 +264,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('');
     };
 
-    await loadDropdownData();
-    await loadSessionsHistory();
+    // Load dropdown metadata and session history concurrently in parallel
+    await Promise.all([loadDropdownData(), loadSessionsHistory()]);
 });

@@ -11,6 +11,7 @@ import com.renaissance.repository.StudentRepository;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.springframework.data.mongodb.core.convert.LazyLoadingProxy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -36,9 +37,51 @@ public class StudentService {
     }
 
     public List<StudentDto> getAllStudents(String departmentId, String classId, String keyword) {
+        return getAllStudents(departmentId, classId, keyword, null, null);
+    }
+
+    public List<StudentDto> getAllStudents(String departmentId, String classId, String keyword, Integer page, Integer size) {
         List<Student> students = studentRepository.searchStudents(departmentId, classId,
-                (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null);
-        return students.stream().map(this::toDto).collect(Collectors.toList());
+                (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null, page, size);
+
+        if (students.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Batch pre-fetch unique departments and classes to eliminate N+1 DBRef lookups
+        Set<String> deptIds = new HashSet<>();
+        Set<String> classIds = new HashSet<>();
+        for (Student s : students) {
+            String deptId = extractDbRefId(s.getDepartment());
+            if (deptId != null) deptIds.add(deptId);
+
+            String cId = extractDbRefId(s.getCollegeClass());
+            if (cId != null) classIds.add(cId);
+        }
+
+        Map<String, Department> deptMap = deptIds.isEmpty() ? Collections.emptyMap() :
+                departmentRepository.findAllById(deptIds).stream().collect(Collectors.toMap(Department::getId, d -> d, (a, b) -> a));
+        Map<String, CollegeClass> classMap = classIds.isEmpty() ? Collections.emptyMap() :
+                classRepository.findAllById(classIds).stream().collect(Collectors.toMap(CollegeClass::getId, c -> c, (a, b) -> a));
+
+        return students.stream()
+                .map(s -> toDtoWithPreloaded(s, deptMap, classMap))
+                .collect(Collectors.toList());
+    }
+
+    private String extractDbRefId(Object entityOrProxy) {
+        if (entityOrProxy == null) return null;
+        if (entityOrProxy instanceof LazyLoadingProxy proxy) {
+            com.mongodb.DBRef dbRef = proxy.toDBRef();
+            return dbRef != null && dbRef.getId() != null ? dbRef.getId().toString() : null;
+        }
+        if (entityOrProxy instanceof Department d) {
+            return d.getId();
+        }
+        if (entityOrProxy instanceof CollegeClass c) {
+            return c.getId();
+        }
+        return null;
     }
 
     public StudentDto getStudentById(String id) {
@@ -182,6 +225,30 @@ public class StudentService {
                 d != null ? d.getCode() : null,
                 d != null ? d.getName() : null,
                 c != null ? c.getId() : null,
+                c != null ? c.getDisplayName() : null,
+                c != null ? c.getSemester() : null,
+                c != null ? c.getSection() : null,
+                student.getStatus()
+        );
+    }
+
+    public StudentDto toDtoWithPreloaded(Student student, Map<String, Department> deptMap, Map<String, CollegeClass> classMap) {
+        if (student == null) return null;
+        String deptId = extractDbRefId(student.getDepartment());
+        String classId = extractDbRefId(student.getCollegeClass());
+
+        Department d = deptId != null && deptMap != null ? deptMap.get(deptId) : null;
+        CollegeClass c = classId != null && classMap != null ? classMap.get(classId) : null;
+
+        return new StudentDto(
+                student.getId(),
+                student.getUsn(),
+                student.getName(),
+                student.getEmail(),
+                d != null ? d.getId() : deptId,
+                d != null ? d.getCode() : null,
+                d != null ? d.getName() : null,
+                c != null ? c.getId() : classId,
                 c != null ? c.getDisplayName() : null,
                 c != null ? c.getSemester() : null,
                 c != null ? c.getSection() : null,

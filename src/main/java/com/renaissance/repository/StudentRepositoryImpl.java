@@ -22,6 +22,11 @@ public class StudentRepositoryImpl implements StudentRepositoryCustom {
 
     @Override
     public List<Student> searchStudents(String deptId, String classId, String keyword) {
+        return searchStudents(deptId, classId, keyword, null, null);
+    }
+
+    @Override
+    public List<Student> searchStudents(String deptId, String classId, String keyword, Integer page, Integer size) {
         List<Criteria> criteriaList = new ArrayList<>();
 
         if (deptId != null && !deptId.isBlank()) {
@@ -57,6 +62,11 @@ public class StudentRepositoryImpl implements StudentRepositoryCustom {
         Query query = new Query();
         if (!criteriaList.isEmpty()) {
             query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
+        }
+
+        if (page != null && size != null && size > 0) {
+            query.skip((long) page * size);
+            query.limit(size);
         }
 
         return mongoTemplate.find(query, Student.class);

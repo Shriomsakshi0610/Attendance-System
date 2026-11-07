@@ -1,6 +1,8 @@
 package com.renaissance.entity;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -8,6 +10,11 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
 @Document(collection = "attendance_sessions")
+@CompoundIndexes({
+    @CompoundIndex(name = "idx_session_teacher_created", def = "{'teacher': 1, 'createdAt': -1}"),
+    @CompoundIndex(name = "idx_session_class_start", def = "{'collegeClass': 1, 'startTime': -1}"),
+    @CompoundIndex(name = "idx_session_status_endtime", def = "{'status': 1, 'endTime': 1}")
+})
 public class AttendanceSession {
 
     public enum SessionStatus {
@@ -22,13 +29,13 @@ public class AttendanceSession {
     @Indexed(unique = true)
     private String sessionCode;
 
-    @DBRef
+    @DBRef(lazy = true)
     private Teacher teacher;
 
-    @DBRef
+    @DBRef(lazy = true)
     private CollegeClass collegeClass;
 
-    @DBRef
+    @DBRef(lazy = true)
     private Subject subject;
 
     private Double teacherLatitude;

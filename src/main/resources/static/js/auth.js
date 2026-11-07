@@ -3,17 +3,37 @@
  */
 
 const Auth = (() => {
-    // Check if current user is logged in
-    const checkAuthStatus = async () => {
-        try {
-            const res = await API.get('/api/auth/status');
-            if (res && res.success && res.data) {
-                return res.data;
-            }
-            return null;
-        } catch (e) {
-            return null;
+    let authPromise = null;
+    let cachedUser = null;
+
+    // Check if current user is logged in (memoized to avoid duplicate concurrent calls)
+    const checkAuthStatus = async (forceRefresh = false) => {
+        if (!forceRefresh && cachedUser) {
+            return cachedUser;
         }
+
+        if (!forceRefresh && authPromise) {
+            return await authPromise;
+        }
+
+        authPromise = (async () => {
+            try {
+                const res = await API.get('/api/auth/status');
+                if (res && res.success && res.data) {
+                    cachedUser = res.data;
+                    return res.data;
+                }
+                cachedUser = null;
+                return null;
+            } catch (e) {
+                cachedUser = null;
+                return null;
+            } finally {
+                authPromise = null;
+            }
+        })();
+
+        return await authPromise;
     };
 
     // Ensure teacher/admin is authenticated on faculty pages
@@ -73,6 +93,8 @@ const Auth = (() => {
 
     // Logout function
     const logout = async (targetLoginUrl) => {
+        cachedUser = null;
+        if (typeof API.clearCache === 'function') API.clearCache();
         try {
             await API.post('/api/auth/logout');
         } catch (e) {

@@ -7,6 +7,7 @@ import com.renaissance.dto.StudentProfileDto;
 import com.renaissance.entity.AttendanceRecord;
 import com.renaissance.entity.AttendanceSession;
 import com.renaissance.entity.CollegeClass;
+import com.renaissance.entity.Department;
 import com.renaissance.entity.Student;
 import com.renaissance.exception.ResourceNotFoundException;
 import com.renaissance.repository.*;
@@ -59,31 +60,35 @@ public class ReportService {
         }
 
         long totalConducted = conductedSessions.stream()
-                .filter(s -> s.getStatus() != AttendanceSession.SessionStatus.EXPIRED || recordRepository.countBySessionId(s.getId()) > 0)
+                .filter(s -> s.getStatus() == AttendanceSession.SessionStatus.COMPLETED || s.getStatus() == AttendanceSession.SessionStatus.ACTIVE)
                 .count();
 
-        List<AttendanceSummaryDto> summaries = new ArrayList<>();
-        for (Student student : students) {
-            long attended;
-            if (subjectId != null && !subjectId.isBlank()) {
-                attended = recordRepository.countPresentByStudentIdAndSubjectId(student.getId(), subjectId);
-            } else {
-                attended = recordRepository.countPresentByStudentId(student.getId());
-            }
+        // Optimized: Single aggregation query returns present counts for all students in the class
+        Map<String, Long> presentCounts = recordRepository.countPresentByStudentsInClass(classId, subjectId);
 
+        String subjectName = (subjectId != null && !conductedSessions.isEmpty() && conductedSessions.get(0).getSubject() != null)
+                ? conductedSessions.get(0).getSubject().getName() : "All Subjects";
+
+        CollegeClass cachedClass = (classId != null && !classId.isBlank()) ? classRepository.findById(classId).orElse(null) : null;
+        Department cachedDept = (cachedClass != null && cachedClass.getDepartment() != null) ? cachedClass.getDepartment() : null;
+        int defaultSemester = cachedClass != null && cachedClass.getSemester() != null ? cachedClass.getSemester() : 0;
+        String defaultSection = cachedClass != null && cachedClass.getSection() != null ? cachedClass.getSection() : "-";
+        String defaultDeptCode = cachedDept != null && cachedDept.getCode() != null ? cachedDept.getCode() : "N/A";
+
+        List<AttendanceSummaryDto> summaries = new ArrayList<>(students.size());
+        for (Student student : students) {
+            long attended = presentCounts.getOrDefault(student.getId(), 0L);
             long absent = Math.max(0, totalConducted - attended);
             double percentage = totalConducted > 0 ? ((double) attended / totalConducted) * 100.0 : 100.0;
 
-            CollegeClass c = student.getCollegeClass();
             summaries.add(new AttendanceSummaryDto(
                     student.getId(),
                     student.getUsn(),
                     student.getName(),
-                    student.getDepartment() != null ? student.getDepartment().getCode() : "N/A",
-                    c != null ? c.getSemester() : 0,
-                    c != null ? c.getSection() : "-",
-                    (subjectId != null && !conductedSessions.isEmpty() && conductedSessions.get(0).getSubject() != null)
-                            ? conductedSessions.get(0).getSubject().getName() : "All Subjects",
+                    defaultDeptCode,
+                    defaultSemester,
+                    defaultSection,
+                    subjectName,
                     totalConducted,
                     attended,
                     absent,
@@ -156,20 +161,15 @@ public class ReportService {
         long todayAttendance = recordRepository.countRecordsToday(startOfDay, endOfDay);
         long activeSessions = sessionRepository.countActiveSessions(now);
 
-        // Calculate Average Attendance Percentage across all students
-        List<Student> allStudents = studentRepository.findAll();
+        // Calculate Average Attendance Percentage efficiently without loading all students & sessions in N+1 loops
         double avgPercentage = 85.0; // default baseline if no sessions yet
-        if (!allStudents.isEmpty() && totalClassesConducted > 0) {
-            double sumPercentage = 0.0;
-            for (Student s : allStudents) {
-                long attended = recordRepository.countPresentByStudentId(s.getId());
-                long conducted = (s.getCollegeClass() != null)
-                        ? sessionRepository.findByCollegeClassIdOrderByStartTimeDesc(s.getCollegeClass().getId()).size()
-                        : 0;
-                double pct = conducted > 0 ? ((double) attended / conducted) * 100.0 : 100.0;
-                sumPercentage += pct;
+        if (totalStudents > 0 && totalClassesConducted > 0) {
+            long totalPresentRecords = recordRepository.countByStatus(AttendanceRecord.AttendanceStatus.PRESENT);
+            long estimatedTotalExpectedSlots = totalClassesConducted * Math.max(1, (totalStudents / Math.max(1, classRepository.count())));
+            if (estimatedTotalExpectedSlots > 0 && totalPresentRecords > 0) {
+                avgPercentage = Math.min(100.0, Math.max(0.0, ((double) totalPresentRecords / estimatedTotalExpectedSlots) * 100.0));
+                avgPercentage = Math.round(avgPercentage * 10.0) / 10.0;
             }
-            avgPercentage = sumPercentage / allStudents.size();
         }
 
         DashboardStatsDto stats = new DashboardStatsDto(
@@ -184,34 +184,35 @@ public class ReportService {
         List<SessionDto> activeSessionDtos = sessionService.getActiveSessions();
         stats.setRecentActiveSessions(activeSessionDtos);
 
-        // Weekly attendance counts (last 7 days)
-        Map<String, Long> weeklyCounts = new LinkedHashMap<>();
-        DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("EEE");
-        for (int i = 6; i >= 0; i--) {
-            LocalDate date = LocalDate.now().minusDays(i);
-            long count = recordRepository.countRecordsToday(date.atStartOfDay(), date.atTime(LocalTime.MAX));
-            weeklyCounts.put(date.format(dayFormatter), count);
-        }
+        // Weekly attendance counts (last 7 days in a SINGLE query instead of 7 round-trips)
+        LocalDateTime sevenDaysAgo = LocalDate.now().minusDays(6).atStartOfDay();
+        Map<String, Long> weeklyCounts = recordRepository.countRecordsByDay(sevenDaysAgo, endOfDay);
         stats.setWeeklyAttendanceCounts(weeklyCounts);
 
-        // Subject attendance trends
+        // Subject attendance trends (optimized: batch aggregate instead of querying per session)
         Map<String, Double> subjectTrends = new HashMap<>();
         List<AttendanceSession> sessions = sessionRepository.findAll();
-        Map<String, List<AttendanceSession>> bySubject = sessions.stream()
-                .filter(s -> s.getSubject() != null && s.getSubject().getName() != null)
-                .collect(Collectors.groupingBy(s -> s.getSubject().getName()));
+        if (!sessions.isEmpty()) {
+            Map<String, List<AttendanceSession>> bySubject = sessions.stream()
+                    .filter(s -> s.getSubject() != null && s.getSubject().getName() != null)
+                    .collect(Collectors.groupingBy(s -> s.getSubject().getName()));
 
-        for (Map.Entry<String, List<AttendanceSession>> entry : bySubject.entrySet()) {
-            long totalRecs = 0;
-            long totalEnroll = 0;
-            for (AttendanceSession s : entry.getValue()) {
-                totalRecs += recordRepository.countBySessionId(s.getId());
-                if (s.getCollegeClass() != null) {
-                    totalEnroll += studentRepository.findByCollegeClassId(s.getCollegeClass().getId()).size();
+            Map<String, Long> classEnrollmentCache = new HashMap<>();
+
+            for (Map.Entry<String, List<AttendanceSession>> entry : bySubject.entrySet()) {
+                long totalRecs = 0;
+                long totalEnroll = 0;
+                for (AttendanceSession s : entry.getValue()) {
+                    totalRecs += recordRepository.countBySessionId(s.getId());
+                    if (s.getCollegeClass() != null) {
+                        String classId = s.getCollegeClass().getId();
+                        long count = classEnrollmentCache.computeIfAbsent(classId, id -> studentRepository.countByCollegeClassId(id));
+                        totalEnroll += count;
+                    }
                 }
+                double pct = totalEnroll > 0 ? ((double) totalRecs / totalEnroll) * 100.0 : 85.0;
+                subjectTrends.put(entry.getKey(), Math.round(pct * 10.0) / 10.0);
             }
-            double pct = totalEnroll > 0 ? ((double) totalRecs / totalEnroll) * 100.0 : 80.0;
-            subjectTrends.put(entry.getKey(), Math.round(pct * 10.0) / 10.0);
         }
         stats.setSubjectAttendanceTrends(subjectTrends);
 

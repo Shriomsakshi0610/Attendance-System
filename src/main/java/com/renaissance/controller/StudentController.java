@@ -26,8 +26,10 @@ public class StudentController {
     public ResponseEntity<ApiResponse<List<StudentDto>>> getAllStudents(
             @RequestParam(required = false) String departmentId,
             @RequestParam(required = false) String classId,
-            @RequestParam(required = false) String keyword) {
-        List<StudentDto> students = studentService.getAllStudents(departmentId, classId, keyword);
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        List<StudentDto> students = studentService.getAllStudents(departmentId, classId, keyword, page, size);
         return ResponseEntity.ok(ApiResponse.ok(students));
     }
 

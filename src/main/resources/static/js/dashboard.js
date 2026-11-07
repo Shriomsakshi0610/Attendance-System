@@ -153,6 +153,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await loadDashboardData();
 
-    // Auto-refresh stats every 15 seconds
-    setInterval(loadDashboardData, 15000);
+    // Auto-refresh stats periodically only when tab is active (preserves bandwidth and Atlas connections)
+    setInterval(() => {
+        if (!document.hidden) {
+            loadDashboardData();
+        }
+    }, 30000);
 });

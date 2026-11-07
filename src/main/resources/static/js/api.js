@@ -1,9 +1,39 @@
 /**
- * Renaissance - API Communication Layer using Fetch API
+ * Renaissance - API Communication Layer using Fetch API with In-Memory Caching
  */
 
 const API = (() => {
+    // Client-side cache for static metadata (departments, classes, subjects)
+    const memoryCache = new Map();
+    const CACHE_TTL_MS = 60 * 1000; // 60-second TTL
+
+    const CACHEABLE_PREFIXES = [
+        '/api/teacher/departments',
+        '/api/teacher/classes',
+        '/api/teacher/subjects',
+        '/api/public/departments',
+        '/api/public/classes'
+    ];
+
+    const isCacheable = (url) => {
+        return CACHEABLE_PREFIXES.some(prefix => url.startsWith(prefix));
+    };
+
+    const clearCache = () => {
+        memoryCache.clear();
+    };
+
     const request = async (url, options = {}) => {
+        const method = (options.method || 'GET').toUpperCase();
+
+        // 1. Check in-memory cache for safe GET metadata requests
+        if (method === 'GET' && !options.noCache && isCacheable(url)) {
+            const cached = memoryCache.get(url);
+            if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
+                return JSON.parse(JSON.stringify(cached.data));
+            }
+        }
+
         const defaultHeaders = {
             'Accept': 'application/json'
         };
@@ -44,6 +74,13 @@ const API = (() => {
                 throw error;
             }
 
+            // Invalidate cache on mutations
+            if (method !== 'GET') {
+                clearCache();
+            } else if (isCacheable(url) && data && data.success) {
+                memoryCache.set(url, { timestamp: Date.now(), data });
+            }
+
             return data;
         } catch (error) {
             console.error(`API Error on ${url}:`, error);
@@ -55,6 +92,7 @@ const API = (() => {
         get: (url, options = {}) => request(url, { method: 'GET', ...options }),
         post: (url, body, options = {}) => request(url, { method: 'POST', body, ...options }),
         put: (url, body, options = {}) => request(url, { method: 'PUT', body, ...options }),
-        delete: (url, options = {}) => request(url, { method: 'DELETE', ...options })
+        delete: (url, options = {}) => request(url, { method: 'DELETE', ...options }),
+        clearCache
     };
 })();
