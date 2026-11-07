@@ -43,24 +43,32 @@ class InAppUpdateManager(
                 val info = response.body()!!
                 if (info.versionCode > BuildConfig.VERSION_CODE) {
                     _availableUpdate.value = info
+                    _statusMessage.value = "New version v${info.versionName} is available."
                     return info
                 } else {
                     _availableUpdate.value = null
                     _statusMessage.value = "App is already up to date (v${BuildConfig.VERSION_NAME})."
                 }
             } else {
-                _statusMessage.value = "Unable to check updates: server responded ${response.code()}."
+                _availableUpdate.value = null
+                _statusMessage.value = "Unable to check updates: server responded HTTP ${response.code()}."
             }
         } catch (e: Exception) {
-            _statusMessage.value = "Failed to check for updates: ${e.message}"
+            _availableUpdate.value = null
+            _statusMessage.value = "Network error: Unable to reach update server (${e.localizedMessage ?: "Connection failed"})."
         }
         return null
     }
 
     fun startDownload(updateInfo: AppVersionInfo) {
+        if (updateInfo.downloadUrl.isNullOrBlank()) {
+            _statusMessage.value = "Update download error: APK download URL is unavailable."
+            return
+        }
+
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
         if (downloadManager == null) {
-            _statusMessage.value = "DownloadManager not available."
+            _statusMessage.value = "Update download error: DownloadManager service is unavailable."
             return
         }
 
@@ -72,7 +80,13 @@ class InAppUpdateManager(
             else base + updateInfo.downloadUrl
         }
 
-        val uri = Uri.parse(baseUrl)
+        val uri = try {
+            Uri.parse(baseUrl)
+        } catch (e: Exception) {
+            _statusMessage.value = "Update download error: invalid download URL '$baseUrl'."
+            return
+        }
+
         val fileName = "renaissance-teacher-v${updateInfo.versionName}.apk"
 
         val destinationFile = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
@@ -80,27 +94,61 @@ class InAppUpdateManager(
             destinationFile.delete()
         }
 
-        val request = DownloadManager.Request(uri)
-            .setTitle("Renaissance Teacher Update")
-            .setDescription("Downloading v${updateInfo.versionName}...")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationUri(Uri.fromFile(destinationFile))
-            .setMimeType("application/vnd.android.package-archive")
+        val request = try {
+            DownloadManager.Request(uri)
+                .setTitle("Renaissance Teacher Update")
+                .setDescription("Downloading v${updateInfo.versionName}...")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationUri(Uri.fromFile(destinationFile))
+                .setMimeType("application/vnd.android.package-archive")
+        } catch (e: Exception) {
+            _statusMessage.value = "Update download error: ${e.message}"
+            return
+        }
 
-        activeDownloadId = downloadManager.enqueue(request)
-        _isDownloading.value = true
-        _statusMessage.value = "Downloading update..."
+        try {
+            activeDownloadId = downloadManager.enqueue(request)
+            _isDownloading.value = true
+            _statusMessage.value = "Downloading update v${updateInfo.versionName}..."
+        } catch (e: Exception) {
+            _isDownloading.value = false
+            _statusMessage.value = "Failed to start download: ${e.message}"
+            return
+        }
 
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context?, intent: Intent?) {
                 val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) ?: -1L
                 if (id == activeDownloadId) {
                     _isDownloading.value = false
-                    _statusMessage.value = "Download finished. Ready to install."
-                    triggerPackageInstall(destinationFile)
                     try {
                         context.unregisterReceiver(this)
                     } catch (_: Exception) {}
+
+                    // Query download status for errors
+                    var downloadSuccessful = false
+                    var errorReason = "Download failed"
+                    val query = DownloadManager.Query().setFilterById(activeDownloadId)
+                    val cursor = downloadManager.query(query)
+                    if (cursor != null && cursor.moveToFirst()) {
+                        val statusIdx = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                        val status = if (statusIdx != -1) cursor.getInt(statusIdx) else -1
+                        if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                            downloadSuccessful = true
+                        } else if (status == DownloadManager.STATUS_FAILED) {
+                            val reasonIdx = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
+                            val reason = if (reasonIdx != -1) cursor.getInt(reasonIdx) else -1
+                            errorReason = "Download failed with error code $reason"
+                        }
+                        cursor.close()
+                    }
+
+                    if (downloadSuccessful && destinationFile.exists() && destinationFile.length() > 0) {
+                        _statusMessage.value = "Download finished (${destinationFile.length() / 1024} KB). Ready to install."
+                        triggerPackageInstall(destinationFile)
+                    } else {
+                        _statusMessage.value = "Update download error: $errorReason. Please check network and retry."
+                    }
                 }
             }
         }
