@@ -1,6 +1,7 @@
 package com.renaissance.service;
 
 import com.renaissance.dto.AttendanceSummaryDto;
+import com.renaissance.dto.DateWiseAttendanceRecordDto;
 import com.renaissance.dto.StudentProfileDto;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -9,7 +10,9 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class CsvExportService {
@@ -24,21 +27,27 @@ public class CsvExportService {
      * Generates a downloadable CSV of attendance summary records with UTF-8 encoding.
      */
     public byte[] exportAttendanceSummaryCsv(String classId, String subjectId) {
-        List<AttendanceSummaryDto> records = reportService.getAttendanceSummary(classId, subjectId);
+        return exportAttendanceSummaryCsv(classId, subjectId, null, null);
+    }
+
+    /**
+     * Generates a downloadable CSV of attendance summary records with optional date filtering.
+     */
+    public byte[] exportAttendanceSummaryCsv(String classId, String subjectId, LocalDate startDate, LocalDate endDate) {
+        List<AttendanceSummaryDto> records = reportService.getAttendanceSummary(classId, subjectId, startDate, endDate);
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();
              OutputStreamWriter writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
              CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.builder()
                      .setHeader(
-                             "USN",
                              "Student Name",
-                             "Department",
-                             "Semester",
+                             "USN / Registration Number",
+                             "Class",
                              "Section",
                              "Subject",
                              "Total Classes",
-                             "Present",
-                             "Absent",
+                             "Classes Attended",
+                             "Classes Absent",
                              "Attendance Percentage"
                      ).build())) {
 
@@ -48,17 +57,18 @@ public class CsvExportService {
             out.write(0xBF);
 
             for (AttendanceSummaryDto rec : records) {
+                String classDisplay = (rec.getDepartment() != null ? rec.getDepartment() : "") +
+                        " Sem " + rec.getSemester();
                 csvPrinter.printRecord(
-                        rec.getUsn(),
                         rec.getStudentName(),
-                        rec.getDepartment(),
-                        rec.getSemester(),
+                        rec.getUsn(),
+                        classDisplay,
                         rec.getSection(),
                         rec.getSubject(),
                         rec.getTotalClasses(),
                         rec.getAttended(),
                         rec.getAbsent(),
-                        String.format("%.2f%%", rec.getPercentage())
+                        String.format(Locale.US, "%.1f%%", rec.getPercentage())
                 );
             }
 
@@ -66,6 +76,53 @@ public class CsvExportService {
             return out.toByteArray();
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate attendance summary CSV: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Generates a downloadable CSV of date-wise attendance records.
+     */
+    public byte[] exportDateWiseAttendanceCsv(String classId, String subjectId, LocalDate startDate, LocalDate endDate) {
+        List<DateWiseAttendanceRecordDto> records = reportService.getDateWiseAttendance(classId, subjectId, startDate, endDate);
+
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+             OutputStreamWriter writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+             CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.builder()
+                     .setHeader(
+                             "Date",
+                             "Student Name",
+                             "Student ID / USN",
+                             "Class",
+                             "Section",
+                             "Subject",
+                             "Attendance Status"
+                     ).build())) {
+
+            // Write UTF-8 BOM
+            out.write(0xEF);
+            out.write(0xBB);
+            out.write(0xBF);
+
+            for (DateWiseAttendanceRecordDto rec : records) {
+                String subjectDisplay = rec.getSubjectCode() != null && !"-".equals(rec.getSubjectCode())
+                        ? rec.getSubjectCode() + " - " + rec.getSubjectName()
+                        : rec.getSubjectName();
+
+                csvPrinter.printRecord(
+                        rec.getDate(),
+                        rec.getStudentName(),
+                        rec.getStudentUsn(),
+                        rec.getClassName(),
+                        rec.getSection(),
+                        subjectDisplay,
+                        rec.getStatus()
+                );
+            }
+
+            csvPrinter.flush();
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate date-wise attendance CSV: " + e.getMessage(), e);
         }
     }
 

@@ -217,6 +217,99 @@ public class StudentProfileDto {
         this.below75 = below75;
     }
 
+    private List<SubjectAttendanceDto> subjectWiseAttendance = new java.util.ArrayList<>();
+
+    public static class SubjectAttendanceDto {
+        private String subjectId;
+        private String subjectCode;
+        private String subjectName;
+        private long totalConducted;
+        private long attended;
+        private long absent;
+        private double percentage;
+
+        public SubjectAttendanceDto() {
+        }
+
+        public SubjectAttendanceDto(String subjectId, String subjectCode, String subjectName,
+                                    long totalConducted, long attended, long absent, double percentage) {
+            this.subjectId = subjectId;
+            this.subjectCode = subjectCode;
+            this.subjectName = subjectName;
+            this.totalConducted = totalConducted;
+            this.attended = attended;
+            this.absent = absent;
+            this.percentage = percentage;
+        }
+
+        public String getSubjectId() {
+            return subjectId;
+        }
+
+        public void setSubjectId(String subjectId) {
+            this.subjectId = subjectId;
+        }
+
+        public String getSubjectCode() {
+            return subjectCode;
+        }
+
+        public void setSubjectCode(String subjectCode) {
+            this.subjectCode = subjectCode;
+        }
+
+        public String getSubjectName() {
+            return subjectName;
+        }
+
+        public void setSubjectName(String subjectName) {
+            this.subjectName = subjectName;
+        }
+
+        public long getTotalConducted() {
+            return totalConducted;
+        }
+
+        public void setTotalConducted(long totalConducted) {
+            this.totalConducted = totalConducted;
+        }
+
+        public long getAttended() {
+            return attended;
+        }
+
+        public void setAttended(long attended) {
+            this.attended = attended;
+        }
+
+        public long getAbsent() {
+            return absent;
+        }
+
+        public void setAbsent(long absent) {
+            this.absent = absent;
+        }
+
+        public double getPercentage() {
+            return percentage;
+        }
+
+        public void setPercentage(double percentage) {
+            this.percentage = percentage;
+        }
+    }
+
+    public List<SubjectAttendanceDto> getSubjectWiseAttendance() {
+        if (subjectWiseAttendance == null) {
+            subjectWiseAttendance = new java.util.ArrayList<>();
+        }
+        return subjectWiseAttendance;
+    }
+
+    public void setSubjectWiseAttendance(List<SubjectAttendanceDto> subjectWiseAttendance) {
+        this.subjectWiseAttendance = subjectWiseAttendance;
+    }
+
     public List<HistoryRecordDto> getAttendanceHistory() {
         return attendanceHistory;
     }

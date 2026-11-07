@@ -20,6 +20,12 @@ public interface StudentRepository extends MongoRepository<Student, String>, Stu
         return findByCollegeClass_Id(classId);
     }
 
+    List<Student> findByCollegeClass_IdIn(java.util.Collection<String> classIds);
+
+    default List<Student> findByCollegeClassIdIn(java.util.Collection<String> classIds) {
+        return findByCollegeClass_IdIn(classIds);
+    }
+
     List<Student> findByDepartment_Id(String departmentId);
 
     default List<Student> findByDepartmentId(String departmentId) {

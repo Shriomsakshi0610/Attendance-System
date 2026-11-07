@@ -146,3 +146,88 @@ data class TeacherDashboardStats(
     val totalStudentsMarkedToday: Int = 0,
     val activeSession: AttendanceSessionItem? = null
 )
+
+data class StudentItem(
+    val id: String,
+    val usn: String,
+    val name: String,
+    val email: String? = null,
+    val departmentId: String? = null,
+    val departmentCode: String? = null,
+    val departmentName: String? = null,
+    val classId: String? = null,
+    val className: String? = null,
+    val semester: Int? = null,
+    val section: String? = null,
+    val status: String? = null
+)
+
+data class AttendanceSummaryItem(
+    val studentId: String,
+    val usn: String,
+    val studentName: String,
+    val department: String?,
+    val semester: Int = 0,
+    val section: String?,
+    val subject: String?,
+    val totalClasses: Long = 0,
+    val attended: Long = 0,
+    val absent: Long = 0,
+    val percentage: Double = 0.0
+)
+
+data class SubjectAttendanceItem(
+    val subjectId: String?,
+    val subjectCode: String?,
+    val subjectName: String?,
+    val totalConducted: Long = 0,
+    val totalPresent: Long = 0,
+    val totalAbsent: Long = 0,
+    val percentage: Double = 0.0
+)
+
+data class StudentHistoryRecordItem(
+    val sessionId: String?,
+    val sessionCode: String?,
+    val subjectCode: String?,
+    val subjectName: String?,
+    val sessionDate: String?,
+    val sessionTime: String?,
+    val status: String?,
+    val markedTime: String?,
+    val distanceFromTeacher: String?
+)
+
+data class StudentProfileItem(
+    val id: String,
+    val usn: String,
+    val name: String,
+    val email: String? = null,
+    val department: String? = null,
+    val semester: Int = 0,
+    val section: String? = null,
+    val totalConducted: Long = 0,
+    val totalPresent: Long = 0,
+    val totalAbsent: Long = 0,
+    val overallPercentage: Double = 0.0,
+    val attendanceHistory: List<StudentHistoryRecordItem> = emptyList(),
+    val subjectWiseAttendance: List<SubjectAttendanceItem> = emptyList()
+)
+
+data class DateWiseRecordItem(
+    val date: String,
+    val sessionId: String? = null,
+    val sessionCode: String? = null,
+    val studentId: String? = null,
+    val studentName: String,
+    val usn: String? = null,
+    val studentUsn: String? = null,
+    val className: String? = null,
+    val section: String? = null,
+    val subjectCode: String? = null,
+    val subjectName: String? = null,
+    val status: String,
+    val markedTime: String? = null,
+    val distanceFromTeacher: String? = null
+)
+

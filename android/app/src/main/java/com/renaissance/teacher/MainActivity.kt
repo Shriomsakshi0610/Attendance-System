@@ -28,6 +28,8 @@ import com.renaissance.teacher.ui.screens.session.ActiveSessionScreen
 import com.renaissance.teacher.ui.screens.session.CreateSessionScreen
 import com.renaissance.teacher.ui.screens.session.SessionViewModel
 import com.renaissance.teacher.ui.screens.splash.SplashScreen
+import com.renaissance.teacher.ui.screens.students.StudentAttendanceScreen
+import com.renaissance.teacher.ui.screens.students.StudentDetailScreen
 import com.renaissance.teacher.ui.screens.timetable.TimetableScreen
 import com.renaissance.teacher.ui.screens.update.SettingsUpdateScreen
 import com.renaissance.teacher.ui.theme.RenaissanceTeacherTheme
@@ -134,6 +136,7 @@ fun TeacherNavHost(app: RenaissanceTeacherApp) {
                 onOpenActiveSession = { id -> navController.navigate(Screen.ActiveSession.createRoute(id)) },
                 onOpenTimetable = { navController.navigate(Screen.Timetable.route) },
                 onOpenHistory = { navController.navigate(Screen.History.route) },
+                onOpenStudentAttendance = { navController.navigate(Screen.StudentAttendance.route) },
                 onOpenSettings = { navController.navigate(Screen.Settings.route) },
                 onLogout = {
                     app.sessionPreferences.clearSession()
@@ -201,6 +204,28 @@ fun TeacherNavHost(app: RenaissanceTeacherApp) {
                 onSelectSession = { id ->
                     navController.navigate(Screen.ActiveSession.createRoute(id))
                 }
+            )
+        }
+
+        composable(Screen.StudentAttendance.route) {
+            StudentAttendanceScreen(
+                apiClient = app.apiClient,
+                onNavigateBack = { navController.popBackStack() },
+                onSelectStudent = { studentId ->
+                    navController.navigate(Screen.StudentDetail.createRoute(studentId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.StudentDetail.route,
+            arguments = listOf(navArgument("studentId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val studentId = backStackEntry.arguments?.getString("studentId") ?: ""
+            StudentDetailScreen(
+                studentId = studentId,
+                apiClient = app.apiClient,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

@@ -87,4 +87,5 @@ class ApiClient(private val context: Context) {
     val sessionApi: SessionApi get() = retrofit.create(SessionApi::class.java)
     val timetableApi: TimetableApi get() = retrofit.create(TimetableApi::class.java)
     val appVersionApi: AppVersionApi get() = retrofit.create(AppVersionApi::class.java)
+    val reportApi: ReportApi get() = retrofit.create(ReportApi::class.java)
 }

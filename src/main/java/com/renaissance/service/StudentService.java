@@ -4,7 +4,9 @@ import com.renaissance.dto.StudentDto;
 import com.renaissance.entity.CollegeClass;
 import com.renaissance.entity.Department;
 import com.renaissance.entity.Student;
+import com.renaissance.entity.Teacher;
 import com.renaissance.exception.ResourceNotFoundException;
+import com.renaissance.exception.UnauthorizedException;
 import com.renaissance.repository.ClassRepository;
 import com.renaissance.repository.DepartmentRepository;
 import com.renaissance.repository.StudentRepository;
@@ -66,6 +68,55 @@ public class StudentService {
 
         return students.stream()
                 .map(s -> toDtoWithPreloaded(s, deptMap, classMap))
+                .collect(Collectors.toList());
+    }
+
+    public List<StudentDto> getStudentsForTeacher(Teacher teacher, String classId, String keyword) {
+        Set<String> assignedClassIds = (teacher != null && !teacher.isAdmin() && teacher.getAssignedClasses() != null && !teacher.getAssignedClasses().isEmpty())
+                ? teacher.getAssignedClasses().stream().map(CollegeClass::getId).collect(Collectors.toSet())
+                : null;
+
+        if (assignedClassIds != null && classId != null && !classId.isBlank()) {
+            if (!assignedClassIds.contains(classId)) {
+                throw new UnauthorizedException("Access Denied: You are not assigned to class " + classId);
+            }
+        }
+
+        List<Student> students;
+        if (classId != null && !classId.isBlank()) {
+            students = studentRepository.findByCollegeClassId(classId);
+        } else if (assignedClassIds != null && !assignedClassIds.isEmpty()) {
+            students = studentRepository.findByCollegeClassIdIn(assignedClassIds);
+        } else {
+            students = studentRepository.findAll();
+        }
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String lowerKey = keyword.trim().toLowerCase();
+            students = students.stream().filter(s ->
+                    (s.getName() != null && s.getName().toLowerCase().contains(lowerKey)) ||
+                    (s.getUsn() != null && s.getUsn().toLowerCase().contains(lowerKey)) ||
+                    (s.getId() != null && s.getId().toLowerCase().contains(lowerKey))
+            ).collect(Collectors.toList());
+        }
+
+        Set<String> deptIds = new HashSet<>();
+        Set<String> classIds = new HashSet<>();
+        for (Student s : students) {
+            String deptId = extractDbRefId(s.getDepartment());
+            if (deptId != null) deptIds.add(deptId);
+            String cId = extractDbRefId(s.getCollegeClass());
+            if (cId != null) classIds.add(cId);
+        }
+
+        Map<String, Department> deptMap = deptIds.isEmpty() ? Collections.emptyMap() :
+                departmentRepository.findAllById(deptIds).stream().collect(Collectors.toMap(Department::getId, d -> d, (a, b) -> a));
+        Map<String, CollegeClass> classMap = classIds.isEmpty() ? Collections.emptyMap() :
+                classRepository.findAllById(classIds).stream().collect(Collectors.toMap(CollegeClass::getId, c -> c, (a, b) -> a));
+
+        return students.stream()
+                .map(s -> toDtoWithPreloaded(s, deptMap, classMap))
+                .sorted(Comparator.comparing(StudentDto::getName, String.CASE_INSENSITIVE_ORDER))
                 .collect(Collectors.toList());
     }
 

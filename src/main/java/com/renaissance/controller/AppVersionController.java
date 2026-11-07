@@ -28,17 +28,17 @@ public class AppVersionController {
 
     private static final Logger log = LoggerFactory.getLogger(AppVersionController.class);
 
-    private static final int CURRENT_VERSION_CODE = 2;
-    private static final String CURRENT_VERSION_NAME = "1.1.0";
+    private static final int CURRENT_VERSION_CODE = 3;
+    private static final String CURRENT_VERSION_NAME = "1.2.0";
     private static final int MIN_SUPPORTED_VERSION_CODE = 1;
     private static final String DEFAULT_RELEASE_NOTES =
-            "Renaissance Teacher App v1.1.0:\n" +
-            "• High-precision 40-meter GPS geofencing verification\n" +
-            "• Dynamic geofence status badges and boundary checking\n" +
-            "• Bluetooth Low Energy (BLE) proximity beacon advertising\n" +
-            "• Real-time attendance monitoring with live counters\n" +
-            "• Timetable, subjects, and class section management\n" +
-            "• In-app update installer";
+            "Renaissance Teacher App v1.2.0:\n" +
+            "• Dedicated Student-wise Attendance Details & Analytics\n" +
+            "• Search students by Name, USN, or Student ID\n" +
+            "• Subject-wise attendance breakdown and date history\n" +
+            "• One-tap CSV Export: Class, Subject, Date-range, and Student summaries\n" +
+            "• Native Android Share / Save Sheet integration\n" +
+            "• 40-meter GPS Geofencing & BLE Proximity Verification";
 
     @Value("${app.apk.path:src/main/resources/static/downloads/renaissance-teacher.apk}")
     private String configuredApkPath;
