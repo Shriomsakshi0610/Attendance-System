@@ -71,4 +71,44 @@ public class StudentRepositoryImpl implements StudentRepositoryCustom {
 
         return mongoTemplate.find(query, Student.class);
     }
+
+    @Override
+    public java.util.Map<String, Long> countStudentsByClassIds(java.util.Collection<String> classIds) {
+        if (classIds == null || classIds.isEmpty()) return new java.util.HashMap<>();
+
+        List<Criteria> orList = new ArrayList<>();
+        for (String cId : classIds) {
+            if (cId != null && !cId.isBlank()) {
+                if (ObjectId.isValid(cId)) {
+                    orList.add(new Criteria().orOperator(
+                            Criteria.where("collegeClass.$id").is(cId),
+                            Criteria.where("collegeClass.$id").is(new ObjectId(cId))
+                    ));
+                } else {
+                    orList.add(Criteria.where("collegeClass.$id").is(cId));
+                }
+            }
+        }
+        if (orList.isEmpty()) return new java.util.HashMap<>();
+
+        org.springframework.data.mongodb.core.aggregation.MatchOperation match =
+                org.springframework.data.mongodb.core.aggregation.Aggregation.match(new Criteria().orOperator(orList.toArray(new Criteria[0])));
+        org.springframework.data.mongodb.core.aggregation.GroupOperation group =
+                org.springframework.data.mongodb.core.aggregation.Aggregation.group("collegeClass.$id").count().as("count");
+        org.springframework.data.mongodb.core.aggregation.Aggregation agg =
+                org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation(match, group);
+
+        org.springframework.data.mongodb.core.aggregation.AggregationResults<org.bson.Document> results =
+                mongoTemplate.aggregate(agg, "students", org.bson.Document.class);
+        java.util.Map<String, Long> map = new java.util.HashMap<>();
+        for (org.bson.Document doc : results) {
+            Object idObj = doc.get("_id");
+            if (idObj != null) {
+                String idStr = idObj.toString();
+                Number countNum = (Number) doc.get("count");
+                map.put(idStr, countNum != null ? countNum.longValue() : 0L);
+            }
+        }
+        return map;
+    }
 }

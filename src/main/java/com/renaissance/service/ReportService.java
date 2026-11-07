@@ -39,6 +39,9 @@ public class ReportService {
     private final TeacherService teacherService;
     private final TeacherRepository teacherRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.cache.CacheManager cacheManager;
+
     public ReportService(StudentRepository studentRepository,
                          AttendanceSessionRepository sessionRepository,
                          AttendanceRecordRepository recordRepository,
@@ -391,6 +394,23 @@ public class ReportService {
         return results;
     }
 
+    public void setCacheManager(org.springframework.cache.CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
+    }
+
+    public void evictDashboardStats(String teacherId) {
+        if (cacheManager != null) {
+            org.springframework.cache.Cache cache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_DASHBOARD_STATS);
+            if (cache != null) {
+                if (teacherId != null && !teacherId.isBlank()) {
+                    cache.evict("TEACHER_" + teacherId);
+                } else {
+                    cache.clear();
+                }
+            }
+        }
+    }
+
     public DashboardStatsDto getDashboardStats() {
         Teacher teacher = getAuthorizedTeacherOrNull();
         if (teacher == null) {
@@ -398,6 +418,17 @@ public class ReportService {
         }
 
         Teacher freshTeacher = teacherRepository.findById(teacher.getId()).orElse(teacher);
+        String cacheKey = (freshTeacher != null && freshTeacher.getId() != null) ? "TEACHER_" + freshTeacher.getId() : "GLOBAL";
+
+        if (cacheManager != null) {
+            org.springframework.cache.Cache cache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_DASHBOARD_STATS);
+            if (cache != null) {
+                DashboardStatsDto cached = cache.get(cacheKey, DashboardStatsDto.class);
+                if (cached != null) {
+                    return cached;
+                }
+            }
+        }
 
         List<ClassDto> assignedClasses = teacherService.getClassesForTeacher(freshTeacher, null);
         List<SubjectDto> assignedSubjects = teacherService.getSubjectsForTeacher(freshTeacher, null, null);
@@ -445,14 +476,28 @@ public class ReportService {
                 .collect(Collectors.toList());
         long activeSessions = activeSessionsList.size();
 
-        List<SessionDto> activeSessionDtos = activeSessionsList.stream()
-                .map(sessionService::toDto)
-                .collect(Collectors.toList());
+        List<SessionDto> activeSessionDtos = sessionService.toDtos(activeSessionsList);
+
+        // Pre-fetch batch aggregations to eliminate all N+1 loops (3 queries total)
+        List<String> allSessionIds = teacherSessions.stream().map(AttendanceSession::getId).filter(Objects::nonNull).collect(Collectors.toList());
+        Set<String> involvedClassIds = new HashSet<>(classIds);
+        for (AttendanceSession s : teacherSessions) {
+            if (s.getCollegeClass() != null && s.getCollegeClass().getId() != null) {
+                involvedClassIds.add(s.getCollegeClass().getId());
+            }
+        }
+
+        Map<String, Long> classStudentCounts = involvedClassIds.isEmpty() ?
+                Collections.emptyMap() : studentRepository.countStudentsByClassIds(involvedClassIds);
+        Map<String, Long> sessionRecordCounts = allSessionIds.isEmpty() ?
+                Collections.emptyMap() : recordRepository.countRecordsBySessionIds(allSessionIds);
+        Map<String, Long> sessionPresentCounts = allSessionIds.isEmpty() ?
+                Collections.emptyMap() : recordRepository.countPresentBySessionIds(allSessionIds);
 
         long todayAttendance = 0;
         for (AttendanceSession s : teacherSessions) {
             if (s.getStartTime() != null && !s.getStartTime().isBefore(startOfDay) && !s.getStartTime().isAfter(endOfDay)) {
-                todayAttendance += recordRepository.countBySessionId(s.getId());
+                todayAttendance += sessionRecordCounts.getOrDefault(s.getId(), 0L);
             }
         }
 
@@ -462,8 +507,9 @@ public class ReportService {
             long totalExpected = 0;
             for (AttendanceSession s : teacherSessions) {
                 if (s.getStatus() == AttendanceSession.SessionStatus.COMPLETED || s.getStatus() == AttendanceSession.SessionStatus.ACTIVE) {
-                    long presentInSession = recordRepository.countBySessionIdAndStatus(s.getId(), AttendanceRecord.AttendanceStatus.PRESENT);
-                    long classStudentCount = (s.getCollegeClass() != null) ? studentRepository.countByCollegeClassId(s.getCollegeClass().getId()) : 0;
+                    long presentInSession = sessionPresentCounts.getOrDefault(s.getId(), 0L);
+                    long classStudentCount = (s.getCollegeClass() != null && s.getCollegeClass().getId() != null)
+                            ? classStudentCounts.getOrDefault(s.getCollegeClass().getId(), 0L) : 0L;
                     totalPresent += presentInSession;
                     totalExpected += classStudentCount > 0 ? classStudentCount : Math.max(1, presentInSession);
                 }
@@ -496,7 +542,7 @@ public class ReportService {
         for (AttendanceSession s : teacherSessions) {
             if (s.getStartTime() != null && !s.getStartTime().isBefore(sevenDaysAgo) && !s.getStartTime().isAfter(endOfDay)) {
                 String dayName = s.getStartTime().format(DateTimeFormatter.ofPattern("EEE"));
-                long recCount = recordRepository.countBySessionId(s.getId());
+                long recCount = sessionRecordCounts.getOrDefault(s.getId(), 0L);
                 weeklyCounts.put(dayName, weeklyCounts.getOrDefault(dayName, 0L) + recCount);
             }
         }
@@ -511,15 +557,22 @@ public class ReportService {
             long totalRecs = 0;
             long totalEnroll = 0;
             for (AttendanceSession s : entry.getValue()) {
-                totalRecs += recordRepository.countBySessionId(s.getId());
-                if (s.getCollegeClass() != null) {
-                    totalEnroll += studentRepository.countByCollegeClassId(s.getCollegeClass().getId());
+                totalRecs += sessionRecordCounts.getOrDefault(s.getId(), 0L);
+                if (s.getCollegeClass() != null && s.getCollegeClass().getId() != null) {
+                    totalEnroll += classStudentCounts.getOrDefault(s.getCollegeClass().getId(), 0L);
                 }
             }
             double pct = totalEnroll > 0 ? ((double) totalRecs / totalEnroll) * 100.0 : 100.0;
             subjectTrends.put(entry.getKey(), Math.round(pct * 10.0) / 10.0);
         }
         stats.setSubjectAttendanceTrends(subjectTrends);
+
+        if (cacheManager != null) {
+            org.springframework.cache.Cache cache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_DASHBOARD_STATS);
+            if (cache != null) {
+                cache.put(cacheKey, stats);
+            }
+        }
 
         return stats;
     }

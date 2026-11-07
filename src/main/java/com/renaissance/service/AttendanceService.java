@@ -24,6 +24,9 @@ public class AttendanceService {
     private final LocationVerificationService locationService;
     private final SimpMessageSendingOperations messagingTemplate;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.cache.CacheManager cacheManager;
+
     public AttendanceService(AttendanceSessionRepository sessionRepository,
                              StudentRepository studentRepository,
                              AttendanceRecordRepository recordRepository,
@@ -143,6 +146,18 @@ public class AttendanceService {
         record.setBleRssi(request.getBleRssi());
 
         recordRepository.save(record);
+
+        // Evict cached dashboard stats for the session's teacher so live stats update immediately
+        if (cacheManager != null) {
+            org.springframework.cache.Cache cache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_DASHBOARD_STATS);
+            if (cache != null) {
+                if (session.getTeacher() != null && session.getTeacher().getId() != null) {
+                    cache.evict("TEACHER_" + session.getTeacher().getId());
+                } else {
+                    cache.clear();
+                }
+            }
+        }
 
         // 7. Log Success Attempt for Audit
         logAttempt(session.getId(), code, usn, "SUCCESS", null, request, verificationResult.getDistanceMeters(), clientIp, userAgent);

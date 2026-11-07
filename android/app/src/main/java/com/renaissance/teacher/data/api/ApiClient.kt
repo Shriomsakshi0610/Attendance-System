@@ -1,10 +1,12 @@
 package com.renaissance.teacher.data.api
 
 import android.content.Context
+import com.renaissance.teacher.BuildConfig
 import com.renaissance.teacher.data.security.SessionPreferences
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -54,16 +56,45 @@ class ApiClient(private val context: Context) {
         }
     }
 
+    /**
+     * Endpoint-specific timeout interceptor tailored for Render Free Tier cold starts.
+     * Endpoints subject to server awakening or heavy initialization (auth, health, reports, session-activation)
+     * are granted up to 45 seconds to avoid socket aborts before the JVM finishes booting.
+     * Standard transactional APIs retain fast, responsive timeouts (15s connect, 20s read).
+     */
+    private val endpointTimeoutInterceptor = Interceptor { chain ->
+        val request = chain.request()
+        val path = request.url.encodedPath
+
+        val isColdStartSensitive = path.contains("api/auth") ||
+                path.contains("health") ||
+                path.contains("api/reports") ||
+                path.contains("api/sessions/active") ||
+                path.contains("api/public/app")
+
+        if (isColdStartSensitive) {
+            chain.withConnectTimeout(45, TimeUnit.SECONDS)
+                .withReadTimeout(45, TimeUnit.SECONDS)
+                .proceed(request)
+        } else {
+            chain.withConnectTimeout(15, TimeUnit.SECONDS)
+                .withReadTimeout(20, TimeUnit.SECONDS)
+                .proceed(request)
+        }
+    }
+
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
+        level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.HEADERS else HttpLoggingInterceptor.Level.NONE
     }
 
     private val okHttpClient = OkHttpClient.Builder()
         .cookieJar(cookieJar)
+        .addInterceptor(endpointTimeoutInterceptor)
         .addInterceptor(loggingInterceptor)
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
-        .writeTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(25, TimeUnit.SECONDS)
+        .readTimeout(25, TimeUnit.SECONDS)
+        .writeTimeout(25, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
         .build()
 
     private var retrofit: Retrofit = buildRetrofit(sessionPrefs.getBaseUrl())

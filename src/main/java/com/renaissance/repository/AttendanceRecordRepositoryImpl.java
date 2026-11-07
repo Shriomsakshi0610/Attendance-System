@@ -194,4 +194,81 @@ public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositor
 
         return mongoTemplate.find(query, AttendanceRecord.class);
     }
+
+    @Override
+    public Map<String, Long> countRecordsBySessionIds(java.util.Collection<String> sessionIds) {
+        if (sessionIds == null || sessionIds.isEmpty()) return new HashMap<>();
+
+        List<Criteria> orList = new ArrayList<>();
+        for (String sId : sessionIds) {
+            if (sId != null && !sId.isBlank()) {
+                if (ObjectId.isValid(sId)) {
+                    orList.add(new Criteria().orOperator(
+                            Criteria.where("session.$id").is(sId),
+                            Criteria.where("session.$id").is(new ObjectId(sId))
+                    ));
+                } else {
+                    orList.add(Criteria.where("session.$id").is(sId));
+                }
+            }
+        }
+        if (orList.isEmpty()) return new HashMap<>();
+
+        MatchOperation match = Aggregation.match(new Criteria().orOperator(orList.toArray(new Criteria[0])));
+        GroupOperation group = Aggregation.group("session.$id").count().as("count");
+        Aggregation agg = Aggregation.newAggregation(match, group);
+
+        AggregationResults<org.bson.Document> results = mongoTemplate.aggregate(agg, "attendance_records", org.bson.Document.class);
+        Map<String, Long> map = new HashMap<>();
+        for (org.bson.Document doc : results) {
+            Object idObj = doc.get("_id");
+            if (idObj != null) {
+                String idStr = idObj.toString();
+                Number countNum = (Number) doc.get("count");
+                map.put(idStr, countNum != null ? countNum.longValue() : 0L);
+            }
+        }
+        return map;
+    }
+
+    @Override
+    public Map<String, Long> countPresentBySessionIds(java.util.Collection<String> sessionIds) {
+        if (sessionIds == null || sessionIds.isEmpty()) return new HashMap<>();
+
+        List<Criteria> orList = new ArrayList<>();
+        for (String sId : sessionIds) {
+            if (sId != null && !sId.isBlank()) {
+                if (ObjectId.isValid(sId)) {
+                    orList.add(new Criteria().orOperator(
+                            Criteria.where("session.$id").is(sId),
+                            Criteria.where("session.$id").is(new ObjectId(sId))
+                    ));
+                } else {
+                    orList.add(Criteria.where("session.$id").is(sId));
+                }
+            }
+        }
+        if (orList.isEmpty()) return new HashMap<>();
+
+        Criteria matchCriteria = new Criteria().andOperator(
+                Criteria.where("status").is(AttendanceRecord.AttendanceStatus.PRESENT.name()),
+                new Criteria().orOperator(orList.toArray(new Criteria[0]))
+        );
+
+        MatchOperation match = Aggregation.match(matchCriteria);
+        GroupOperation group = Aggregation.group("session.$id").count().as("count");
+        Aggregation agg = Aggregation.newAggregation(match, group);
+
+        AggregationResults<org.bson.Document> results = mongoTemplate.aggregate(agg, "attendance_records", org.bson.Document.class);
+        Map<String, Long> map = new HashMap<>();
+        for (org.bson.Document doc : results) {
+            Object idObj = doc.get("_id");
+            if (idObj != null) {
+                String idStr = idObj.toString();
+                Number countNum = (Number) doc.get("count");
+                map.put(idStr, countNum != null ? countNum.longValue() : 0L);
+            }
+        }
+        return map;
+    }
 }

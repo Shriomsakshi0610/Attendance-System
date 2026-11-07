@@ -21,6 +21,9 @@ interface SessionApi {
     @POST("api/sessions/{id}/end")
     suspend fun endSession(@Path("id") id: String): Response<ApiResponse<AttendanceSessionItem>>
 
+    @GET("api/sessions/active")
+    suspend fun getActiveSessions(): Response<ApiResponse<List<AttendanceSessionItem>>>
+
     @GET("api/sessions/my-sessions")
     suspend fun getTeacherSessions(): Response<ApiResponse<List<AttendanceSessionItem>>>
 

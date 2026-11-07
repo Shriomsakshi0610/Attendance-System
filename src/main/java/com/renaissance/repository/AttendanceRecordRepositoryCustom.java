@@ -18,5 +18,9 @@ public interface AttendanceRecordRepositoryCustom {
 
     Map<String, Long> countRecordsByDay(LocalDateTime startDateTime, LocalDateTime endDateTime);
 
+    Map<String, Long> countRecordsBySessionIds(java.util.Collection<String> sessionIds);
+
+    Map<String, Long> countPresentBySessionIds(java.util.Collection<String> sessionIds);
+
     List<AttendanceRecord> findFilteredRecords(String classId, String subjectId, LocalDateTime startDate, LocalDateTime endDate);
 }

@@ -28,6 +28,9 @@ public class SessionService {
     private final AttendanceRecordRepository recordRepository;
     private final AuthService authService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.cache.CacheManager cacheManager;
+
     @Value("${renaissance.geofence.radius-meters:40.0}")
     private double defaultRadiusMeters;
 
@@ -108,6 +111,7 @@ public class SessionService {
         }
 
         AttendanceSession saved = sessionRepository.save(session);
+        evictTeacherDashboardCache(teacher);
         return toDto(saved);
     }
 
@@ -118,7 +122,21 @@ public class SessionService {
         session.setStatus(AttendanceSession.SessionStatus.COMPLETED);
         session.setEndTime(LocalDateTime.now());
         AttendanceSession saved = sessionRepository.save(session);
+        evictTeacherDashboardCache(saved.getTeacher());
         return toDto(saved);
+    }
+
+    private void evictTeacherDashboardCache(Teacher teacher) {
+        if (cacheManager != null) {
+            org.springframework.cache.Cache cache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_DASHBOARD_STATS);
+            if (cache != null) {
+                if (teacher != null && teacher.getId() != null) {
+                    cache.evict("TEACHER_" + teacher.getId());
+                } else {
+                    cache.clear();
+                }
+            }
+        }
     }
 
     public SessionDto getSessionById(String sessionId) {
@@ -136,32 +154,63 @@ public class SessionService {
     public List<SessionDto> getTeacherSessions() {
         Teacher teacher = authService.getCurrentTeacher();
         List<AttendanceSession> sessions = sessionRepository.findByTeacherIdOrderByCreatedAtDesc(teacher.getId());
-        return sessions.stream().map(this::toDto).collect(Collectors.toList());
+        return toDtos(sessions);
     }
 
     public List<SessionDto> getActiveSessions() {
         List<AttendanceSession> active = sessionRepository.findByStatus(AttendanceSession.SessionStatus.ACTIVE);
-        return active.stream()
+        List<AttendanceSession> nonExpired = active.stream()
                 .filter(s -> !s.isExpired())
-                .map(this::toDto)
                 .collect(Collectors.toList());
+        return toDtos(nonExpired);
+    }
+
+    public List<SessionDto> toDtos(List<AttendanceSession> sessions) {
+        if (sessions == null || sessions.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        java.util.Set<String> classIds = new java.util.HashSet<>();
+        List<String> sessionIds = new java.util.ArrayList<>(sessions.size());
+
+        for (AttendanceSession session : sessions) {
+            if (session.getStatus() == AttendanceSession.SessionStatus.ACTIVE && session.getEndTime() != null && now.isAfter(session.getEndTime())) {
+                session.setStatus(AttendanceSession.SessionStatus.EXPIRED);
+            }
+            if (session.getId() != null) {
+                sessionIds.add(session.getId());
+            }
+            if (session.getCollegeClass() != null && session.getCollegeClass().getId() != null) {
+                classIds.add(session.getCollegeClass().getId());
+            }
+        }
+
+        // Batch count queries via MongoDB aggregation pipelines (eliminates N+1 loop)
+        java.util.Map<String, Long> classCounts = classIds.isEmpty() ?
+                java.util.Collections.emptyMap() : studentRepository.countStudentsByClassIds(classIds);
+        java.util.Map<String, Long> sessionCounts = sessionIds.isEmpty() ?
+                java.util.Collections.emptyMap() : recordRepository.countRecordsBySessionIds(sessionIds);
+
+        return sessions.stream().map(session -> {
+            CollegeClass c = session.getCollegeClass();
+            Subject s = session.getSubject();
+            Teacher t = session.getTeacher();
+
+            long enrolledCount = (c != null && c.getId() != null) ? classCounts.getOrDefault(c.getId(), 0L) : 0L;
+            long presentCount = (session.getId() != null) ? sessionCounts.getOrDefault(session.getId(), 0L) : 0L;
+
+            return mapSessionDto(session, t, c, s, enrolledCount, presentCount);
+        }).collect(Collectors.toList());
     }
 
     public SessionDto toDto(AttendanceSession session) {
         if (session == null) return null;
+        List<SessionDto> dtos = toDtos(java.util.Collections.singletonList(session));
+        return dtos.isEmpty() ? null : dtos.get(0);
+    }
 
-        // Auto-check expiration if active but past end time
-        if (session.getStatus() == AttendanceSession.SessionStatus.ACTIVE && LocalDateTime.now().isAfter(session.getEndTime())) {
-            session.setStatus(AttendanceSession.SessionStatus.EXPIRED);
-        }
-
-        CollegeClass c = session.getCollegeClass();
-        Subject s = session.getSubject();
-        Teacher t = session.getTeacher();
-
-        long enrolledCount = c != null ? studentRepository.countByCollegeClassId(c.getId()) : 0;
-        long presentCount = recordRepository.countBySessionId(session.getId());
-
+    private SessionDto mapSessionDto(AttendanceSession session, Teacher t, CollegeClass c, Subject s, long enrolledCount, long presentCount) {
         SessionDto dto = new SessionDto();
         dto.setId(session.getId());
         dto.setSessionCode(session.getSessionCode());

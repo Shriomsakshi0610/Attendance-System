@@ -9,6 +9,10 @@ import com.renaissance.teacher.data.model.AttendanceSessionItem
 import com.renaissance.teacher.data.model.ClassItem
 import com.renaissance.teacher.data.model.SubjectItem
 import com.renaissance.teacher.data.security.SessionPreferences
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,27 +43,51 @@ class DashboardViewModel(
     )
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
+    private var refreshJob: Job? = null
+
     init {
         refreshDashboard()
         listenLocation()
     }
 
+    /**
+     * Optimized Dashboard Refresh:
+     * 1. Cancels any in-flight refresh job to prevent duplicate network requests.
+     * 2. Executes on Dispatchers.IO.
+     * 3. Dispatches classes, subjects, and active session checks concurrently via async/await.
+     * 4. Queries getActiveSessions() directly instead of downloading entire historical session records.
+     * 5. Preserves user session metadata, active states, and error handling.
+     */
     fun refreshDashboard() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+        refreshJob?.cancel()
+        refreshJob = viewModelScope.launch(Dispatchers.IO) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                errorMessage = null,
+                facultyName = sessionPrefs.getTeacherName(),
+                department = sessionPrefs.getDepartment()
+            )
             try {
-                // Fetch assigned classes
-                val classesRes = apiClient.teacherApi.getAssignedClasses()
-                val classes = if (classesRes.isSuccessful) classesRes.body()?.data ?: emptyList() else emptyList()
+                val currentTeacherId = sessionPrefs.getTeacherId()
 
-                // Fetch assigned subjects
-                val subjectsRes = apiClient.teacherApi.getAssignedSubjects()
+                // Concurrent execution of independent network calls
+                val classesDeferred = async { apiClient.teacherApi.getAssignedClasses() }
+                val subjectsDeferred = async { apiClient.teacherApi.getAssignedSubjects() }
+                val activeSessionsDeferred = async { apiClient.sessionApi.getActiveSessions() }
+
+                val classesRes = classesDeferred.await()
+                val subjectsRes = subjectsDeferred.await()
+                val activeSessionsRes = activeSessionsDeferred.await()
+
+                val classes = if (classesRes.isSuccessful) classesRes.body()?.data ?: emptyList() else emptyList()
                 val subjects = if (subjectsRes.isSuccessful) subjectsRes.body()?.data ?: emptyList() else emptyList()
 
-                // Fetch teacher sessions to find any ACTIVE session
-                val sessionsRes = apiClient.sessionApi.getTeacherSessions()
-                val sessions = if (sessionsRes.isSuccessful) sessionsRes.body()?.data ?: emptyList() else emptyList()
-                val active = sessions.firstOrNull { it.status.equals("ACTIVE", ignoreCase = true) }
+                // Identify if an active session belongs to this authenticated faculty member
+                val activeSessions = if (activeSessionsRes.isSuccessful) activeSessionsRes.body()?.data ?: emptyList() else emptyList()
+                val active = activeSessions.firstOrNull { session ->
+                    session.status.equals("ACTIVE", ignoreCase = true) &&
+                    (currentTeacherId.isNullOrBlank() || session.teacherId == null || session.teacherId == currentTeacherId)
+                }
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -70,9 +98,10 @@ class DashboardViewModel(
                     department = sessionPrefs.getDepartment()
                 )
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = e.message
+                    errorMessage = e.message ?: "Failed to refresh dashboard"
                 )
             }
         }
@@ -86,5 +115,10 @@ class DashboardViewModel(
                 }
             } catch (_: Exception) {}
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        refreshJob?.cancel()
     }
 }

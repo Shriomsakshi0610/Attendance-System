@@ -34,6 +34,9 @@ public class AdminService {
     private final SessionService sessionService;
     private final PasswordEncoder passwordEncoder;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.cache.CacheManager cacheManager;
+
     public AdminService(DepartmentRepository departmentRepository,
                         ClassRepository classRepository,
                         SubjectRepository subjectRepository,
@@ -506,7 +509,21 @@ public class AdminService {
         }
 
         Teacher updated = teacherRepository.save(t);
+        evictTeacherCache(id);
         return toTeacherDto(updated);
+    }
+
+    private void evictTeacherCache(String teacherId) {
+        if (cacheManager != null) {
+            org.springframework.cache.Cache cache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_DASHBOARD_STATS);
+            if (cache != null) {
+                if (teacherId != null && !teacherId.isBlank()) {
+                    cache.evict("TEACHER_" + teacherId);
+                } else {
+                    cache.clear();
+                }
+            }
+        }
     }
 
     public TeacherDto toggleTeacherStatus(String id) {
@@ -514,6 +531,7 @@ public class AdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("Teacher not found with ID: " + id));
         t.setActive(!t.isActive());
         Teacher updated = teacherRepository.save(t);
+        evictTeacherCache(id);
         return toTeacherDto(updated);
     }
 
@@ -543,6 +561,7 @@ public class AdminService {
                     " class mentorship(s). Please deactivate the teacher instead.");
         }
         teacherRepository.deleteById(id);
+        evictTeacherCache(id);
     }
 
     private TeacherDto toTeacherDto(Teacher t) {
