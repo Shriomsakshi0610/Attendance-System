@@ -64,5 +64,11 @@ public interface AttendanceRecordRepository extends MongoRepository<AttendanceRe
         return countByStudent_Id(studentId);
     }
 
+    long countBySession_IdAndStatus(String sessionId, AttendanceRecord.AttendanceStatus status);
+
+    default long countBySessionIdAndStatus(String sessionId, AttendanceRecord.AttendanceStatus status) {
+        return countBySession_IdAndStatus(sessionId, status);
+    }
+
     long countByStatus(AttendanceRecord.AttendanceStatus status);
 }

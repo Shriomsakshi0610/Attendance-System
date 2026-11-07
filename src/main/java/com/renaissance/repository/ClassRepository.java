@@ -37,5 +37,7 @@ public interface ClassRepository extends MongoRepository<CollegeClass, String> {
 
     long countByClassTeacher_Id(String teacherId);
 
+    List<CollegeClass> findByClassTeacher_Id(String teacherId);
+
     List<CollegeClass> findByStatus(String status);
 }

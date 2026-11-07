@@ -43,7 +43,8 @@ public class TeacherController {
 
     @GetMapping("/classes")
     public ResponseEntity<ApiResponse<List<ClassDto>>> getClasses(@RequestParam(required = false) String departmentId) {
-        List<ClassDto> classes = teacherService.getClassesByDepartment(departmentId);
+        Teacher teacher = authService.getCurrentTeacher();
+        List<ClassDto> classes = teacherService.getClassesForTeacher(teacher, departmentId);
         return ResponseEntity.ok(ApiResponse.ok(classes));
     }
 
@@ -51,7 +52,8 @@ public class TeacherController {
     public ResponseEntity<ApiResponse<List<SubjectDto>>> getSubjects(
             @RequestParam(required = false) String departmentId,
             @RequestParam(required = false) Integer semester) {
-        List<SubjectDto> subjects = teacherService.getSubjects(departmentId, semester);
+        Teacher teacher = authService.getCurrentTeacher();
+        List<SubjectDto> subjects = teacherService.getSubjectsForTeacher(teacher, departmentId, semester);
         return ResponseEntity.ok(ApiResponse.ok(subjects));
     }
 

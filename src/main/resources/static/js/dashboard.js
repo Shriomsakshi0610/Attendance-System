@@ -30,6 +30,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('stat-avg-attendance').textContent = `${data.averageAttendancePercentage}%`;
         document.getElementById('stat-today-attendance').textContent = data.todayAttendance;
         document.getElementById('stat-active-sessions').textContent = data.activeSessions;
+        const classesEl = document.getElementById('stat-assigned-classes');
+        if (classesEl) {
+            classesEl.textContent = data.assignedClasses != null ? data.assignedClasses : (data.classesCount || 0);
+        }
+        const subjectsEl = document.getElementById('stat-assigned-subjects');
+        if (subjectsEl) {
+            subjectsEl.textContent = data.assignedSubjects != null ? data.assignedSubjects : (data.subjectsCount || 0);
+        }
     };
 
     const renderActiveSessions = (sessions) => {
