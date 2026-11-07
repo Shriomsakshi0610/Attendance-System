@@ -44,7 +44,7 @@ public class AttendanceSession {
 
     private Double teacherAccuracy;
 
-    private Double geofenceRadiusMeters = 15.0;
+    private Double geofenceRadiusMeters = 40.0;
 
     private boolean bluetoothVerificationEnabled = false;
 
@@ -75,7 +75,7 @@ public class AttendanceSession {
         this.teacherLatitude = teacherLatitude;
         this.teacherLongitude = teacherLongitude;
         this.teacherAccuracy = teacherAccuracy;
-        this.geofenceRadiusMeters = geofenceRadiusMeters != null ? geofenceRadiusMeters : 15.0;
+        this.geofenceRadiusMeters = geofenceRadiusMeters != null ? geofenceRadiusMeters : 40.0;
         this.startTime = startTime != null ? startTime : LocalDateTime.now();
         this.endTime = endTime;
         this.status = SessionStatus.ACTIVE;

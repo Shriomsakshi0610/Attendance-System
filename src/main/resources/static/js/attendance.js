@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 statusText.textContent = msg;
             });
 
-            statusText.textContent = 'Verifying 15-meter geofence with server...';
+            statusText.textContent = 'Verifying 40-meter geofence with server...';
 
             // Step 2: Send payload to backend
             const payload = {

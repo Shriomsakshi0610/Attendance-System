@@ -8,7 +8,7 @@ import kotlin.math.sqrt
 object GeofenceCalculator {
 
     const val EARTH_RADIUS_METERS = 6371000.0
-    const val GEOFENCE_RADIUS_METERS = 15.0 // Exactly 15 meters strict college classroom limit
+    const val GEOFENCE_RADIUS_METERS = 40.0 // Exactly 40 meters strict college classroom limit
     const val ACCURACY_WARNING_THRESHOLD_METERS = 25.0 // Warn if GPS reading uncertainty is too large
 
     data class GeofenceEvaluation(
@@ -37,7 +37,7 @@ object GeofenceCalculator {
     }
 
     /**
-     * Evaluates whether a student coordinate is strictly inside the teacher's 15m radius geofence.
+     * Evaluates whether a student coordinate is strictly inside the teacher's 40m radius geofence.
      */
     fun evaluate(
         teacherLat: Double,

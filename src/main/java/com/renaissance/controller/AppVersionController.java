@@ -34,7 +34,7 @@ public class AppVersionController {
     private static final String DEFAULT_RELEASE_NOTES =
             "Renaissance Teacher App v1.0.0:\n" +
             "• Secure Teacher Authentication with biometric/keystore storage\n" +
-            "• High-precision 15-meter GPS geofencing verification\n" +
+            "• High-precision 40-meter GPS geofencing verification\n" +
             "• Bluetooth Low Energy (BLE) proximity beacon advertising\n" +
             "• Real-time attendance monitoring with live counters\n" +
             "• Timetable, subjects, and class section management\n" +

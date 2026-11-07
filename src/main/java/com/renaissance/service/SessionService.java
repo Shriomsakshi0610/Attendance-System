@@ -28,7 +28,7 @@ public class SessionService {
     private final AttendanceRecordRepository recordRepository;
     private final AuthService authService;
 
-    @Value("${renaissance.geofence.radius-meters:15.0}")
+    @Value("${renaissance.geofence.radius-meters:40.0}")
     private double defaultRadiusMeters;
 
     public SessionService(AttendanceSessionRepository sessionRepository,

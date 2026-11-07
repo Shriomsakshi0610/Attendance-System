@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class LocationVerificationService {
 
-    @Value("${renaissance.geofence.radius-meters:15.0}")
+    @Value("${renaissance.geofence.radius-meters:40.0}")
     private double defaultRadiusMeters;
 
     @Value("${renaissance.geofence.max-allowed-gps-accuracy:100.0}")
@@ -50,7 +50,7 @@ public class LocationVerificationService {
 
     /**
      * Independently computes distance between teacher session coordinates and student coordinates,
-     * validates GPS accuracy, and checks whether the student falls strictly within the 15-meter geofence.
+     * validates GPS accuracy, and checks whether the student falls strictly within the 40-meter geofence.
      */
     public VerificationResult verifyLocation(Double teacherLat, Double teacherLon,
                                              Double studentLat, Double studentLon,
@@ -80,7 +80,7 @@ public class LocationVerificationService {
 
         if (!isWithin) {
             throw new AttendanceValidationException(
-                    "You are outside the 15-meter attendance radius.",
+                    "You are outside the " + Math.round(radius) + "-meter attendance radius.",
                     "OUTSIDE_RADIUS",
                     roundedDistance
             );

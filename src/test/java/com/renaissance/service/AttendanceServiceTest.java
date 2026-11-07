@@ -47,7 +47,7 @@ class AttendanceServiceTest {
     @BeforeEach
     void setUp() {
         locationService = new LocationVerificationService();
-        ReflectionTestUtils.setField(locationService, "defaultRadiusMeters", 15.0);
+        ReflectionTestUtils.setField(locationService, "defaultRadiusMeters", 40.0);
         ReflectionTestUtils.setField(locationService, "maxAllowedAccuracyMeters", 100.0);
 
         attendanceService = new AttendanceService(
@@ -79,7 +79,7 @@ class AttendanceServiceTest {
                 13.030500,
                 77.565000,
                 5.0,
-                15.0,
+                40.0,
                 LocalDateTime.now().minusMinutes(5),
                 LocalDateTime.now().plusMinutes(10)
         );
@@ -90,7 +90,7 @@ class AttendanceServiceTest {
     }
 
     @Test
-    @DisplayName("Should successfully mark attendance when all validations pass (inside 15m radius)")
+    @DisplayName("Should successfully mark attendance when all validations pass (inside 40m radius ~3m)")
     void testSuccessfulAttendance() {
         // Coordinate ~3 meters away from teacher
         MarkAttendanceRequest req = new MarkAttendanceRequest(
@@ -117,6 +117,128 @@ class AttendanceServiceTest {
     }
 
     @Test
+    @DisplayName("Should accept attendance when student is exactly ~10 meters away (inside 40m radius)")
+    void testAttendanceAcceptedAt10Meters() {
+        // ~10 meters away from teacher (lat + 0.00009)
+        MarkAttendanceRequest req = new MarkAttendanceRequest(
+                "1MS21CS001",
+                "RN1234",
+                "class-10",
+                13.030590,
+                77.565000,
+                5.0
+        );
+
+        when(sessionRepository.findBySessionCodeIgnoreCase("RN1234")).thenReturn(Optional.of(activeSession));
+        when(studentRepository.findByUsnIgnoreCase("1MS21CS001")).thenReturn(Optional.of(validStudent));
+        when(recordRepository.existsBySessionIdAndStudentId("sess-500", "student-1000")).thenReturn(false);
+        when(recordRepository.save(any(AttendanceRecord.class))).thenAnswer(i -> i.getArgument(0));
+
+        var response = attendanceService.markAttendance(req, null);
+
+        assertNotNull(response);
+        assertEquals("PRESENT", response.getAttendanceStatus());
+    }
+
+    @Test
+    @DisplayName("Should accept attendance when student is exactly ~15 meters away (inside 40m radius)")
+    void testAttendanceAcceptedAt15Meters() {
+        // ~15 meters away from teacher (lat + 0.000135)
+        MarkAttendanceRequest req = new MarkAttendanceRequest(
+                "1MS21CS001",
+                "RN1234",
+                "class-10",
+                13.030635,
+                77.565000,
+                5.0
+        );
+
+        when(sessionRepository.findBySessionCodeIgnoreCase("RN1234")).thenReturn(Optional.of(activeSession));
+        when(studentRepository.findByUsnIgnoreCase("1MS21CS001")).thenReturn(Optional.of(validStudent));
+        when(recordRepository.existsBySessionIdAndStudentId("sess-500", "student-1000")).thenReturn(false);
+        when(recordRepository.save(any(AttendanceRecord.class))).thenAnswer(i -> i.getArgument(0));
+
+        var response = attendanceService.markAttendance(req, null);
+
+        assertNotNull(response);
+        assertEquals("PRESENT", response.getAttendanceStatus());
+    }
+
+    @Test
+    @DisplayName("Should accept attendance when student is ~30 meters away (inside 40m radius)")
+    void testAttendanceAcceptedAt30Meters() {
+        // ~30 meters away from teacher (lat + 0.000270)
+        MarkAttendanceRequest req = new MarkAttendanceRequest(
+                "1MS21CS001",
+                "RN1234",
+                "class-10",
+                13.030770,
+                77.565000,
+                5.0
+        );
+
+        when(sessionRepository.findBySessionCodeIgnoreCase("RN1234")).thenReturn(Optional.of(activeSession));
+        when(studentRepository.findByUsnIgnoreCase("1MS21CS001")).thenReturn(Optional.of(validStudent));
+        when(recordRepository.existsBySessionIdAndStudentId("sess-500", "student-1000")).thenReturn(false);
+        when(recordRepository.save(any(AttendanceRecord.class))).thenAnswer(i -> i.getArgument(0));
+
+        var response = attendanceService.markAttendance(req, null);
+
+        assertNotNull(response);
+        assertEquals("PRESENT", response.getAttendanceStatus());
+    }
+
+    @Test
+    @DisplayName("Should accept attendance when student is ~40 meters away (boundary check)")
+    void testAttendanceAcceptedAt40Meters() {
+        // ~39.8 meters away from teacher (lat + 0.000358)
+        MarkAttendanceRequest req = new MarkAttendanceRequest(
+                "1MS21CS001",
+                "RN1234",
+                "class-10",
+                13.030858,
+                77.565000,
+                5.0
+        );
+
+        when(sessionRepository.findBySessionCodeIgnoreCase("RN1234")).thenReturn(Optional.of(activeSession));
+        when(studentRepository.findByUsnIgnoreCase("1MS21CS001")).thenReturn(Optional.of(validStudent));
+        when(recordRepository.existsBySessionIdAndStudentId("sess-500", "student-1000")).thenReturn(false);
+        when(recordRepository.save(any(AttendanceRecord.class))).thenAnswer(i -> i.getArgument(0));
+
+        var response = attendanceService.markAttendance(req, null);
+
+        assertNotNull(response);
+        assertEquals("PRESENT", response.getAttendanceStatus());
+    }
+
+    @Test
+    @DisplayName("Should strictly reject attendance when student is >40 meters away (~45m)")
+    void testAttendanceRejectedOutside40Meters() {
+        // ~45 meters away from teacher (lat + 0.000405)
+        MarkAttendanceRequest req = new MarkAttendanceRequest(
+                "1MS21CS001",
+                "RN1234",
+                "class-10",
+                13.030905,
+                77.565000,
+                5.0
+        );
+
+        when(sessionRepository.findBySessionCodeIgnoreCase("RN1234")).thenReturn(Optional.of(activeSession));
+        when(studentRepository.findByUsnIgnoreCase("1MS21CS001")).thenReturn(Optional.of(validStudent));
+        when(recordRepository.existsBySessionIdAndStudentId("sess-500", "student-1000")).thenReturn(false);
+
+        AttendanceValidationException ex = assertThrows(AttendanceValidationException.class, () ->
+                attendanceService.markAttendance(req, null)
+        );
+        assertEquals("You are outside the 40-meter attendance radius.", ex.getMessage());
+        assertEquals("OUTSIDE_RADIUS", ex.getErrorCode());
+        assertNotNull(ex.getCalculatedDistance());
+        assertTrue(ex.getCalculatedDistance() > 40.0);
+    }
+
+    @Test
     @DisplayName("Should reject attendance with invalid session code")
     void testInvalidSessionCode() {
         MarkAttendanceRequest req = new MarkAttendanceRequest(
@@ -138,7 +260,7 @@ class AttendanceServiceTest {
     }
 
     @Test
-    @DisplayName("Should strictly reject attendance when student is outside 15m radius (~80 meters away)")
+    @DisplayName("Should strictly reject attendance when student is outside 40m radius (~80 meters away)")
     void testOutsideRadiusRejection() {
         // ~80 meters away from teacher
         MarkAttendanceRequest req = new MarkAttendanceRequest(
@@ -157,10 +279,10 @@ class AttendanceServiceTest {
         AttendanceValidationException ex = assertThrows(AttendanceValidationException.class, () ->
                 attendanceService.markAttendance(req, null)
         );
-        assertEquals("You are outside the 15-meter attendance radius.", ex.getMessage());
+        assertEquals("You are outside the 40-meter attendance radius.", ex.getMessage());
         assertEquals("OUTSIDE_RADIUS", ex.getErrorCode());
         assertNotNull(ex.getCalculatedDistance());
-        assertTrue(ex.getCalculatedDistance() > 15.0);
+        assertTrue(ex.getCalculatedDistance() > 40.0);
     }
 
     @Test

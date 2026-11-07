@@ -289,7 +289,7 @@ fun CreateSessionScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "15-Meter Strict Classroom Geofence",
+                            text = "40-Meter Strict Classroom Geofence",
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onSurface

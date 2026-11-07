@@ -8,7 +8,7 @@ public final class GeoLocationUtils {
 
     // Mean radius of Earth in meters
     public static final double EARTH_RADIUS_METERS = 6371000.0;
-    public static final double DEFAULT_GEOFENCE_RADIUS_METERS = 15.0;
+    public static final double DEFAULT_GEOFENCE_RADIUS_METERS = 40.0;
 
     private GeoLocationUtils() {
         // Private constructor for utility class
@@ -56,7 +56,7 @@ public final class GeoLocationUtils {
      * @param teacherLon Teacher's session longitude
      * @param studentLat Student's current latitude
      * @param studentLon Student's current longitude
-     * @param allowedRadiusMeters Allowed geofence boundary (e.g. 15.0 meters)
+     * @param allowedRadiusMeters Allowed geofence boundary (e.g. 40.0 meters)
      * @return true if within allowed radius, false otherwise
      */
     public static boolean isWithinRadius(double teacherLat, double teacherLon,

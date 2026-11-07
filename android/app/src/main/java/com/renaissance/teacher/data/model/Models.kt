@@ -91,7 +91,7 @@ data class AttendanceSessionItem(
     val subjectCode: String?,
     val teacherLatitude: Double,
     val teacherLongitude: Double,
-    val geofenceRadiusMeters: Double = 15.0,
+    val geofenceRadiusMeters: Double = 40.0,
     val bluetoothVerificationEnabled: Boolean = false,
     val bleBeaconUuid: String? = null,
     val bleRssiThreshold: Int? = -75,

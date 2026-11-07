@@ -1,6 +1,6 @@
 # 🏛️ Renaissance — Smart GPS-Based Attendance Management System
 
-**Renaissance** is a modern, production-ready, full-stack college classroom attendance management web application powered by **strict 15-meter GPS geofencing** using the Haversine formula and backed by **MongoDB**.
+**Renaissance** is a modern, production-ready, full-stack college classroom attendance management web application powered by **strict 40-meter GPS geofencing** using the Haversine formula and backed by **MongoDB**.
 
 Built specifically to eliminate proxy attendance in university lecture halls, Renaissance pairs ephemeral random attendance codes with cryptographic backend coordinate distance calculations, ensuring attendance can only be registered if the student is physically present inside the classroom.
 
@@ -81,7 +81,7 @@ c:\Users\Shrio\Attendance-System\
 
 When a faculty member starts an attendance session:
 1. The teacher's browser captures exact GPS coordinates $(\text{lat}_1, \text{lon}_1)$ via `navigator.geolocation.getCurrentPosition`.
-2. Spring Boot creates an `AttendanceSession` with `geofence_radius_meters = 15.0`.
+2. Spring Boot creates an `AttendanceSession` with `geofence_radius_meters = 40.0`.
 3. An ephemeral 6-character random alphanumeric code is generated (e.g. `RN7A82`).
 
 When a student submits attendance:
@@ -93,8 +93,8 @@ When a student submits attendance:
    $$c = 2 \cdot \text{atan2}(\sqrt{a}, \sqrt{1 - a})$$
    $$d = R \cdot c \quad \text{where } R = 6,371,000 \text{ meters}$$
 3. **Boundary Verification**:
-   - If $d \le 15.0 \text{ meters}$, attendance is recorded as `PRESENT`.
-   - If $d > 15.0 \text{ meters}$, attendance is rejected with error: *"You are outside the 15-meter attendance radius."*
+   - If $d \le 40.0 \text{ meters}$, attendance is recorded as `PRESENT`.
+   - If $d > 40.0 \text{ meters}$, attendance is rejected with error: *"You are outside the 40-meter attendance radius."*
    - Every attempt (success or failure) is logged in `attendance_attempt_logs` with distance, IP address, and client User-Agent for auditing.
 
 ---
@@ -161,7 +161,7 @@ Run from the project root directory (`c:\Users\Shrio\Attendance-System`):
 ```
 
 All 12 unit and integration tests will execute against an in-memory MongoDB wire server (`mongo-java-server`), validating:
-- The 15-meter boundary condition
+- The 40-meter boundary condition
 - Outside-radius rejection
 - Duplicate attendance submission prevention
 - Expired session protection
@@ -229,8 +229,8 @@ When testing on desktop browsers without physical movement:
 1. Open Chrome DevTools (`F12`).
 2. Press `Ctrl + Shift + P` and search for **"Show Sensors"**.
 3. Under the **Sensors** tab, override the Geolocation:
-   - **Inside 15m radius:** Use the exact coordinates or add $\pm 0.00008^{\circ}$ latitude (~9 meters).
-   - **Outside 15m radius:** Add $+0.00045^{\circ}$ latitude (~50 meters) to test the strict rejection error: *"You are outside the 15-meter attendance radius."*
+   - **Inside 40m radius:** Use the exact coordinates or add $\pm 0.00020^{\circ}$ latitude (~22 meters).
+   - **Outside 40m radius:** Add $+0.00045^{\circ}$ latitude (~50 meters) to test the strict rejection error: *"You are outside the 40-meter attendance radius."*
 
 ---
 

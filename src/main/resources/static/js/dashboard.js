@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <strong style="font-size:1.1rem;">${App.escapeHtml(s.className)}</strong>
                     </div>
                     <p style="font-size:0.875rem; color:var(--text-secondary); margin:0.25rem 0;">
-                        Subject: <strong>${App.escapeHtml(s.subjectName)}</strong> (${App.escapeHtml(s.subjectCode)}) • Geofence: <strong>15m</strong>
+                        Subject: <strong>${App.escapeHtml(s.subjectName)}</strong> (${App.escapeHtml(s.subjectCode)}) • Geofence: <strong>${s.geofenceRadiusMeters ? Math.round(s.geofenceRadiusMeters) : 40}m</strong>
                     </p>
                     <p style="font-size:0.825rem; color:var(--text-muted);">
                         Present: <strong>${s.presentCount}</strong> / ${s.totalEnrolled} students

@@ -107,13 +107,14 @@ fun StatCard(
 fun GeofenceBadge(
     distanceMeters: Double?,
     accuracyMeters: Double? = null,
-    maxRadiusMeters: Double = 15.0
+    maxRadiusMeters: Double = 40.0
 ) {
     val isInside = distanceMeters != null && distanceMeters <= maxRadiusMeters
     val badgeColor = if (isInside) AccentGreen else AccentRed
+    val radiusInt = maxRadiusMeters.toInt()
     val text = if (distanceMeters != null) {
-        if (isInside) "Inside 15m Geofence (${String.format("%.1f", distanceMeters)}m)"
-        else "Outside 15m Geofence (${String.format("%.1f", distanceMeters)}m)"
+        if (isInside) "Inside ${radiusInt}m Geofence (${String.format("%.1f", distanceMeters)}m)"
+        else "Outside ${radiusInt}m Geofence (${String.format("%.1f", distanceMeters)}m)"
     } else {
         "Acquiring GPS Fix..."
     }

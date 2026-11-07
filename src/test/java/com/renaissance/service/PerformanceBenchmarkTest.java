@@ -100,7 +100,7 @@ public class PerformanceBenchmarkTest {
         // Seed 10 sessions with 20 attendance records each = 200 attendance records
         for (int s = 1; s <= 10; s++) {
             AttendanceSession session = new AttendanceSession("SESS" + s, teacher, cseClass, subject,
-                    12.9716, 77.5946, 5.0, 15.0, LocalDateTime.now().minusDays(s), LocalDateTime.now().minusDays(s).plusMinutes(50));
+                    12.9716, 77.5946, 5.0, 40.0, LocalDateTime.now().minusDays(s), LocalDateTime.now().minusDays(s).plusMinutes(50));
             session.setStatus(AttendanceSession.SessionStatus.COMPLETED);
             AttendanceSession savedSession = sessionRepository.save(session);
 

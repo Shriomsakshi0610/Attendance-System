@@ -151,12 +151,12 @@ fun ActiveSessionScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Verification Badges Row (GPS 15m + BLE)
+            // Verification Badges Row (GPS 40m + BLE)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // GPS 15m Badge
+                // GPS 40m Badge
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -172,8 +172,9 @@ fun ActiveSessionScreen(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
+                        val radiusMeters = session?.geofenceRadiusMeters?.toInt() ?: 40
                         Text(
-                            text = "15m Geofence",
+                            text = "${radiusMeters}m Geofence",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface

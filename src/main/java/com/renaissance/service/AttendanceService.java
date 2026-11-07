@@ -93,7 +93,7 @@ public class AttendanceService {
             throw new AttendanceValidationException("Attendance has already been marked.", "ALREADY_MARKED");
         }
 
-        // 5. GPS Location & Geofencing Verification (15-Meter Geofence)
+        // 5. GPS Location & Geofencing Verification (40-Meter Geofence)
         LocationVerificationService.VerificationResult verificationResult;
         try {
             verificationResult = locationService.verifyLocation(

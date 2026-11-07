@@ -1528,7 +1528,7 @@ const AdminApp = (() => {
                     </span>
                 </td>
                 <td style="font-family: monospace; font-size: 0.8rem; color: var(--text-muted);">
-                    ${s.teacherLatitude?.toFixed(4)}, ${s.teacherLongitude?.toFixed(4)} (±15m)
+                    ${s.teacherLatitude?.toFixed(4)}, ${s.teacherLongitude?.toFixed(4)} (±${s.geofenceRadiusMeters ? Math.round(s.geofenceRadiusMeters) : 40}m)
                 </td>
                 <td>
                     <button class="btn btn-danger btn-sm" onclick="AdminApp.terminateSession('${s.id}', '${s.sessionCode}')">

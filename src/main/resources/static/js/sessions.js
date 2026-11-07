@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             // Step 1: Capture Teacher's GPS location via browser
             const coords = await LocationService.getCurrentLocation();
-            startSessionBtn.innerHTML = '<span>🚀 Activating 15m Geofence...</span>';
+            startSessionBtn.innerHTML = '<span>🚀 Activating 40m Geofence...</span>';
 
             // Step 2: Call backend to create and activate session
             const payload = {
@@ -135,7 +135,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         livePercentage.textContent = `${pct}%`;
 
         if (gpsLocationStatus) {
-            gpsLocationStatus.textContent = `Lat: ${session.teacherLatitude.toFixed(6)}, Lon: ${session.teacherLongitude.toFixed(6)} (Radius: 15m)`;
+            const rad = session.geofenceRadiusMeters ? Math.round(session.geofenceRadiusMeters) : 40;
+            gpsLocationStatus.textContent = `Lat: ${session.teacherLatitude.toFixed(6)}, Lon: ${session.teacherLongitude.toFixed(6)} (Radius: ${rad}m)`;
         }
 
         // Setup Copy Link
@@ -205,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (records.length === 0) {
             liveRecordsTable.innerHTML = `
                 <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:1.5rem;">
-                    Waiting for students to submit attendance within 15 meters...
+                    Waiting for students to submit attendance within 40 meters...
                 </td></tr>
             `;
             return;
