@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/timetable")
@@ -23,9 +24,17 @@ public class TimetableController {
     }
 
     @GetMapping({"/my-schedule", "/teacher"})
-    public ResponseEntity<ApiResponse<List<TimetableScheduleDto>>> getMySchedule() {
+    public ResponseEntity<ApiResponse<List<TimetableScheduleDto>>> getMySchedule(
+            @RequestParam(required = false) String day) {
         Teacher currentTeacher = authService.getCurrentTeacher();
         List<TimetableScheduleDto> schedules = timetableService.getSchedulesByTeacher(currentTeacher.getId());
+        if (day != null && !day.isBlank()) {
+            String dayUpper = day.trim().toUpperCase();
+            schedules = schedules.stream()
+                    .filter(s -> (s.getDayName() != null && s.getDayName().equalsIgnoreCase(dayUpper)) ||
+                            (s.getDayOfWeek() != null && s.getDayOfWeek().name().equalsIgnoreCase(dayUpper)))
+                    .collect(Collectors.toList());
+        }
         return ResponseEntity.ok(ApiResponse.ok(schedules));
     }
 

@@ -222,20 +222,47 @@ public class DataInitializer implements CommandLineRunner {
 
         // 7. Seed Sample Timetable Schedules if empty
         if (timetableRepository.count() == 0 && assignedFaculty != null) {
-            List<TimetableSchedule> sampleSchedules = List.of(
-                    new TimetableSchedule(cse, cse5A, dbms, assignedFaculty, "MONDAY",
+            List<TimetableSchedule> sampleSchedules = new java.util.ArrayList<>(List.of(
+                    new TimetableSchedule(cse, cse5A, dbms, assignedFaculty, "MONDAY", 1,
                             java.time.LocalTime.of(9, 0), java.time.LocalTime.of(10, 0), "LH-101"),
-                    new TimetableSchedule(cse, cse5A, cn, assignedFaculty, "MONDAY",
+                    new TimetableSchedule(cse, cse5A, cn, assignedFaculty, "MONDAY", 2,
                             java.time.LocalTime.of(10, 0), java.time.LocalTime.of(11, 0), "LH-101"),
-                    new TimetableSchedule(cse, cse5A, se, assignedFaculty, "TUESDAY",
+                    new TimetableSchedule(cse, cse5A, se, assignedFaculty, "TUESDAY", 3,
                             java.time.LocalTime.of(11, 15), java.time.LocalTime.of(12, 15), "LH-102"),
-                    new TimetableSchedule(cse, cse5A, dbms, assignedFaculty, "WEDNESDAY",
+                    new TimetableSchedule(cse, cse5A, dbms, assignedFaculty, "WEDNESDAY", 5,
                             java.time.LocalTime.of(14, 0), java.time.LocalTime.of(15, 0), "LH-101"),
-                    new TimetableSchedule(cse, cse5A, cn, assignedFaculty, "THURSDAY",
+                    new TimetableSchedule(cse, cse5A, cn, assignedFaculty, "THURSDAY", 1,
                             java.time.LocalTime.of(9, 0), java.time.LocalTime.of(10, 0), "LH-101"),
-                    new TimetableSchedule(cse, cse5A, se, assignedFaculty, "FRIDAY",
+                    new TimetableSchedule(cse, cse5A, se, assignedFaculty, "FRIDAY", 2,
                             java.time.LocalTime.of(10, 0), java.time.LocalTime.of(11, 0), "LH-102")
-            );
+            ));
+
+            // Seed second faculty (Dr. Ada Lovelace) for multi-faculty timetable verification (Requirement 6)
+            Teacher secondFaculty = teacherRepository.findByEmailIgnoreCase("faculty2@renaissance.edu")
+                    .orElseGet(() -> {
+                        Teacher t = new Teacher(
+                                "Dr. Ada Lovelace",
+                                "faculty2@renaissance.edu",
+                                passwordEncoder.encode("Teacher@1234"),
+                                "EMP002",
+                                ise,
+                                "ROLE_TEACHER"
+                        );
+                        t.setPhone("+91 9876543222");
+                        t.setAssignedClasses(List.of(ise5A));
+                        t.setAssignedSubjects(List.of(atc));
+                        return teacherRepository.save(t);
+                    });
+
+            if (secondFaculty != null) {
+                sampleSchedules.add(new TimetableSchedule(ise, ise5A, atc, secondFaculty, "TUESDAY", 1,
+                        java.time.LocalTime.of(9, 0), java.time.LocalTime.of(10, 0), "LH-201"));
+                sampleSchedules.add(new TimetableSchedule(ise, ise5A, atc, secondFaculty, "THURSDAY", 3,
+                        java.time.LocalTime.of(11, 0), java.time.LocalTime.of(12, 0), "LH-201"));
+                sampleSchedules.add(new TimetableSchedule(ise, ise5A, atc, secondFaculty, "SATURDAY", 2,
+                        java.time.LocalTime.of(10, 0), java.time.LocalTime.of(11, 0), "LH-202"));
+            }
+
             timetableRepository.saveAll(sampleSchedules);
         }
     }

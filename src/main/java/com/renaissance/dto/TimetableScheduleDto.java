@@ -1,5 +1,7 @@
 package com.renaissance.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 
@@ -18,8 +20,16 @@ public class TimetableScheduleDto {
     private String teacherName;
     private DayOfWeek dayOfWeek;
     private String dayName;
+    private Integer periodNumber;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
     private LocalTime startTime;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
     private LocalTime endTime;
+
+    private String startTimeFormatted;
+    private String endTimeFormatted;
     private String timeSlot;
     private String roomNumber;
     private String status;
@@ -142,12 +152,23 @@ public class TimetableScheduleDto {
         this.dayName = dayName;
     }
 
+    public Integer getPeriodNumber() {
+        return periodNumber;
+    }
+
+    public void setPeriodNumber(Integer periodNumber) {
+        this.periodNumber = periodNumber;
+    }
+
     public LocalTime getStartTime() {
         return startTime;
     }
 
     public void setStartTime(LocalTime startTime) {
         this.startTime = startTime;
+        if (startTime != null) {
+            this.startTimeFormatted = String.format("%02d:%02d", startTime.getHour(), startTime.getMinute());
+        }
         updateTimeSlot();
     }
 
@@ -157,7 +178,32 @@ public class TimetableScheduleDto {
 
     public void setEndTime(LocalTime endTime) {
         this.endTime = endTime;
+        if (endTime != null) {
+            this.endTimeFormatted = String.format("%02d:%02d", endTime.getHour(), endTime.getMinute());
+        }
         updateTimeSlot();
+    }
+
+    public String getStartTimeFormatted() {
+        if (startTimeFormatted == null && startTime != null) {
+            startTimeFormatted = String.format("%02d:%02d", startTime.getHour(), startTime.getMinute());
+        }
+        return startTimeFormatted;
+    }
+
+    public void setStartTimeFormatted(String startTimeFormatted) {
+        this.startTimeFormatted = startTimeFormatted;
+    }
+
+    public String getEndTimeFormatted() {
+        if (endTimeFormatted == null && endTime != null) {
+            endTimeFormatted = String.format("%02d:%02d", endTime.getHour(), endTime.getMinute());
+        }
+        return endTimeFormatted;
+    }
+
+    public void setEndTimeFormatted(String endTimeFormatted) {
+        this.endTimeFormatted = endTimeFormatted;
     }
 
     public String getTimeSlot() {
@@ -170,7 +216,9 @@ public class TimetableScheduleDto {
 
     private void updateTimeSlot() {
         if (startTime != null && endTime != null) {
-            this.timeSlot = startTime.toString() + " - " + endTime.toString();
+            String s = String.format("%02d:%02d", startTime.getHour(), startTime.getMinute());
+            String e = String.format("%02d:%02d", endTime.getHour(), endTime.getMinute());
+            this.timeSlot = s + " - " + e;
         }
     }
 

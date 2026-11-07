@@ -1397,6 +1397,8 @@ const AdminApp = (() => {
     function openTimetableModal(scheduleId = null) {
         document.getElementById('form-timetable').reset();
         document.getElementById('timetable-id').value = '';
+        const pInput = document.getElementById('tt-period');
+        if (pInput) pInput.value = '';
         document.getElementById('modal-timetable-conflict-box').style.display = 'none';
 
         populateClassDropdowns();
@@ -1425,6 +1427,8 @@ const AdminApp = (() => {
         const conflictBox = document.getElementById('modal-timetable-conflict-box');
         conflictBox.style.display = 'none';
 
+        const id = document.getElementById('timetable-id').value;
+        const periodVal = document.getElementById('tt-period')?.value;
         const payload = {
             classId: document.getElementById('tt-class-select').value,
             subjectId: document.getElementById('tt-subject-select').value,
@@ -1432,10 +1436,9 @@ const AdminApp = (() => {
             dayOfWeek: document.getElementById('tt-day').value,
             startTime: document.getElementById('tt-start-time').value,
             endTime: document.getElementById('tt-end-time').value,
+            periodNumber: periodVal ? parseInt(periodVal, 10) : null,
             roomNumber: document.getElementById('tt-room').value.trim() || null
         };
-
-        const id = document.getElementById('timetable-id').value;
         const method = id ? 'PUT' : 'POST';
         const url = id ? `/api/admin/timetable/${id}` : '/api/admin/timetable';
 

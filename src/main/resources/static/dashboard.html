@@ -31,6 +31,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="#weekly-timetable-section" class="nav-link">
+                        <span class="nav-icon">📅</span>
+                        <span>Weekly Timetable</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="/sessions.html" class="nav-link">
                         <span class="nav-icon">🎯</span>
                         <span>Class Sessions</span>
@@ -160,6 +166,41 @@
                         <div class="stat-info">
                             <div class="stat-value" id="stat-active-sessions">-</div>
                             <div class="stat-label">Active Sessions</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- My Weekly Timetable Section -->
+                <section class="timetable-card-section" id="weekly-timetable-section" style="margin-bottom: 2rem;">
+                    <div class="timetable-section-header">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                                <span style="font-size: 1.35rem;">📅</span>
+                                <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">My Weekly Timetable</h3>
+                                <span class="badge badge-primary" id="today-day-indicator">Today: -</span>
+                            </div>
+                            <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0.35rem 0 0 0;">
+                                Your scheduled teaching sessions, lecture timings, sections, and classroom allocations
+                            </p>
+                        </div>
+                        <div class="timetable-day-selector" id="timetable-day-tabs">
+                            <button type="button" class="day-tab-btn" data-day="MONDAY">Monday</button>
+                            <button type="button" class="day-tab-btn" data-day="TUESDAY">Tuesday</button>
+                            <button type="button" class="day-tab-btn" data-day="WEDNESDAY">Wednesday</button>
+                            <button type="button" class="day-tab-btn" data-day="THURSDAY">Thursday</button>
+                            <button type="button" class="day-tab-btn" data-day="FRIDAY">Friday</button>
+                            <button type="button" class="day-tab-btn" data-day="SATURDAY">Saturday</button>
+                        </div>
+                    </div>
+
+                    <!-- Today's Upcoming Highlights Banner -->
+                    <div id="timetable-upcoming-banner" style="display: none; margin-bottom: 1.25rem;"></div>
+
+                    <!-- Timetable Content Area (Table & Cards) -->
+                    <div id="timetable-content-container" style="min-height: 160px;">
+                        <div style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                            <div class="spinner" style="width: 2rem; height: 2rem; margin: 0 auto 0.75rem auto;"></div>
+                            <p>Loading your weekly timetable...</p>
                         </div>
                     </div>
                 </section>

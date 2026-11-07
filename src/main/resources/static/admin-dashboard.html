@@ -1023,7 +1023,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem;">
                         <div class="form-group">
                             <label class="form-label">Day of Week *</label>
                             <select id="tt-day" class="form-control" required>
@@ -1034,6 +1034,10 @@
                                 <option value="FRIDAY">Friday</option>
                                 <option value="SATURDAY">Saturday</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Period # (Optional)</label>
+                            <input type="number" id="tt-period" class="form-control" min="1" max="12" placeholder="Auto">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Start Time *</label>

@@ -34,6 +34,8 @@ public class TimetableSchedule {
 
     private String dayOfWeek; // MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY
 
+    private Integer periodNumber; // 1, 2, 3...
+
     private LocalTime startTime;
 
     private LocalTime endTime;
@@ -60,6 +62,13 @@ public class TimetableSchedule {
         this.roomNumber = roomNumber != null ? roomNumber.trim() : null;
         this.status = "ACTIVE";
         this.createdAt = LocalDateTime.now();
+    }
+
+    public TimetableSchedule(Department department, CollegeClass collegeClass, Subject subject,
+                             Teacher teacher, String dayOfWeek, Integer periodNumber,
+                             LocalTime startTime, LocalTime endTime, String roomNumber) {
+        this(department, collegeClass, subject, teacher, dayOfWeek, startTime, endTime, roomNumber);
+        this.periodNumber = periodNumber;
     }
 
     public String getId() {
@@ -108,6 +117,14 @@ public class TimetableSchedule {
 
     public void setDayOfWeek(String dayOfWeek) {
         this.dayOfWeek = dayOfWeek != null ? dayOfWeek.trim().toUpperCase() : null;
+    }
+
+    public Integer getPeriodNumber() {
+        return periodNumber;
+    }
+
+    public void setPeriodNumber(Integer periodNumber) {
+        this.periodNumber = periodNumber;
     }
 
     public LocalTime getStartTime() {

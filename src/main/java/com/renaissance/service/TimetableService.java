@@ -15,11 +15,14 @@ import com.renaissance.repository.TeacherRepository;
 import com.renaissance.repository.TimetableScheduleRepository;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.mongodb.core.convert.LazyLoadingProxy;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,7 +59,24 @@ public class TimetableService {
 
     @Cacheable(value = CacheConfig.CACHE_TIMETABLE, key = "'TEACHER_' + #teacherId", unless = "#result == null")
     public List<TimetableScheduleDto> getSchedulesByTeacher(String teacherId) {
-        return timetableRepository.findByTeacher_Id(teacherId).stream()
+        if (teacherId == null || teacherId.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        List<TimetableSchedule> schedules = timetableRepository.findByTeacher_Id(teacherId);
+
+        // Robust DBRef fallback: in case Mongo DBRef representation requires proxy extraction
+        if (schedules == null || schedules.isEmpty()) {
+            List<TimetableSchedule> all = timetableRepository.findAll();
+            schedules = all.stream()
+                    .filter(s -> s.getTeacher() != null && teacherId.equals(extractTeacherId(s.getTeacher())))
+                    .collect(Collectors.toList());
+        }
+
+        return schedules.stream()
+                .filter(TimetableSchedule::isActive)
+                .sorted(Comparator.comparing(this::dayOrder)
+                        .thenComparing(s -> s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN))
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
@@ -85,12 +105,16 @@ public class TimetableService {
 
         validateTimeAndConflicts(null, collegeClass, teacher, request.getDayOfWeek(), startTime, endTime, request.getRoomNumber());
 
+        Integer periodNumber = request.getPeriodNumber() != null ?
+                request.getPeriodNumber() : derivePeriodNumber(startTime);
+
         TimetableSchedule schedule = new TimetableSchedule(
                 department,
                 collegeClass,
                 subject,
                 teacher,
                 request.getDayOfWeek().trim().toUpperCase(),
+                periodNumber,
                 startTime,
                 endTime,
                 request.getRoomNumber()
@@ -127,6 +151,12 @@ public class TimetableService {
         schedule.setStartTime(startTime);
         schedule.setEndTime(endTime);
         schedule.setRoomNumber(request.getRoomNumber() != null ? request.getRoomNumber().trim() : null);
+
+        if (request.getPeriodNumber() != null) {
+            schedule.setPeriodNumber(request.getPeriodNumber());
+        } else if (schedule.getPeriodNumber() == null) {
+            schedule.setPeriodNumber(derivePeriodNumber(startTime));
+        }
 
         TimetableSchedule updated = timetableRepository.save(schedule);
         return toDto(updated);
@@ -232,17 +262,62 @@ public class TimetableService {
             dto.setTeacherId(schedule.getTeacher().getId());
             dto.setTeacherName(schedule.getTeacher().getName());
         }
+        String dayStr = schedule.getDayOfWeek() != null ? schedule.getDayOfWeek().trim().toUpperCase() : "MONDAY";
         try {
-            if (schedule.getDayOfWeek() != null) {
-                dto.setDayOfWeek(DayOfWeek.valueOf(schedule.getDayOfWeek().toUpperCase()));
-            }
-        } catch (Exception ignored) {
-            dto.setDayName(schedule.getDayOfWeek());
-        }
+            dto.setDayOfWeek(DayOfWeek.valueOf(dayStr));
+        } catch (Exception ignored) {}
+        dto.setDayName(dayStr);
+
         dto.setStartTime(schedule.getStartTime());
         dto.setEndTime(schedule.getEndTime());
         dto.setRoomNumber(schedule.getRoomNumber());
         dto.setStatus(schedule.getStatus());
+
+        if (schedule.getPeriodNumber() != null) {
+            dto.setPeriodNumber(schedule.getPeriodNumber());
+        } else {
+            dto.setPeriodNumber(derivePeriodNumber(schedule.getStartTime()));
+        }
+
         return dto;
+    }
+
+    public static int derivePeriodNumber(LocalTime time) {
+        if (time == null) return 1;
+        int hour = time.getHour();
+        if (hour <= 9) return 1;
+        if (hour == 10) return 2;
+        if (hour == 11) return 3;
+        if (hour == 12) return 4;
+        if (hour == 13 || hour == 14) return 5;
+        if (hour == 15) return 6;
+        return 7;
+    }
+
+    private int dayOrder(TimetableSchedule s) {
+        if (s == null || s.getDayOfWeek() == null) return 7;
+        return switch (s.getDayOfWeek().trim().toUpperCase()) {
+            case "MONDAY" -> 1;
+            case "TUESDAY" -> 2;
+            case "WEDNESDAY" -> 3;
+            case "THURSDAY" -> 4;
+            case "FRIDAY" -> 5;
+            case "SATURDAY" -> 6;
+            case "SUNDAY" -> 7;
+            default -> 8;
+        };
+    }
+
+    private String extractTeacherId(Teacher teacher) {
+        if (teacher == null) return null;
+        if (teacher instanceof LazyLoadingProxy proxy) {
+            try {
+                com.mongodb.DBRef dbRef = proxy.toDBRef();
+                if (dbRef != null && dbRef.getId() != null) {
+                    return dbRef.getId().toString();
+                }
+            } catch (Exception ignored) {}
+        }
+        return teacher.getId();
     }
 }

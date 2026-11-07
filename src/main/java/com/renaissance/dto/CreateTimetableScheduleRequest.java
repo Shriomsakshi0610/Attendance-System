@@ -25,6 +25,8 @@ public class CreateTimetableScheduleRequest {
 
     private String roomNumber;
 
+    private Integer periodNumber;
+
     public CreateTimetableScheduleRequest() {
     }
 
@@ -82,5 +84,13 @@ public class CreateTimetableScheduleRequest {
 
     public void setRoomNumber(String roomNumber) {
         this.roomNumber = roomNumber;
+    }
+
+    public Integer getPeriodNumber() {
+        return periodNumber;
+    }
+
+    public void setPeriodNumber(Integer periodNumber) {
+        this.periodNumber = periodNumber;
     }
 }

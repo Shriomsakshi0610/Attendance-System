@@ -64,17 +64,49 @@ data class SubjectItem(
 )
 
 data class TimetableItem(
-    val id: String,
-    val classId: String,
-    val className: String?,
-    val subjectId: String,
-    val subjectName: String?,
-    val subjectCode: String?,
-    val dayOfWeek: String,
-    val startTime: String,
-    val endTime: String,
-    val roomNumber: String?
-)
+    val id: String? = null,
+    val classId: String? = null,
+    val className: String? = null,
+    val section: String? = null,
+    val semester: Int? = null,
+    val subjectId: String? = null,
+    val subjectName: String? = null,
+    val subjectCode: String? = null,
+    val teacherId: String? = null,
+    val teacherName: String? = null,
+    val dayOfWeek: String? = null,
+    val dayName: String? = null,
+    val periodNumber: Int? = null,
+    val startTime: String? = null,
+    val endTime: String? = null,
+    val startTimeFormatted: String? = null,
+    val endTimeFormatted: String? = null,
+    val timeSlot: String? = null,
+    val roomNumber: String? = null,
+    val status: String? = null
+) {
+    val displayDay: String
+        get() = (dayName ?: dayOfWeek ?: "").trim().uppercase()
+
+    val displayPeriod: String
+        get() = "Period ${periodNumber ?: 1}"
+
+    val displayTime: String
+        get() {
+            if (!timeSlot.isNullOrBlank()) return timeSlot
+            val s = startTimeFormatted ?: startTime ?: ""
+            val e = endTimeFormatted ?: endTime ?: ""
+            return if (s.isNotBlank() && e.isNotBlank()) "$s – $e" else s
+        }
+
+    val displayClass: String
+        get() = when {
+            !className.isNullOrBlank() && !section.isNullOrBlank() && !className.contains(section) -> "$className ($section)"
+            !className.isNullOrBlank() -> className
+            !section.isNullOrBlank() -> "Section $section"
+            else -> "Class"
+        }
+}
 
 data class AttendanceSessionItem(
     val id: String,

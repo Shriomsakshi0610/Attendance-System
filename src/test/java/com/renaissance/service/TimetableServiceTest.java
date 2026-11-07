@@ -214,4 +214,67 @@ class TimetableServiceTest {
 
         assertTrue(ex.getMessage().contains("Room LH-101 is already occupied on TUESDAY"));
     }
+
+    @Test
+    @DisplayName("Requirement 6: Faculty-Wise Timetable Isolation - Faculty A only sees their own schedule")
+    void testFacultyWiseTimetableIsolation_FacultyA_OnlySeesOwn() {
+        // Faculty A schedules: Monday and Wednesday
+        TimetableSchedule aMon = new TimetableSchedule(dept, collegeClass, subject, teacher, "MONDAY", 1,
+                LocalTime.of(9, 0), LocalTime.of(10, 0), "LH-101");
+        aMon.setId("sched-a1");
+
+        TimetableSchedule aWed = new TimetableSchedule(dept, collegeClass, subject, teacher, "WEDNESDAY", 4,
+                LocalTime.of(14, 0), LocalTime.of(15, 0), "LH-101");
+        aWed.setId("sched-a2");
+
+        when(timetableRepository.findByTeacher_Id("teacher-1")).thenReturn(List.of(aMon, aWed));
+
+        List<TimetableScheduleDto> result = timetableService.getSchedulesByTeacher("teacher-1");
+
+        assertNotNull(result);
+        assertEquals(2, result.size(), "Faculty A must see exactly their 2 assigned classes");
+        assertEquals("teacher-1", result.get(0).getTeacherId());
+        assertEquals("teacher-1", result.get(1).getTeacherId());
+        assertEquals("MONDAY", result.get(0).getDayName());
+        assertEquals("WEDNESDAY", result.get(1).getDayName());
+        assertEquals(1, result.get(0).getPeriodNumber());
+        assertEquals(4, result.get(1).getPeriodNumber());
+    }
+
+    @Test
+    @DisplayName("Requirement 6: Faculty-Wise Timetable Isolation - Faculty B only sees their own schedule")
+    void testFacultyWiseTimetableIsolation_FacultyB_OnlySeesOwn() {
+        // Faculty B schedules: Tuesday and Thursday
+        TimetableSchedule bTue = new TimetableSchedule(dept, otherClass, subject, otherTeacher, "TUESDAY", 2,
+                LocalTime.of(10, 0), LocalTime.of(11, 0), "LH-201");
+        bTue.setId("sched-b1");
+
+        TimetableSchedule bThu = new TimetableSchedule(dept, otherClass, subject, otherTeacher, "THURSDAY", 3,
+                LocalTime.of(11, 15), LocalTime.of(12, 15), "LH-201");
+        bThu.setId("sched-b2");
+
+        when(timetableRepository.findByTeacher_Id("teacher-2")).thenReturn(List.of(bTue, bThu));
+
+        List<TimetableScheduleDto> result = timetableService.getSchedulesByTeacher("teacher-2");
+
+        assertNotNull(result);
+        assertEquals(2, result.size(), "Faculty B must see exactly their 2 assigned classes");
+        assertEquals("teacher-2", result.get(0).getTeacherId());
+        assertEquals("teacher-2", result.get(1).getTeacherId());
+        assertEquals("TUESDAY", result.get(0).getDayName());
+        assertEquals("THURSDAY", result.get(1).getDayName());
+        assertEquals(2, result.get(0).getPeriodNumber());
+        assertEquals(3, result.get(1).getPeriodNumber());
+    }
+
+    @Test
+    @DisplayName("Requirement 2: Faculty with no assigned timetable returns empty list")
+    void testUnassignedFaculty_returnsEmptyList() {
+        when(timetableRepository.findByTeacher_Id("unassigned-teacher")).thenReturn(List.of());
+
+        List<TimetableScheduleDto> result = timetableService.getSchedulesByTeacher("unassigned-teacher");
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty(), "Faculty with no timetable must return empty list");
+    }
 }
