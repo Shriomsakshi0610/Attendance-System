@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -103,7 +104,14 @@ fun StudentAttendanceScreen(
                 if (summaryRes.isSuccessful && summaryRes.body()?.data != null) {
                     summaryList = summaryRes.body()!!.data!!
                 } else {
-                    summaryList = emptyList()
+                    val code = summaryRes.code()
+                    if (code == 401 || code == 403) {
+                        errorMessage = "Session expired. Please log in again."
+                    } else if (code >= 500) {
+                        errorMessage = "Server unavailable (HTTP $code). Please try again."
+                    } else {
+                        errorMessage = "Failed to load attendance records (HTTP $code)."
+                    }
                 }
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Failed to load attendance data"
@@ -419,6 +427,34 @@ fun StudentAttendanceScreen(
             if (isLoading && summaryList.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = PrimaryIndigo)
+                }
+            } else if (errorMessage != null && summaryList.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = AccentRed,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = errorMessage ?: "Failed to load attendance records",
+                            color = AccentRed,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { loadData() },
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
+                        ) {
+                            Text("Retry Connection")
+                        }
+                    }
                 }
             } else if (filteredList.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

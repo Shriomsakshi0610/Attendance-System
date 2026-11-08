@@ -54,23 +54,48 @@ class SessionViewModel(
 
     fun loadClassesAndSubjects() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             try {
+                val currentClasses = _uiState.value.classes
+                val currentSubjects = _uiState.value.subjects
+
                 val cRes = apiClient.teacherApi.getAssignedClasses()
                 val sRes = apiClient.teacherApi.getAssignedSubjects()
 
-                val classes = if (cRes.isSuccessful) cRes.body()?.data ?: emptyList() else emptyList()
-                val subjects = if (sRes.isSuccessful) sRes.body()?.data ?: emptyList() else emptyList()
+                val newClasses = if (cRes.isSuccessful && cRes.body()?.data != null) {
+                    cRes.body()!!.data!!
+                } else {
+                    currentClasses
+                }
+
+                val newSubjects = if (sRes.isSuccessful && sRes.body()?.data != null) {
+                    sRes.body()!!.data!!
+                } else {
+                    currentSubjects
+                }
+
+                val hasFailure = (!cRes.isSuccessful && currentClasses.isEmpty()) || (!sRes.isSuccessful && currentSubjects.isEmpty())
+                val errorMsg = if (hasFailure) {
+                    "Unable to load classes or subjects. Please check your network connection."
+                } else null
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    classes = classes,
-                    subjects = subjects,
-                    selectedClass = classes.firstOrNull(),
-                    selectedSubject = subjects.firstOrNull()
+                    classes = newClasses,
+                    subjects = newSubjects,
+                    selectedClass = _uiState.value.selectedClass ?: newClasses.firstOrNull(),
+                    selectedSubject = _uiState.value.selectedSubject ?: newSubjects.firstOrNull(),
+                    errorMessage = errorMsg
                 )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message)
+                val currentClasses = _uiState.value.classes
+                val currentSubjects = _uiState.value.subjects
+                val hasCached = currentClasses.isNotEmpty() || currentSubjects.isNotEmpty()
+
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = if (hasCached) "Connection issue. Showing cached classes." else (e.message ?: "Failed to load classes")
+                )
             }
         }
     }

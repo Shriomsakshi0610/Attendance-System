@@ -1,5 +1,6 @@
 package com.renaissance.teacher.ui.screens.dashboard
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +36,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -46,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.renaissance.teacher.data.model.ResourceState
 import com.renaissance.teacher.ui.components.GpsAccuracyBanner
 import com.renaissance.teacher.ui.components.RenaissanceTopBar
 import com.renaissance.teacher.ui.components.StatCard
@@ -84,7 +87,8 @@ fun DashboardScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .padding(padding)
         ) {
-            if (state.isLoading && state.assignedClasses.isEmpty()) {
+            val hasNoData = state.assignedClasses.isEmpty() && state.assignedSubjects.isEmpty()
+            if (state.isLoading && hasNoData) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -107,7 +111,7 @@ fun DashboardScreen(
                         )
                     }
                 }
-            } else if (state.errorMessage != null && state.assignedClasses.isEmpty()) {
+            } else if (state.errorMessage != null && hasNoData) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -142,6 +146,53 @@ fun DashboardScreen(
                         .padding(horizontal = 20.dp, vertical = 12.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
+                    // Stale Data Non-Destructive Warning Banner
+                    if (state.isStaleData && state.errorMessage != null) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = AccentRed.copy(alpha = 0.1f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, AccentRed.copy(alpha = 0.3f)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Sensors,
+                                        contentDescription = null,
+                                        tint = AccentRed,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = state.errorMessage ?: "Network issue. Displaying cached data.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AccentRed
+                                    )
+                                }
+                                Text(
+                                    text = "Retry",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PrimaryIndigo,
+                                    modifier = Modifier
+                                        .clickable { viewModel.refreshDashboard() }
+                                        .padding(4.dp)
+                                )
+                            }
+                        }
+                    }
+
                     // Faculty Welcome Header Card
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -332,16 +383,16 @@ fun DashboardScreen(
                     ) {
                         StatCard(
                             title = "Classes",
-                            value = state.assignedClasses.size.toString(),
-                            subtitle = "Assigned sections",
+                            value = if (state.classesState is ResourceState.Loading && state.assignedClasses.isEmpty()) "..." else state.assignedClasses.size.toString(),
+                            subtitle = if (state.classesState is ResourceState.Empty) "No classes assigned" else "Assigned sections",
                             icon = Icons.Default.People,
                             accentColor = PrimaryIndigo,
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
                             title = "Subjects",
-                            value = state.assignedSubjects.size.toString(),
-                            subtitle = "Active courses",
+                            value = if (state.subjectsState is ResourceState.Loading && state.assignedSubjects.isEmpty()) "..." else state.assignedSubjects.size.toString(),
+                            subtitle = if (state.subjectsState is ResourceState.Empty) "No subjects assigned" else "Active courses",
                             icon = Icons.Default.Book,
                             accentColor = SecondaryViolet,
                             modifier = Modifier.weight(1f)

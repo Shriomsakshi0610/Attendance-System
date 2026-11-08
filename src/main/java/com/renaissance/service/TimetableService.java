@@ -13,9 +13,14 @@ import com.renaissance.repository.ClassRepository;
 import com.renaissance.repository.SubjectRepository;
 import com.renaissance.repository.TeacherRepository;
 import com.renaissance.repository.TimetableScheduleRepository;
+import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.convert.LazyLoadingProxy;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
@@ -33,15 +38,26 @@ public class TimetableService {
     private final ClassRepository classRepository;
     private final SubjectRepository subjectRepository;
     private final TeacherRepository teacherRepository;
+    private final MongoTemplate mongoTemplate;
+
+    @Autowired
+    public TimetableService(TimetableScheduleRepository timetableRepository,
+                            ClassRepository classRepository,
+                            SubjectRepository subjectRepository,
+                            TeacherRepository teacherRepository,
+                            @Autowired(required = false) MongoTemplate mongoTemplate) {
+        this.timetableRepository = timetableRepository;
+        this.classRepository = classRepository;
+        this.subjectRepository = subjectRepository;
+        this.teacherRepository = teacherRepository;
+        this.mongoTemplate = mongoTemplate;
+    }
 
     public TimetableService(TimetableScheduleRepository timetableRepository,
                             ClassRepository classRepository,
                             SubjectRepository subjectRepository,
                             TeacherRepository teacherRepository) {
-        this.timetableRepository = timetableRepository;
-        this.classRepository = classRepository;
-        this.subjectRepository = subjectRepository;
-        this.teacherRepository = teacherRepository;
+        this(timetableRepository, classRepository, subjectRepository, teacherRepository, null);
     }
 
     public List<TimetableScheduleDto> getAllSchedules() {
@@ -52,7 +68,34 @@ public class TimetableService {
 
     @Cacheable(value = CacheConfig.CACHE_TIMETABLE, key = "'CLASS_' + #classId", unless = "#result == null")
     public List<TimetableScheduleDto> getSchedulesByClass(String classId) {
-        return timetableRepository.findByCollegeClass_Id(classId).stream()
+        if (classId == null || classId.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        List<TimetableSchedule> schedules;
+        if (mongoTemplate != null) {
+            Criteria classCriteria;
+            if (ObjectId.isValid(classId)) {
+                classCriteria = new Criteria().orOperator(
+                        Criteria.where("collegeClass.$id").is(classId),
+                        Criteria.where("collegeClass.$id").is(new ObjectId(classId))
+                );
+            } else {
+                classCriteria = Criteria.where("collegeClass.$id").is(classId);
+            }
+            schedules = mongoTemplate.find(new Query(classCriteria), TimetableSchedule.class);
+        } else {
+            schedules = timetableRepository.findByCollegeClass_Id(classId);
+        }
+
+        if (schedules == null || schedules.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return schedules.stream()
+                .filter(TimetableSchedule::isActive)
+                .sorted(Comparator.comparing(this::dayOrder)
+                        .thenComparing(s -> s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN))
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
@@ -63,14 +106,24 @@ public class TimetableService {
             return Collections.emptyList();
         }
 
-        List<TimetableSchedule> schedules = timetableRepository.findByTeacher_Id(teacherId);
+        List<TimetableSchedule> schedules;
+        if (mongoTemplate != null) {
+            Criteria teacherCriteria;
+            if (ObjectId.isValid(teacherId)) {
+                teacherCriteria = new Criteria().orOperator(
+                        Criteria.where("teacher.$id").is(teacherId),
+                        Criteria.where("teacher.$id").is(new ObjectId(teacherId))
+                );
+            } else {
+                teacherCriteria = Criteria.where("teacher.$id").is(teacherId);
+            }
+            schedules = mongoTemplate.find(new Query(teacherCriteria), TimetableSchedule.class);
+        } else {
+            schedules = timetableRepository.findByTeacher_Id(teacherId);
+        }
 
-        // Robust DBRef fallback: in case Mongo DBRef representation requires proxy extraction
         if (schedules == null || schedules.isEmpty()) {
-            List<TimetableSchedule> all = timetableRepository.findAll();
-            schedules = all.stream()
-                    .filter(s -> s.getTeacher() != null && teacherId.equals(extractTeacherId(s.getTeacher())))
-                    .collect(Collectors.toList());
+            return Collections.emptyList();
         }
 
         return schedules.stream()

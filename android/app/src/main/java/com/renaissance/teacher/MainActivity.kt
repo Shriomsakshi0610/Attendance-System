@@ -31,6 +31,7 @@ import com.renaissance.teacher.ui.screens.splash.SplashScreen
 import com.renaissance.teacher.ui.screens.students.StudentAttendanceScreen
 import com.renaissance.teacher.ui.screens.students.StudentDetailScreen
 import com.renaissance.teacher.ui.screens.timetable.TimetableScreen
+import com.renaissance.teacher.ui.screens.timetable.TimetableViewModel
 import com.renaissance.teacher.ui.screens.update.SettingsUpdateScreen
 import com.renaissance.teacher.ui.theme.RenaissanceTeacherTheme
 
@@ -191,8 +192,11 @@ fun TeacherNavHost(app: RenaissanceTeacherApp) {
         }
 
         composable(Screen.Timetable.route) {
+            val timetableVm = viewModel {
+                TimetableViewModel(apiClient = app.apiClient)
+            }
             TimetableScreen(
-                apiClient = app.apiClient,
+                viewModel = timetableVm,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

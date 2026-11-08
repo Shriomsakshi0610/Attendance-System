@@ -24,24 +24,23 @@ import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,13 +49,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.renaissance.teacher.data.api.ApiClient
+import com.renaissance.teacher.data.model.ResourceState
 import com.renaissance.teacher.data.model.TimetableItem
 import com.renaissance.teacher.ui.components.RenaissanceTopBar
 import com.renaissance.teacher.ui.theme.AccentGreen
+import com.renaissance.teacher.ui.theme.AccentRed
 import com.renaissance.teacher.ui.theme.PrimaryIndigo
 import com.renaissance.teacher.ui.theme.SecondaryViolet
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 @Composable
@@ -64,6 +65,20 @@ fun TimetableScreen(
     apiClient: ApiClient,
     onNavigateBack: () -> Unit
 ) {
+    val vm: TimetableViewModel = viewModel { TimetableViewModel(apiClient) }
+    TimetableScreen(viewModel = vm, onNavigateBack = onNavigateBack)
+}
+
+@Composable
+fun TimetableScreen(
+    viewModel: TimetableViewModel,
+    onNavigateBack: () -> Unit
+) {
+    val timetableState by viewModel.timetableState.collectAsState()
+    val cachedSchedules by viewModel.cachedSchedules.collectAsState()
+    val selectedDay by viewModel.selectedDay.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+
     val days = listOf("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY")
 
     val todayDay = remember {
@@ -75,43 +90,15 @@ fun TimetableScreen(
         if (d == "SUNDAY") "MONDAY" else d
     }
 
-    var selectedDay by remember { mutableStateOf(todayDay) }
-    var schedules by remember { mutableStateOf<List<TimetableItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-
-    val loadTimetable: () -> Unit = {
-        scope.launch {
-            isLoading = true
-            errorMessage = null
-            try {
-                val response = apiClient.timetableApi.getTeacherTimetable()
-                if (response.isSuccessful && response.body()?.data != null) {
-                    schedules = response.body()!!.data!!
-                } else {
-                    val code = response.code()
-                    if (code == 401) {
-                        errorMessage = "Session expired. Please log in again."
-                    } else {
-                        errorMessage = "Failed to load timetable (HTTP $code)"
-                    }
-                }
-            } catch (e: Exception) {
-                errorMessage = e.localizedMessage ?: "Failed to connect to server. Please check your internet connection."
-            } finally {
-                isLoading = false
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        loadTimetable()
+    // Determine current effective schedule list (cached or freshly fetched)
+    val currentSchedules = when (timetableState) {
+        is ResourceState.Success -> (timetableState as ResourceState.Success<List<TimetableItem>>).data
+        else -> cachedSchedules
     }
 
     // Filter lectures for selected day
-    val daySchedules = remember(schedules, selectedDay) {
-        schedules.filter { it.displayDay.equals(selectedDay, ignoreCase = true) }
+    val daySchedules = remember(currentSchedules, selectedDay) {
+        currentSchedules.filter { it.displayDay.equals(selectedDay, ignoreCase = true) }
     }
 
     Scaffold(
@@ -120,7 +107,7 @@ fun TimetableScreen(
                 title = "My Timetable",
                 canNavigateBack = true,
                 onNavigateBack = onNavigateBack,
-                onRefresh = { loadTimetable() }
+                onRefresh = { viewModel.loadTimetable(isUserRefresh = true) }
             )
         }
     ) { padding ->
@@ -131,6 +118,63 @@ fun TimetableScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
+            // Subtle in-flight refresh indicator
+            if (isRefreshing) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 6.dp),
+                    color = PrimaryIndigo
+                )
+            }
+
+            // Stale-While-Revalidate Error Banner: shows error while preserving cached schedules!
+            if (timetableState.isError && cachedSchedules.isNotEmpty()) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = AccentRed.copy(alpha = 0.1f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentRed.copy(alpha = 0.3f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.WifiOff,
+                                contentDescription = null,
+                                tint = AccentRed,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Network issue. Showing cached timetable.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AccentRed
+                            )
+                        }
+                        Text(
+                            text = "Retry",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryIndigo,
+                            modifier = Modifier
+                                .clickable { viewModel.loadTimetable(isUserRefresh = true) }
+                                .padding(4.dp)
+                        )
+                    }
+                }
+            }
+
             // Day Selector Horizontal Bar
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -146,7 +190,7 @@ fun TimetableScreen(
                         tonalElevation = if (isSelected) 4.dp else 1.dp,
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
-                            .clickable { selectedDay = day }
+                            .clickable { viewModel.selectDay(day) }
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -174,9 +218,10 @@ fun TimetableScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Body Area
+            // Body Area with strict ResourceState matching
             when {
-                isLoading -> {
+                // 1. Initial Loading (No cached data yet)
+                timetableState is ResourceState.Loading && cachedSchedules.isEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator(color = PrimaryIndigo)
@@ -190,7 +235,16 @@ fun TimetableScreen(
                     }
                 }
 
-                errorMessage != null -> {
+                // 2. Full Error Screen (When no cached data is available to display)
+                timetableState.isError && cachedSchedules.isEmpty() -> {
+                    val errorTitle = when (timetableState) {
+                        is ResourceState.Timeout -> "Connection Timeout"
+                        is ResourceState.AuthError -> "Authentication Required"
+                        is ResourceState.ServerError -> "Server Unavailable"
+                        else -> "Network Connection Error"
+                    }
+                    val errorDesc = timetableState.getErrorMessageOrNull() ?: "Unable to load your timetable."
+
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -209,32 +263,39 @@ fun TimetableScreen(
                                 Icon(
                                     imageVector = Icons.Default.Warning,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(40.dp)
+                                    tint = AccentRed,
+                                    modifier = Modifier.size(44.dp)
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
-                                    text = errorMessage!!,
-                                    color = MaterialTheme.colorScheme.error,
-                                    fontSize = 14.sp,
+                                    text = errorTitle,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = errorDesc,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center
                                 )
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(18.dp))
                                 Button(
-                                    onClick = { loadTimetable() },
+                                    onClick = { viewModel.loadTimetable(isUserRefresh = true) },
                                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
                                 ) {
                                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Retry")
+                                    Text("Retry Connection")
                                 }
                             }
                         }
                     }
                 }
 
-                // If user has zero timetable slots assigned across the entire week
-                schedules.isEmpty() -> {
+                // 3. Genuine Server-Verified Empty State (Faculty has 0 schedules assigned across whole week)
+                timetableState is ResourceState.Empty && currentSchedules.isEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -265,7 +326,7 @@ fun TimetableScreen(
                                 textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(20.dp))
-                            OutlinedButton(onClick = { loadTimetable() }) {
+                            OutlinedButton(onClick = { viewModel.loadTimetable(isUserRefresh = true) }) {
                                 Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text("Check Again")
@@ -274,8 +335,8 @@ fun TimetableScreen(
                     }
                 }
 
-                // If user has timetable entries, but none on the selected day
-                daySchedules.isEmpty() -> {
+                // 4. Success / Cached with zero lectures scheduled on selected day
+                daySchedules.isEmpty() && currentSchedules.isNotEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -307,6 +368,7 @@ fun TimetableScreen(
                     }
                 }
 
+                // 5. Success / Cached with lectures available
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -322,7 +384,7 @@ fun TimetableScreen(
                             )
                         }
 
-                        items(daySchedules) { item ->
+                        items(daySchedules, key = { it.id ?: "${it.displayDay}_${it.periodNumber}_${it.subjectCode}" }) { item ->
                             TimetableCard(item = item)
                         }
 
