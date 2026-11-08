@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -577,5 +578,32 @@ fun DashboardScreen(
                 }
             }
         }
+    }
+
+    if (state.isSessionExpired) {
+        AlertDialog(
+            onDismissRequest = { onLogout() },
+            title = {
+                Text(
+                    text = "Session Expired",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Your login session has expired. Please log in again to access live classes and attendance data.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = onLogout,
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
+                ) {
+                    Text("Log In Again")
+                }
+            }
+        )
     }
 }

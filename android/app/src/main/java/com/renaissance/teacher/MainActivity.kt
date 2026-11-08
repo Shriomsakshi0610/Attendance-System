@@ -97,8 +97,9 @@ fun TeacherNavHost(app: RenaissanceTeacherApp) {
     ) {
         composable(Screen.Splash.route) {
             SplashScreen(
+                apiClient = app.apiClient,
                 sessionPrefs = app.sessionPreferences,
-                onNavigateToLogin = {
+                onNavigateToLogin = { message ->
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
@@ -140,7 +141,7 @@ fun TeacherNavHost(app: RenaissanceTeacherApp) {
                 onOpenStudentAttendance = { navController.navigate(Screen.StudentAttendance.route) },
                 onOpenSettings = { navController.navigate(Screen.Settings.route) },
                 onLogout = {
-                    app.sessionPreferences.clearSession()
+                    app.apiClient.clearSessionCookies()
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }

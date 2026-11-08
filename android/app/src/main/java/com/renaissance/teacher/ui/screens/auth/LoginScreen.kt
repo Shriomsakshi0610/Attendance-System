@@ -63,13 +63,14 @@ import kotlinx.coroutines.launch
 fun LoginScreen(
     apiClient: ApiClient,
     sessionPrefs: SessionPreferences,
+    initialMessage: String? = null,
     onLoginSuccess: () -> Unit
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(initialMessage) }
     var showServerConfig by remember { mutableStateOf(false) }
     var serverUrl by remember { mutableStateOf(sessionPrefs.getBaseUrl()) }
 
@@ -94,13 +95,21 @@ fun LoginScreen(
                     val body = response.body()!!
                     if (body.success) {
                         val teacher = body.data?.teacher
+                        val rawSetCookie = response.headers()["Set-Cookie"]
+                        val cleanCookie = if (!rawSetCookie.isNullOrBlank() && rawSetCookie.contains("=")) {
+                            rawSetCookie.split(";").firstOrNull()?.trim() ?: rawSetCookie
+                        } else {
+                            sessionPrefs.getSessionCookieHeader() ?: "RENAISSANCE_SESSION=active"
+                        }
+                        val deptName = teacher?.departmentName ?: teacher?.department ?: body.department ?: "Faculty"
                         sessionPrefs.saveSession(
-                            cookie = response.headers()["Set-Cookie"] ?: "RENAISSANCE_SESSION=active",
+                            cookie = cleanCookie,
                             name = teacher?.name ?: body.displayName ?: body.username ?: u,
                             teacherId = teacher?.id ?: body.teacherId,
                             email = teacher?.email ?: body.username ?: u,
-                            department = teacher?.department ?: body.department ?: "Faculty"
+                            department = deptName
                         )
+                        apiClient.restoreSession()
                         onLoginSuccess()
                     } else {
                         errorMessage = body.message

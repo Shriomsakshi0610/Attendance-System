@@ -32,7 +32,8 @@ data class DashboardUiState(
     val subjectsState: ResourceState<List<SubjectItem>> = ResourceState.Idle,
     val currentLocation: DeviceLocation? = null,
     val errorMessage: String? = null,
-    val isStaleData: Boolean = false
+    val isStaleData: Boolean = false,
+    val isSessionExpired: Boolean = false
 )
 
 class DashboardViewModel(
@@ -141,10 +142,16 @@ class DashboardViewModel(
                     _uiState.value.activeSession
                 }
 
+                val isAuthExpired = classesRes.code() == 401 || classesRes.code() == 403 ||
+                        subjectsRes.code() == 401 || subjectsRes.code() == 403 ||
+                        activeSessionsRes.code() == 401 || activeSessionsRes.code() == 403
+
                 val hasAnyError = newClassesState.isError || newSubjectsState.isError
                 val hasCachedData = newClasses.isNotEmpty() || newSubjects.isNotEmpty()
                 val isStale = hasAnyError && hasCachedData
-                val errMsg = if (isStale) {
+                val errMsg = if (isAuthExpired) {
+                    "Your session has expired. Please log in again."
+                } else if (isStale) {
                     "Unable to refresh some faculty data. Showing cached records."
                 } else if (hasAnyError && !hasCachedData) {
                     newClassesState.getErrorMessageOrNull() ?: newSubjectsState.getErrorMessageOrNull() ?: "Failed to load dashboard data."
@@ -160,6 +167,7 @@ class DashboardViewModel(
                     subjectsState = newSubjectsState,
                     activeSession = active,
                     isStaleData = isStale,
+                    isSessionExpired = isAuthExpired,
                     errorMessage = errMsg,
                     facultyName = sessionPrefs.getTeacherName(),
                     department = sessionPrefs.getDepartment()

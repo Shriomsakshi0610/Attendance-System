@@ -22,45 +22,83 @@ import java.util.concurrent.TimeUnit
 
 class ApiClient(private val context: Context) {
 
-    private val sessionPrefs = SessionPreferences(context)
+    val sessionPrefs = SessionPreferences(context)
     private val cookieStore = mutableMapOf<String, List<Cookie>>()
 
     private val cookieJar = object : CookieJar {
         override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-            cookieStore[url.host] = cookies
-            // Also store any session cookie
-            for (cookie in cookies) {
-                if (cookie.name == "JSESSIONID" || cookie.name == "RENAISSANCE_SESSION") {
-                    val fullCookie = "${cookie.name}=${cookie.value}"
-                    val currentName = sessionPrefs.getTeacherName()
-                    val currentId = sessionPrefs.getTeacherId()
-                    val currentEmail = sessionPrefs.getTeacherEmail() ?: ""
-                    val currentDept = sessionPrefs.getDepartment()
-                    sessionPrefs.saveSession(fullCookie, currentName, currentId, currentEmail, currentDept)
+            if (cookies.isNotEmpty()) {
+                val current = cookieStore[url.host]?.toMutableList() ?: mutableListOf()
+                for (newCookie in cookies) {
+                    current.removeAll { it.name == newCookie.name }
+                    current.add(newCookie)
+                    if (newCookie.name == "RENAISSANCE_SESSION" || newCookie.name == "JSESSIONID") {
+                        val fullCookie = "${newCookie.name}=${newCookie.value}"
+                        sessionPrefs.saveSessionCookie(
+                            rawCookie = fullCookie,
+                            name = newCookie.name,
+                            value = newCookie.value
+                        )
+                        Log.i("AttendanceNetworkDiag", "[CookieJar] Saved persistent session cookie: ${newCookie.name}")
+                    }
                 }
+                cookieStore[url.host] = current
             }
         }
 
         override fun loadForRequest(url: HttpUrl): List<Cookie> {
-            val list = cookieStore[url.host]?.toMutableList() ?: mutableListOf()
-            // If empty in memory, attempt from encrypted prefs
-            if (list.isEmpty()) {
-                val savedCookie = sessionPrefs.getSessionCookie()
-                if (!savedCookie.isNullOrBlank() && savedCookie.contains("=")) {
-                    val parts = savedCookie.split("=", limit = 2)
-                    try {
-                        val cookie = Cookie.Builder()
-                            .name(parts[0].trim())
-                            .value(parts[1].trim())
-                            .domain(url.host)
-                            .path("/")
-                            .build()
-                        list.add(cookie)
-                    } catch (_: Exception) {}
+            val inMemory = cookieStore[url.host]
+            if (!inMemory.isNullOrEmpty()) {
+                return inMemory
+            }
+
+            // Restore from persistent storage on fresh start / process recreation
+            val restoredList = mutableListOf<Cookie>()
+            val cookieName = sessionPrefs.getSessionCookieName()
+            val cookieVal = sessionPrefs.getSessionCookieValue()
+
+            if (!cookieVal.isNullOrBlank()) {
+                try {
+                    val cookie = Cookie.Builder()
+                        .name(cookieName)
+                        .value(cookieVal)
+                        .hostOnlyDomain(url.host)
+                        .path("/")
+                        .apply {
+                            if (url.isHttps) secure()
+                            httpOnly()
+                        }
+                        .build()
+                    restoredList.add(cookie)
+                    cookieStore[url.host] = restoredList
+                    Log.i("AttendanceNetworkDiag", "[CookieJar] Restored persistent cookie: ${cookie.name} for ${url.host}")
+                } catch (e: Exception) {
+                    Log.e("AttendanceNetworkDiag", "[CookieJar] Error restoring cookie: ${e.message}")
                 }
             }
-            return list
+            return restoredList
         }
+    }
+
+    /**
+     * Interceptor ensuring the session cookie is unconditionally attached to every authenticated request,
+     * protecting against any edge-case CookieJar domain/path mismatch or process recreation gaps.
+     */
+    private val authCookieInterceptor = Interceptor { chain ->
+        val request = chain.request()
+        val cookieHeader = sessionPrefs.getSessionCookieHeader()
+
+        if (!cookieHeader.isNullOrBlank()) {
+            val existing = request.header("Cookie")
+            if (existing == null || !existing.contains("RENAISSANCE_SESSION")) {
+                val combined = if (existing.isNullOrBlank()) cookieHeader else "$existing; $cookieHeader"
+                val authenticatedRequest = request.newBuilder()
+                    .header("Cookie", combined)
+                    .build()
+                return@Interceptor chain.proceed(authenticatedRequest)
+            }
+        }
+        chain.proceed(request)
     }
 
     /**
@@ -162,9 +200,9 @@ class ApiClient(private val context: Context) {
 
     /**
      * Endpoint-specific timeout interceptor tailored for Render Free Tier cold starts.
-     * Endpoints subject to server awakening or heavy initialization (auth, health, reports, session-activation)
-     * are granted up to 45 seconds to avoid socket aborts before the JVM finishes booting.
-     * Standard transactional APIs retain fast, responsive timeouts (15s connect, 20s read).
+     * Endpoints subject to server awakening or heavy initialization (auth, teacher profile, reports, session-activation)
+     * are granted up to 50 seconds to avoid socket aborts before the JVM finishes booting.
+     * Standard transactional APIs retain robust 35s timeouts.
      */
     private val endpointTimeoutInterceptor = Interceptor { chain ->
         val request = chain.request()
@@ -174,15 +212,17 @@ class ApiClient(private val context: Context) {
                 path.contains("health") ||
                 path.contains("api/reports") ||
                 path.contains("api/sessions/active") ||
-                path.contains("api/public/app")
+                path.contains("api/public/app") ||
+                path.contains("api/teacher") ||
+                path.contains("api/timetable")
 
         if (isColdStartSensitive) {
-            chain.withConnectTimeout(45, TimeUnit.SECONDS)
-                .withReadTimeout(45, TimeUnit.SECONDS)
+            chain.withConnectTimeout(50, TimeUnit.SECONDS)
+                .withReadTimeout(50, TimeUnit.SECONDS)
                 .proceed(request)
         } else {
-            chain.withConnectTimeout(15, TimeUnit.SECONDS)
-                .withReadTimeout(20, TimeUnit.SECONDS)
+            chain.withConnectTimeout(35, TimeUnit.SECONDS)
+                .withReadTimeout(35, TimeUnit.SECONDS)
                 .proceed(request)
         }
     }
@@ -193,13 +233,14 @@ class ApiClient(private val context: Context) {
 
     private val okHttpClient = OkHttpClient.Builder()
         .cookieJar(cookieJar)
+        .addInterceptor(authCookieInterceptor)
         .addInterceptor(transientRetryInterceptor)
         .addInterceptor(endpointTimeoutInterceptor)
         .addInterceptor(auditDiagnosticInterceptor)
         .addInterceptor(loggingInterceptor)
-        .connectTimeout(25, TimeUnit.SECONDS)
-        .readTimeout(25, TimeUnit.SECONDS)
-        .writeTimeout(25, TimeUnit.SECONDS)
+        .connectTimeout(35, TimeUnit.SECONDS)
+        .readTimeout(35, TimeUnit.SECONDS)
+        .writeTimeout(35, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
         .build()
 
@@ -217,6 +258,20 @@ class ApiClient(private val context: Context) {
     fun updateBaseUrl(newUrl: String) {
         sessionPrefs.setBaseUrl(newUrl)
         retrofit = buildRetrofit(newUrl)
+    }
+
+    fun clearSessionCookies() {
+        cookieStore.clear()
+        sessionPrefs.clearSession()
+        Log.i("AttendanceNetworkDiag", "[ApiClient] Session cookies and preferences cleared.")
+    }
+
+    fun restoreSession() {
+        try {
+            val host = sessionPrefs.getBaseUrl().replace("https://", "").replace("http://", "").split("/")[0]
+            val testUrl = HttpUrl.Builder().scheme("https").host(host).build()
+            cookieJar.loadForRequest(testUrl)
+        } catch (_: Exception) {}
     }
 
     val authApi: AuthApi get() = retrofit.create(AuthApi::class.java)

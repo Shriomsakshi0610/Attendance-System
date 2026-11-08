@@ -38,6 +38,8 @@ data class TeacherProfile(
     val email: String,
     val employeeId: String?,
     val department: String?,
+    val departmentName: String? = null,
+    val departmentCode: String? = null,
     val phone: String?
 )
 
