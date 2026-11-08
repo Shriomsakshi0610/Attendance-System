@@ -28,16 +28,17 @@ public class AppVersionController {
 
     private static final Logger log = LoggerFactory.getLogger(AppVersionController.class);
 
-    private static final int CURRENT_VERSION_CODE = 5;
-    private static final String CURRENT_VERSION_NAME = "1.3.1";
+    private static final int CURRENT_VERSION_CODE = 6;
+    private static final String CURRENT_VERSION_NAME = "1.3.2";
     private static final int MIN_SUPPORTED_VERSION_CODE = 1;
     private static final String DEFAULT_RELEASE_NOTES =
-            "Renaissance Teacher App v1.3.1:\n" +
+            "Renaissance Teacher App v1.3.2:\n" +
+            "• Subject-Specific Student Attendance History: Strict filtering by selected class & subject ID\n" +
+            "• Zero-attendance empty states: Accurate subject-isolated reporting with zero cross-subject leakage\n" +
+            "• Mobile Responsive Portal Home Page on Website\n" +
             "• Direct in-app streaming APK download with live progress indicator\n" +
             "• Permanent session restoration & app restart reliability fix\n" +
             "• Dedicated Student-wise Attendance Details & Analytics\n" +
-            "• Search students by Name, USN, or Student ID\n" +
-            "• Subject-wise attendance breakdown and date history\n" +
             "• One-tap CSV Export: Class, Subject, Date-range, and Student summaries\n" +
             "• Native Android Share / Save Sheet integration\n" +
             "• 40-meter GPS Geofencing & BLE Proximity Verification";

@@ -46,8 +46,11 @@ public class ReportController {
     }
 
     @GetMapping("/student-profile/{id}")
-    public ResponseEntity<ApiResponse<StudentProfileDto>> getStudentProfile(@PathVariable String id) {
-        StudentProfileDto profile = reportService.getStudentProfile(id);
+    public ResponseEntity<ApiResponse<StudentProfileDto>> getStudentProfile(
+            @PathVariable String id,
+            @RequestParam(required = false) String classId,
+            @RequestParam(required = false) String subjectId) {
+        StudentProfileDto profile = reportService.getStudentProfile(id, classId, subjectId);
         return ResponseEntity.ok(ApiResponse.ok(profile));
     }
 
@@ -92,8 +95,11 @@ public class ReportController {
     }
 
     @GetMapping("/export/student-csv/{id}")
-    public ResponseEntity<byte[]> exportStudentCsv(@PathVariable String id) {
-        byte[] csvData = csvExportService.exportStudentHistoryCsv(id);
+    public ResponseEntity<byte[]> exportStudentCsv(
+            @PathVariable String id,
+            @RequestParam(required = false) String classId,
+            @RequestParam(required = false) String subjectId) {
+        byte[] csvData = csvExportService.exportStudentHistoryCsv(id, classId, subjectId);
         String filename = "Attendance_Student_" + id + "_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".csv";
 
         return ResponseEntity.ok()

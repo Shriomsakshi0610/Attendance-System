@@ -142,11 +142,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 3. Open Detailed Student Profile Modal
     const openProfileModal = async (studentId) => {
         selectedStudentId = studentId;
+        const classId = filterClass ? filterClass.value : '';
+        const subjectId = filterSubject ? filterSubject.value : '';
+        const selectedSubjectName = (filterSubject && filterSubject.selectedIndex >= 0 && filterSubject.value)
+            ? filterSubject.options[filterSubject.selectedIndex].text
+            : '';
+
+        let url = `/api/reports/student-profile/${encodeURIComponent(studentId)}`;
+        const queryParams = [];
+        if (classId) queryParams.push(`classId=${encodeURIComponent(classId)}`);
+        if (subjectId) queryParams.push(`subjectId=${encodeURIComponent(subjectId)}`);
+        if (queryParams.length > 0) url += `?${queryParams.join('&')}`;
+
         try {
-            const res = await API.get(`/api/reports/student-profile/${studentId}`);
+            const res = await API.get(url);
             if (res && res.data) {
                 const p = res.data;
-                profileName.textContent = p.name;
+                const subjectBadge = p.filteredSubjectName || selectedSubjectName;
+                profileName.textContent = subjectBadge ? `${p.name} — ${subjectBadge}` : p.name;
                 profileUsn.textContent = p.usn;
                 profileDept.textContent = p.department;
                 profileSemSec.textContent = `Sem ${p.semester} (Sec ${p.section})`;
@@ -163,9 +176,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Render Attendance History
                 if (!p.attendanceHistory || p.attendanceHistory.length === 0) {
+                    const emptySubjectText = subjectBadge || 'the selected subject';
                     profileHistoryBody.innerHTML = `
                         <tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--text-muted);">
-                            No sessions attended yet.
+                            ${subjectId ? `No attendance records found for ${App.escapeHtml(emptySubjectText)}.` : 'No sessions attended yet.'}
                         </td></tr>
                     `;
                 } else {
@@ -224,7 +238,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         exportStudentCsvBtn.addEventListener('click', async () => {
             if (!selectedStudentId) return;
             try {
-                const res = await API.get(`/api/reports/export/student-csv/${selectedStudentId}`);
+                const classId = filterClass ? filterClass.value : '';
+                const subjectId = filterSubject ? filterSubject.value : '';
+                let url = `/api/reports/export/student-csv/${encodeURIComponent(selectedStudentId)}`;
+                const queryParams = [];
+                if (classId) queryParams.push(`classId=${encodeURIComponent(classId)}`);
+                if (subjectId) queryParams.push(`subjectId=${encodeURIComponent(subjectId)}`);
+                if (queryParams.length > 0) url += `?${queryParams.join('&')}`;
+
+                const res = await API.get(url);
                 if (res.isFile) {
                     const downloadUrl = window.URL.createObjectURL(res.blob);
                     const a = document.createElement('a');

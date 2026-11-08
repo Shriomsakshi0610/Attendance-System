@@ -23,7 +23,9 @@ interface ReportApi {
 
     @GET("api/reports/student-profile/{id}")
     suspend fun getStudentProfile(
-        @Path("id") studentId: String
+        @Path("id") studentId: String,
+        @Query("classId") classId: String? = null,
+        @Query("subjectId") subjectId: String? = null
     ): Response<ApiResponse<StudentProfileItem>>
 
     @GET("api/reports/datewise")
@@ -55,6 +57,8 @@ interface ReportApi {
     @Streaming
     @GET("api/reports/export/student-csv/{id}")
     suspend fun downloadStudentCsv(
-        @Path("id") studentId: String
+        @Path("id") studentId: String,
+        @Query("classId") classId: String? = null,
+        @Query("subjectId") subjectId: String? = null
     ): Response<ResponseBody>
 }

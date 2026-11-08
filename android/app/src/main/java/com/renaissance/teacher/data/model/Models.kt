@@ -245,7 +245,10 @@ data class StudentProfileItem(
     val totalAbsent: Long = 0,
     val overallPercentage: Double = 0.0,
     val attendanceHistory: List<StudentHistoryRecordItem> = emptyList(),
-    val subjectWiseAttendance: List<SubjectAttendanceItem> = emptyList()
+    val subjectWiseAttendance: List<SubjectAttendanceItem> = emptyList(),
+    val filteredSubjectId: String? = null,
+    val filteredSubjectName: String? = null,
+    val filteredSubjectCode: String? = null
 )
 
 data class DateWiseRecordItem(

@@ -130,7 +130,14 @@ public class CsvExportService {
      * Generates a downloadable CSV of an individual student's complete attendance history.
      */
     public byte[] exportStudentHistoryCsv(String studentId) {
-        StudentProfileDto profile = reportService.getStudentProfile(studentId);
+        return exportStudentHistoryCsv(studentId, null, null);
+    }
+
+    /**
+     * Generates a downloadable CSV of an individual student's attendance history filtered by class and subject.
+     */
+    public byte[] exportStudentHistoryCsv(String studentId, String classId, String subjectId) {
+        StudentProfileDto profile = reportService.getStudentProfile(studentId, classId, subjectId);
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();
              OutputStreamWriter writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);

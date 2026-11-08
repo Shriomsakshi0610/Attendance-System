@@ -16,6 +16,9 @@ public class StudentProfileDto {
     private long totalAbsent;
     private boolean below75;
     private List<HistoryRecordDto> attendanceHistory;
+    private String filteredSubjectId;
+    private String filteredSubjectName;
+    private String filteredSubjectCode;
 
     public static class HistoryRecordDto {
         private String sessionId;
@@ -316,5 +319,29 @@ public class StudentProfileDto {
 
     public void setAttendanceHistory(List<HistoryRecordDto> attendanceHistory) {
         this.attendanceHistory = attendanceHistory;
+    }
+
+    public String getFilteredSubjectId() {
+        return filteredSubjectId;
+    }
+
+    public void setFilteredSubjectId(String filteredSubjectId) {
+        this.filteredSubjectId = filteredSubjectId;
+    }
+
+    public String getFilteredSubjectName() {
+        return filteredSubjectName;
+    }
+
+    public void setFilteredSubjectName(String filteredSubjectName) {
+        this.filteredSubjectName = filteredSubjectName;
+    }
+
+    public String getFilteredSubjectCode() {
+        return filteredSubjectCode;
+    }
+
+    public void setFilteredSubjectCode(String filteredSubjectCode) {
+        this.filteredSubjectCode = filteredSubjectCode;
     }
 }

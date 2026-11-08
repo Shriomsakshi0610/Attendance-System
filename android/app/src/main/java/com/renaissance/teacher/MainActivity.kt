@@ -216,19 +216,30 @@ fun TeacherNavHost(app: RenaissanceTeacherApp) {
             StudentAttendanceScreen(
                 apiClient = app.apiClient,
                 onNavigateBack = { navController.popBackStack() },
-                onSelectStudent = { studentId ->
-                    navController.navigate(Screen.StudentDetail.createRoute(studentId))
+                onSelectStudent = { studentId, classId, subjectId, subjectName ->
+                    navController.navigate(Screen.StudentDetail.createRoute(studentId, classId, subjectId, subjectName))
                 }
             )
         }
 
         composable(
             route = Screen.StudentDetail.route,
-            arguments = listOf(navArgument("studentId") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("studentId") { type = NavType.StringType },
+                navArgument("classId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument("subjectId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument("subjectName") { type = NavType.StringType; nullable = true; defaultValue = null }
+            )
         ) { backStackEntry ->
             val studentId = backStackEntry.arguments?.getString("studentId") ?: ""
+            val classId = backStackEntry.arguments?.getString("classId")
+            val subjectId = backStackEntry.arguments?.getString("subjectId")
+            val subjectName = backStackEntry.arguments?.getString("subjectName")
             StudentDetailScreen(
                 studentId = studentId,
+                classId = classId,
+                subjectId = subjectId,
+                subjectName = subjectName,
                 apiClient = app.apiClient,
                 onNavigateBack = { navController.popBackStack() }
             )

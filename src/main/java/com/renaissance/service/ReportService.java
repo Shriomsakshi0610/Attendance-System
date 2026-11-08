@@ -199,20 +199,149 @@ public class ReportService {
     }
 
     public StudentProfileDto getStudentProfile(String studentId) {
+        return getStudentProfile(studentId, null, null);
+    }
+
+    public StudentProfileDto getStudentProfile(String studentId, String classId, String subjectId) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + studentId));
 
         Teacher teacher = getAuthorizedTeacherOrNull();
-        if (teacher != null && !teacher.isAdmin() && teacher.getAssignedClasses() != null && !teacher.getAssignedClasses().isEmpty()) {
-            Set<String> assignedClassIds = teacher.getAssignedClasses().stream().map(CollegeClass::getId).collect(Collectors.toSet());
-            if (student.getCollegeClass() == null || !assignedClassIds.contains(student.getCollegeClass().getId())) {
-                throw new UnauthorizedException("Access Denied: You do not have permission to view attendance records for this student.");
+        if (teacher != null && !teacher.isAdmin()) {
+            Set<String> assignedClassIds = (teacher.getAssignedClasses() != null && !teacher.getAssignedClasses().isEmpty())
+                    ? teacher.getAssignedClasses().stream().map(CollegeClass::getId).collect(Collectors.toSet())
+                    : Collections.emptySet();
+
+            if (classId != null && !classId.isBlank()) {
+                if (!assignedClassIds.contains(classId)) {
+                    throw new UnauthorizedException("Access Denied: You are not assigned to class " + classId);
+                }
+            } else if (student.getCollegeClass() != null && !assignedClassIds.isEmpty()) {
+                if (!assignedClassIds.contains(student.getCollegeClass().getId())) {
+                    throw new UnauthorizedException("Access Denied: You do not have permission to view attendance records for this student.");
+                }
+            }
+
+            if (subjectId != null && !subjectId.isBlank()) {
+                Set<String> assignedSubjectIds = (teacher.getAssignedSubjects() != null && !teacher.getAssignedSubjects().isEmpty())
+                        ? teacher.getAssignedSubjects().stream().map(Subject::getId).collect(Collectors.toSet())
+                        : Collections.emptySet();
+                if (!assignedSubjectIds.contains(subjectId)) {
+                    throw new UnauthorizedException("Access Denied: You are not assigned to subject " + subjectId);
+                }
             }
         }
 
+        String targetClassId = (classId != null && !classId.isBlank())
+                ? classId
+                : (student.getCollegeClass() != null ? student.getCollegeClass().getId() : null);
+
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd MMM yyyy");
+        DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("hh:mm a");
+
+        // Case 1: Specific Subject Requested
+        if (subjectId != null && !subjectId.isBlank()) {
+            Subject specificSubject = subjectRepository.findById(subjectId).orElse(null);
+            String specificSubjName = specificSubject != null ? specificSubject.getName() : "Subject";
+            String specificSubjCode = specificSubject != null ? specificSubject.getCode() : "-";
+
+            List<AttendanceSession> conductedSessions;
+            if (targetClassId != null) {
+                conductedSessions = sessionRepository.findByCollegeClassIdAndSubjectIdOrderByStartTimeAsc(targetClassId, subjectId);
+            } else {
+                conductedSessions = sessionRepository.findAll().stream()
+                        .filter(s -> s.getSubject() != null && subjectId.equals(s.getSubject().getId()))
+                        .collect(Collectors.toList());
+            }
+
+            List<AttendanceSession> validSessions = conductedSessions.stream()
+                    .filter(s -> s.getStatus() == AttendanceSession.SessionStatus.COMPLETED || s.getStatus() == AttendanceSession.SessionStatus.ACTIVE)
+                    .collect(Collectors.toList());
+
+            long totalConducted = validSessions.size();
+            Set<String> validSessionIds = validSessions.stream().map(AttendanceSession::getId).collect(Collectors.toSet());
+
+            List<AttendanceRecord> records = recordRepository.findByStudentIdOrderByMarkedAtDesc(studentId);
+            List<AttendanceRecord> subjectRecords = records.stream().filter(r -> {
+                String rSubId = null;
+                if (r.getSubject() != null && r.getSubject().getId() != null) {
+                    rSubId = r.getSubject().getId();
+                } else if (r.getSession() != null && r.getSession().getSubject() != null && r.getSession().getSubject().getId() != null) {
+                    rSubId = r.getSession().getSubject().getId();
+                }
+                if (!subjectId.equals(rSubId)) {
+                    return false;
+                }
+                if (r.getSession() != null && !validSessionIds.isEmpty() && !validSessionIds.contains(r.getSession().getId())) {
+                    return false;
+                }
+                return true;
+            }).collect(Collectors.toList());
+
+            long totalPresent = subjectRecords.stream().filter(r -> r.getStatus() == AttendanceRecord.AttendanceStatus.PRESENT).count();
+            long totalAbsent = Math.max(0, totalConducted - totalPresent);
+            double overallPercentage = totalConducted > 0 ? ((double) totalPresent / totalConducted) * 100.0 : 100.0;
+
+            List<StudentProfileDto.HistoryRecordDto> history = subjectRecords.stream().map(r -> {
+                AttendanceSession s = r.getSession();
+                String sCode = s != null ? s.getSessionCode() : "-";
+                String subCode = (s != null && s.getSubject() != null) ? s.getSubject().getCode() : specificSubjCode;
+                String subName = (s != null && s.getSubject() != null) ? s.getSubject().getName() : specificSubjName;
+                String sDate = (s != null && s.getStartTime() != null) ? s.getStartTime().format(dateFmt) : "-";
+                String sTime = (s != null && s.getStartTime() != null) ? s.getStartTime().format(timeFmt) : "-";
+
+                return new StudentProfileDto.HistoryRecordDto(
+                        s != null ? s.getId() : null,
+                        sCode,
+                        subCode,
+                        subName,
+                        sDate,
+                        sTime,
+                        r.getStatus().name(),
+                        r.getMarkedAt() != null ? r.getMarkedAt().format(timeFmt) : "-",
+                        r.getDistanceFromTeacher() != null ? String.format("%.1f m", r.getDistanceFromTeacher()) : "-"
+                );
+            }).collect(Collectors.toList());
+
+            List<StudentProfileDto.SubjectAttendanceDto> subjectAttendanceList = new ArrayList<>();
+            subjectAttendanceList.add(new StudentProfileDto.SubjectAttendanceDto(
+                    subjectId,
+                    specificSubjCode,
+                    specificSubjName,
+                    totalConducted,
+                    totalPresent,
+                    totalAbsent,
+                    Math.round(overallPercentage * 100.0) / 100.0
+            ));
+
+            StudentProfileDto profile = new StudentProfileDto();
+            profile.setId(student.getId());
+            profile.setUsn(student.getUsn());
+            profile.setName(student.getName());
+            profile.setEmail(student.getEmail());
+            profile.setDepartment(student.getDepartment() != null ? student.getDepartment().getName() : "General");
+            if (student.getCollegeClass() != null) {
+                profile.setSemester(student.getCollegeClass().getSemester());
+                profile.setSection(student.getCollegeClass().getSection());
+            }
+            profile.setTotalConducted(totalConducted);
+            profile.setTotalPresent(totalPresent);
+            profile.setTotalAbsent(totalAbsent);
+            profile.setOverallPercentage(Math.round(overallPercentage * 100.0) / 100.0);
+            profile.setBelow75(overallPercentage < 75.0);
+            profile.setAttendanceHistory(history);
+            profile.setSubjectWiseAttendance(subjectAttendanceList);
+            profile.setFilteredSubjectId(subjectId);
+            profile.setFilteredSubjectName(specificSubjName);
+            profile.setFilteredSubjectCode(specificSubjCode);
+
+            return profile;
+        }
+
+        // Case 2: All Subjects (existing behavior with class authorization)
         List<AttendanceRecord> records = recordRepository.findByStudentIdOrderByMarkedAtDesc(studentId);
-        List<AttendanceSession> classSessions = (student.getCollegeClass() != null)
-                ? sessionRepository.findByCollegeClassIdOrderByStartTimeDesc(student.getCollegeClass().getId())
+        List<AttendanceSession> classSessions = (targetClassId != null)
+                ? sessionRepository.findByCollegeClassIdOrderByStartTimeDesc(targetClassId)
                 : Collections.emptyList();
 
         classSessions = classSessions.stream()
@@ -224,16 +353,13 @@ public class ReportService {
         long totalAbsent = Math.max(0, totalConducted - totalPresent);
         double overallPercentage = totalConducted > 0 ? ((double) totalPresent / totalConducted) * 100.0 : 100.0;
 
-        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd MMM yyyy");
-        DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("hh:mm a");
-
         List<StudentProfileDto.HistoryRecordDto> history = records.stream().map(r -> {
             AttendanceSession s = r.getSession();
             return new StudentProfileDto.HistoryRecordDto(
                     s != null ? s.getId() : null,
                     s != null ? s.getSessionCode() : "-",
-                    (s != null && s.getSubject() != null) ? s.getSubject().getCode() : "-",
-                    (s != null && s.getSubject() != null) ? s.getSubject().getName() : "-",
+                    (s != null && s.getSubject() != null) ? s.getSubject().getCode() : (r.getSubject() != null ? r.getSubject().getCode() : "-"),
+                    (s != null && s.getSubject() != null) ? s.getSubject().getName() : (r.getSubject() != null ? r.getSubject().getName() : "-"),
                     (s != null && s.getStartTime() != null) ? s.getStartTime().format(dateFmt) : "-",
                     (s != null && s.getStartTime() != null) ? s.getStartTime().format(timeFmt) : "-",
                     r.getStatus().name(),
@@ -292,6 +418,7 @@ public class ReportService {
         profile.setTotalPresent(totalPresent);
         profile.setTotalAbsent(totalAbsent);
         profile.setOverallPercentage(Math.round(overallPercentage * 100.0) / 100.0);
+        profile.setBelow75(overallPercentage < 75.0);
         profile.setAttendanceHistory(history);
         profile.setSubjectWiseAttendance(subjectAttendanceList);
 

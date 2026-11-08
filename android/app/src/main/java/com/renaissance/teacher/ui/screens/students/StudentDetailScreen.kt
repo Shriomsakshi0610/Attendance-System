@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.renaissance.teacher.data.api.ApiClient
@@ -32,6 +33,9 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun StudentDetailScreen(
     studentId: String,
+    classId: String? = null,
+    subjectId: String? = null,
+    subjectName: String? = null,
     apiClient: ApiClient,
     onNavigateBack: () -> Unit
 ) {
@@ -44,12 +48,18 @@ fun StudentDetailScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var selectedTab by remember { mutableStateOf(0) } // 0: Overview & Subjects, 1: Date-wise History
 
+    val effectiveSubjectName = profile?.filteredSubjectName ?: subjectName
+
     fun loadProfile() {
         coroutineScope.launch {
             isLoading = true
             errorMessage = null
             try {
-                val res = apiClient.reportApi.getStudentProfile(studentId)
+                val res = apiClient.reportApi.getStudentProfile(
+                    studentId = studentId,
+                    classId = classId,
+                    subjectId = subjectId
+                )
                 if (res.isSuccessful && res.body()?.data != null) {
                     profile = res.body()!!.data
                 } else {
@@ -63,7 +73,7 @@ fun StudentDetailScreen(
         }
     }
 
-    LaunchedEffect(studentId) {
+    LaunchedEffect(studentId, classId, subjectId) {
         loadProfile()
     }
 
@@ -71,7 +81,11 @@ fun StudentDetailScreen(
         coroutineScope.launch {
             isExporting = true
             try {
-                val res = apiClient.reportApi.downloadStudentCsv(studentId)
+                val res = apiClient.reportApi.downloadStudentCsv(
+                    studentId = studentId,
+                    classId = classId,
+                    subjectId = subjectId
+                )
                 if (res.isSuccessful && res.body() != null) {
                     val usn = profile?.usn ?: studentId
                     val filename = "Attendance_Student_${usn}_${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}.csv"
@@ -174,6 +188,21 @@ fun StudentDetailScreen(
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                    if (!effectiveSubjectName.isNullOrBlank()) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = PrimaryIndigo.copy(alpha = 0.12f)
+                                        ) {
+                                            Text(
+                                                text = "Subject: $effectiveSubjectName",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = PrimaryIndigo,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
                                 }
 
                                 // Overall Percentage Badge
@@ -269,8 +298,16 @@ fun StudentDetailScreen(
                     if (selectedTab == 0) {
                         // Subject-wise attendance list
                         if (p.subjectWiseAttendance.isEmpty()) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("No subject attendance recorded yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = if (!effectiveSubjectName.isNullOrBlank()) {
+                                        "No attendance records found for $effectiveSubjectName."
+                                    } else {
+                                        "No subject attendance recorded yet."
+                                    },
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         } else {
                             LazyColumn(
@@ -285,8 +322,16 @@ fun StudentDetailScreen(
                     } else {
                         // Date-wise attendance history
                         if (p.attendanceHistory.isEmpty()) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("No attendance sessions recorded yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = if (!effectiveSubjectName.isNullOrBlank()) {
+                                        "No attendance records found for $effectiveSubjectName."
+                                    } else {
+                                        "No attendance sessions recorded yet."
+                                    },
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         } else {
                             LazyColumn(

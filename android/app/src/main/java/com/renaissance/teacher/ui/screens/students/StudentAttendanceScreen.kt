@@ -39,7 +39,7 @@ import java.time.format.DateTimeFormatter
 fun StudentAttendanceScreen(
     apiClient: ApiClient,
     onNavigateBack: () -> Unit,
-    onSelectStudent: (String) -> Unit
+    onSelectStudent: (studentId: String, classId: String?, subjectId: String?, subjectName: String?) -> Unit
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -481,7 +481,7 @@ fun StudentAttendanceScreen(
                     items(filteredList, key = { it.studentId }) { student ->
                         StudentAttendanceCard(
                             student = student,
-                            onClick = { onSelectStudent(student.studentId) }
+                            onClick = { onSelectStudent(student.studentId, selectedClass?.id, selectedSubject?.id, selectedSubject?.name) }
                         )
                     }
                 }
