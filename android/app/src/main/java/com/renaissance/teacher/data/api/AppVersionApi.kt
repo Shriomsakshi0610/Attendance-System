@@ -5,6 +5,7 @@ import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Streaming
+import retrofit2.http.Url
 
 interface AppVersionApi {
 
@@ -14,4 +15,8 @@ interface AppVersionApi {
     @Streaming
     @GET("api/public/app/download")
     suspend fun downloadApk(): Response<ResponseBody>
+
+    @Streaming
+    @GET
+    suspend fun downloadApkFromUrl(@Url url: String): Response<ResponseBody>
 }

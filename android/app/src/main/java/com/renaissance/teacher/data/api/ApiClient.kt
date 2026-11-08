@@ -210,6 +210,7 @@ class ApiClient(
         val request = chain.request()
         val path = request.url.encodedPath
 
+        val isDownload = path.contains("api/public/app/download")
         val isColdStartSensitive = path.contains("api/auth") ||
                 path.contains("health") ||
                 path.contains("api/reports") ||
@@ -218,7 +219,11 @@ class ApiClient(
                 path.contains("api/teacher") ||
                 path.contains("api/timetable")
 
-        if (isColdStartSensitive) {
+        if (isDownload) {
+            chain.withConnectTimeout(45, TimeUnit.SECONDS)
+                .withReadTimeout(120, TimeUnit.SECONDS)
+                .proceed(request)
+        } else if (isColdStartSensitive) {
             chain.withConnectTimeout(35, TimeUnit.SECONDS)
                 .withReadTimeout(35, TimeUnit.SECONDS)
                 .proceed(request)

@@ -28,11 +28,12 @@ public class AppVersionController {
 
     private static final Logger log = LoggerFactory.getLogger(AppVersionController.class);
 
-    private static final int CURRENT_VERSION_CODE = 4;
-    private static final String CURRENT_VERSION_NAME = "1.3.0";
+    private static final int CURRENT_VERSION_CODE = 5;
+    private static final String CURRENT_VERSION_NAME = "1.3.1";
     private static final int MIN_SUPPORTED_VERSION_CODE = 1;
     private static final String DEFAULT_RELEASE_NOTES =
-            "Renaissance Teacher App v1.3.0:\n" +
+            "Renaissance Teacher App v1.3.1:\n" +
+            "• Direct in-app streaming APK download with live progress indicator\n" +
             "• Permanent session restoration & app restart reliability fix\n" +
             "• Dedicated Student-wise Attendance Details & Analytics\n" +
             "• Search students by Name, USN, or Student ID\n" +
