@@ -326,4 +326,28 @@ class InAppUpdateManager(
             _updateState.value = UpdateState.Error(err)
         }
     }
+
+    fun openDownloadInBrowser(updateInfo: AppVersionInfo) {
+        val downloadUrl = updateInfo.downloadUrl ?: "/api/public/app/download"
+        val fullUrl = if (downloadUrl.startsWith("http")) {
+            downloadUrl
+        } else {
+            val base = apiClient.sessionPrefs.getBaseUrl()
+            if (base.endsWith("/") && downloadUrl.startsWith("/")) {
+                base + downloadUrl.substring(1)
+            } else if (!base.endsWith("/") && !downloadUrl.startsWith("/")) {
+                "$base/$downloadUrl"
+            } else {
+                base + downloadUrl
+            }
+        }
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(fullUrl)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to launch browser: ${e.message}")
+        }
+    }
 }

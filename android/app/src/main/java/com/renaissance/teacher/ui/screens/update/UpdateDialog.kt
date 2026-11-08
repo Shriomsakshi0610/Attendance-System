@@ -352,15 +352,26 @@ fun SettingsUpdateScreen(
                             if (state.canRetry && (state.targetInfo != null || availableUpdate != null)) {
                                 val target = state.targetInfo ?: availableUpdate!!
                                 Spacer(modifier = Modifier.height(12.dp))
-                                Button(
-                                    onClick = { updateManager.startDownload(target) },
-                                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                                Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Retry Download")
+                                    Button(
+                                        onClick = { updateManager.startDownload(target) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Retry")
+                                    }
+                                    OutlinedButton(
+                                        onClick = { updateManager.openDownloadInBrowser(target) },
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text("Browser")
+                                    }
                                 }
                             }
                         }
@@ -403,15 +414,26 @@ fun SettingsUpdateScreen(
 
                             Spacer(modifier = Modifier.height(14.dp))
 
-                            Button(
-                                onClick = { updateManager.startDownload(update) },
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = SecondaryViolet)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(imageVector = Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Download APK (v${update.versionName})")
+                                Button(
+                                    onClick = { updateManager.startDownload(update) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = SecondaryViolet)
+                                ) {
+                                    Icon(imageVector = Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Download APK (v${update.versionName})")
+                                }
+                                OutlinedButton(
+                                    onClick = { updateManager.openDownloadInBrowser(update) },
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("Browser")
+                                }
                             }
                         }
                     }
