@@ -10,7 +10,6 @@ import okhttp3.CookieJar
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -18,12 +17,15 @@ import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
-class ApiClient(private val context: Context) {
+class ApiClient(
+    private val context: Context,
+    val sessionPrefs: SessionPreferences = SessionPreferences.getInstance(context)
+) {
 
-    val sessionPrefs = SessionPreferences(context)
-    private val cookieStore = mutableMapOf<String, List<Cookie>>()
+    private val cookieStore = ConcurrentHashMap<String, List<Cookie>>()
 
     private val cookieJar = object : CookieJar {
         override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
@@ -39,7 +41,7 @@ class ApiClient(private val context: Context) {
                             name = newCookie.name,
                             value = newCookie.value
                         )
-                        Log.i("AttendanceNetworkDiag", "[CookieJar] Saved persistent session cookie: ${newCookie.name}")
+                        Log.i("AttendanceNetworkDiag", "[CookieJar] Saved session cookie: ${newCookie.name} for ${url.host}")
                     }
                 }
                 cookieStore[url.host] = current
@@ -109,7 +111,7 @@ class ApiClient(private val context: Context) {
     private val transientRetryInterceptor = Interceptor { chain ->
         val request = chain.request()
         val isGet = request.method.equals("GET", ignoreCase = true)
-        val maxRetries = if (isGet) 2 else 0
+        val maxRetries = if (isGet) 1 else 0
         var attempt = 0
         var lastException: IOException? = null
 
@@ -119,7 +121,7 @@ class ApiClient(private val context: Context) {
                 if (response.code == 503 && isGet && attempt < maxRetries) {
                     response.close()
                     attempt++
-                    val backoff = if (attempt == 1) 600L else 1500L
+                    val backoff = 1000L
                     Log.w("AttendanceNetworkDiag", "[Transient Retry] HTTP 503 for ${request.url.encodedPath}. Retrying in ${backoff}ms (Attempt $attempt/$maxRetries)")
                     try {
                         Thread.sleep(backoff)
@@ -135,7 +137,7 @@ class ApiClient(private val context: Context) {
                 val isRetryable = e is SocketTimeoutException || e is ConnectException || e is UnknownHostException
                 if (isRetryable && isGet && attempt < maxRetries) {
                     attempt++
-                    val backoff = if (attempt == 1) 600L else 1500L
+                    val backoff = 1000L
                     Log.w("AttendanceNetworkDiag", "[Transient Retry] ${e.javaClass.simpleName} for ${request.url.encodedPath}. Retrying in ${backoff}ms (Attempt $attempt/$maxRetries)")
                     try {
                         Thread.sleep(backoff)
@@ -201,8 +203,8 @@ class ApiClient(private val context: Context) {
     /**
      * Endpoint-specific timeout interceptor tailored for Render Free Tier cold starts.
      * Endpoints subject to server awakening or heavy initialization (auth, teacher profile, reports, session-activation)
-     * are granted up to 50 seconds to avoid socket aborts before the JVM finishes booting.
-     * Standard transactional APIs retain robust 35s timeouts.
+     * are granted up to 35 seconds to avoid socket aborts before the JVM finishes booting.
+     * Standard transactional APIs retain fast, responsive 20s timeouts.
      */
     private val endpointTimeoutInterceptor = Interceptor { chain ->
         val request = chain.request()
@@ -217,12 +219,12 @@ class ApiClient(private val context: Context) {
                 path.contains("api/timetable")
 
         if (isColdStartSensitive) {
-            chain.withConnectTimeout(50, TimeUnit.SECONDS)
-                .withReadTimeout(50, TimeUnit.SECONDS)
-                .proceed(request)
-        } else {
             chain.withConnectTimeout(35, TimeUnit.SECONDS)
                 .withReadTimeout(35, TimeUnit.SECONDS)
+                .proceed(request)
+        } else {
+            chain.withConnectTimeout(20, TimeUnit.SECONDS)
+                .withReadTimeout(20, TimeUnit.SECONDS)
                 .proceed(request)
         }
     }
@@ -238,9 +240,9 @@ class ApiClient(private val context: Context) {
         .addInterceptor(endpointTimeoutInterceptor)
         .addInterceptor(auditDiagnosticInterceptor)
         .addInterceptor(loggingInterceptor)
-        .connectTimeout(35, TimeUnit.SECONDS)
-        .readTimeout(35, TimeUnit.SECONDS)
-        .writeTimeout(35, TimeUnit.SECONDS)
+        .connectTimeout(25, TimeUnit.SECONDS)
+        .readTimeout(25, TimeUnit.SECONDS)
+        .writeTimeout(25, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
         .build()
 

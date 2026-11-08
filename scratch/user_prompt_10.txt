@@ -1,0 +1,394 @@
+<USER_REQUEST>
+# CRITICAL PRODUCTION BUG — RECURRING TEACHER APP DATA FETCH FAILURE
+## Full Root-Cause Investigation, Permanent Fix, Production APK Update & End-to-End Verification
+
+The Teacher Attendance Android application is STILL experiencing the SAME data-fetching problem, even after the previous authentication persistence and cookie restoration fixes.
+
+**The previous fix did NOT permanently resolve the issue. Do not consider the task complete by repeating the previous changes or generating another report.**
+
+I am authorizing you to perform a complete investigation, modify the Android application, modify the Spring Boot backend if necessary, rebuild the APK, update the application distribution files, and complete end-to-end testing.
+
+You have permission to make all necessary code changes required to permanently resolve this issue.
+
+---
+
+## 1. RECURRING ISSUE — EXACT USER EXPERIENCE
+
+The issue occurs as follows:
+
+1. Teacher opens the Android app.
+2. Sometimes the dashboard fails to fetch data from the production server.
+3. The application keeps loading for a long time.
+4. Refreshing does not reliably fetch the data.
+5. Sometimes logging out and logging in again temporarily fixes the issue.
+6. After closing the app from Recent Apps and reopening it, the same issue appears again.
+7. Dashboard information such as classes, subjects, sessions, timetable, student lists and attendance records does not load reliably.
+
+This is a recurring production issue, not an occasional cosmetic loading problem.
+
+The previous report claimed that cookie restoration, session validation, timeouts and retry handling were fixed. However, the problem is still happening.
+
+**Assume that the previous fix may be incomplete or incorrect. Independently verify every previous change.**
+
+## 2. FIRST: INVESTIGATE BEFORE MODIFYING CODE
+
+Do not immediately start changing timeouts, adding delays, or rewriting the UI.
+
+Perform a complete root-cause investigation across the entire request lifecycle.
+
+Investigate these layers independently:
+
+### A. Android Application Lifecycle
+- MainActivity and SplashScreen initialization.
+- Application process recreation.
+- Activity recreation and configuration changes.
+- App background/foreground transitions.
+- ViewModel lifecycle and coroutine cancellation.
+- Whether API calls are cancelled when the app is closed.
+- Whether stale loading states survive when the application restarts.
+- Whether the dashboard is initialized more than once.
+- Whether multiple requests race with session initialization.
+
+### B. Authentication and Session Persistence
+
+Inspect the actual implementation of:
+
+- SessionPreferences.kt
+- ApiClient.kt
+- LoginScreen.kt
+- SplashScreen.kt
+- MainActivity.kt
+- CookieJar implementation
+- Authentication interceptors
+- Logout and session clearing logic.
+
+Verify the actual cookie format received from the production backend.
+
+Specifically investigate:
+
+- Whether Set-Cookie is parsed correctly.
+- Whether the cookie name and value are extracted correctly.
+- Whether cookie attributes such as Path, Domain, Secure, HttpOnly, SameSite and Expires are handled correctly.
+- Whether the CookieJar restores the cookie after process death.
+- Whether the interceptor and CookieJar are injecting duplicate Cookie headers.
+- Whether a stale cookie overrides a valid cookie.
+- Whether cookies are being saved asynchronously and the app starts before saving completes.
+- Whether the saved cookie belongs to the correct backend hostname.
+- Whether the session is being cleared accidentally.
+- Whether session expiration is handled correctly.
+
+Do not assume that the cookie fix from the previous implementation is correct just because it compiled.
+
+### C. API Request Investigation
+
+Instrument every relevant API request.
+
+For each request, capture:
+
+- Endpoint.
+- HTTP method.
+- Request timestamp.
+- Response timestamp.
+- HTTP status code.
+- Response duration.
+- Authentication state.
+- Whether the required session cookie was attached (never log its actual value).
+- Response body or sanitized error details.
+- Timeout, DNS, SSL, connection reset or network failure information.
+
+Investigate:
+
+- HTTP 401 and 403.
+- HTTP 500 and 503.
+- SocketTimeoutException.
+- UnknownHostException.
+- SSLHandshakeException.
+- Connection reset.
+- Empty response bodies.
+- Malformed JSON.
+- Incorrect API base URL.
+- Incorrect content type.
+- Serialization/deserialization failures.
+
+Find the exact request that fails first when the problem occurs.
+
+Do not confuse an authentication error with a network timeout or a backend failure.
+
+### D. Backend and Render Investigation
+
+Inspect the production Spring Boot backend.
+
+Verify:
+
+- Render service availability.
+- Cold-start behavior.
+- Health-check endpoint.
+- Spring Security configuration.
+- Session creation and validation.
+- Session timeout configuration.
+- Session cookie attributes.
+- CORS configuration wherever applicable.
+- MongoDB Atlas connectivity.
+- MongoDB connection pool behavior.
+- Backend thread and connection handling.
+- API response consistency after Render wakes up.
+
+Check whether Render is restarting, sleeping, or dropping connections.
+
+Check whether MongoDB connections are being recreated properly after backend inactivity.
+
+Do not simply assume Render cold start is the only reason.
+
+### E. Dashboard Data Dependencies
+
+Inspect the actual dashboard endpoints:
+
+- `/api/teacher/profile`
+- `/api/teacher/classes`
+- `/api/teacher/subjects`
+- `/api/timetable/my-schedule`
+- Active sessions endpoint.
+- Student list endpoints.
+- Attendance history and report endpoints.
+
+Verify that each endpoint works independently using a real authenticated teacher account.
+
+Find out whether one failing endpoint prevents the other dashboard sections from loading.
+
+---
+
+## 3. IMPLEMENT A RELIABLE AUTHENTICATION ARCHITECTURE
+
+After identifying the actual causes, implement the necessary corrections.
+
+The app startup sequence must be deterministic:
+
+1. Initialize the backend configuration.
+2. Load the correct production BASE_URL.
+3. Restore persisted authentication credentials/session.
+4. Initialize the HTTP client and cookie handling.
+5. Validate the session against the backend.
+6. Fetch the authenticated teacher profile.
+7. Initialize the dashboard data requests.
+8. Display successfully loaded dashboard sections.
+
+Do not use arbitrary delays to solve initialization race conditions.
+
+Use proper synchronization and lifecycle-aware coroutines.
+
+If the session is invalid:
+- Clear invalid session data.
+- Redirect to Login.
+- Show a clear session-expired message.
+
+If the backend is temporarily unavailable:
+- Do not clear a potentially valid session.
+- Show a meaningful connection error.
+- Allow the teacher to retry.
+- Recover automatically when connectivity returns, where appropriate.
+
+Never endlessly load the dashboard.
+
+---
+
+## 4. IMPLEMENT RELIABLE NETWORK AND RETRY HANDLING
+
+Implement appropriate network handling for all dashboard APIs.
+
+Requirements:
+
+- Reasonable connection, read and write timeouts.
+- Limited exponential-backoff retries for transient failures.
+- Do not retry HTTP 401 indefinitely.
+- Do not retry permanent 4xx errors unnecessarily.
+- Prevent duplicate concurrent requests.
+- Correctly cancel obsolete requests.
+- Prevent stale requests from overwriting newer dashboard data.
+- Ensure Refresh triggers actual API requests.
+- Provide per-section error states where possible.
+- Restore the loading state correctly after retry.
+- Do not show dummy data as real data.
+
+Investigate whether retrying the same request with the same invalid cookie is causing repeated failures.
+
+---
+
+## 5. IMPLEMENT A REAL DIAGNOSTIC SYSTEM
+
+Add structured diagnostic logging to help identify future failures.
+
+Logs should include:
+
+- App startup sequence.
+- Session restoration success/failure.
+- Session validation result.
+- API endpoint and response status.
+- API request duration.
+- Network exception category.
+- Retry attempt number.
+- Dashboard section loading status.
+
+IMPORTANT SECURITY REQUIREMENTS:
+
+- Never log passwords.
+- Never log complete authentication cookies.
+- Never log JWTs, secrets, MongoDB URIs or private user information.
+- Use sanitized diagnostic logs.
+- Do not expose debugging endpoints publicly.
+
+Provide a way to inspect diagnostic logs during testing.
+
+---
+
+## 6. VERIFY TEACHER DASHBOARD DATA
+
+Use the actual production backend and a real authorized teacher account.
+
+Verify that the following information loads correctly:
+
+- Teacher's real name and profile.
+- Department and designation.
+- Assigned classes.
+- Assigned subjects.
+- Timetable.
+- Active sessions.
+- Student lists.
+- Student-wise attendance.
+- Attendance history.
+- CSV export functionality.
+
+Do not use demo accounts, fake students, mock API responses or hardcoded attendance values.
+
+Do not modify actual attendance records during testing.
+
+---
+
+## 7. MANDATORY END-TO-END TESTING
+
+Perform the following tests. Do not mark them PASS without actual execution and evidence.
+
+| Test | Required scenario |
+|---|---|
+| 1 | Fresh installation → login → all dashboard data loads |
+| 2 | Login → close app from Recent Apps → reopen |
+| 3 | Force stop app → reopen → data loads |
+| 4 | Restart Android phone → open app → data loads |
+| 5 | Close app → wait 5 minutes → reopen |
+| 6 | Close app → wait 30 minutes → reopen |
+| 7 | Open app after prolonged inactivity |
+| 8 | Disable internet → open app → meaningful error |
+| 9 | Restore internet → Retry → data loads |
+| 10 | Backend unavailable temporarily → recover → data loads |
+| 11 | Session expires → clean login redirect |
+| 12 | Rapidly press Refresh multiple times |
+| 13 | Repeatedly close and reopen the app 20 times |
+| 14 | Verify all dashboard APIs against production |
+| 15 | Verify student attendance and CSV export |
+
+At least 20 complete restart cycles must be tested.
+
+Test on an actual Android device, not only an emulator or unit tests.
+
+If an actual device is unavailable, clearly state which tests could not be executed. Never fabricate device test results.
+
+---
+
+## 8. PROPER APK UPDATE — AUTHORIZED
+
+You are authorized to build and publish a new application update after implementing the permanent fix.
+
+Complete the following:
+
+1. Increase Android `versionCode`.
+2. Update `versionName`.
+3. Preserve the existing application `applicationId` / package name.
+4. Preserve the production signing key and signing configuration.
+5. Generate a properly signed production release APK.
+6. Verify that the new APK can update the currently installed production application without uninstalling it.
+7. Verify that login/session behavior works after upgrading.
+8. Verify that the APK download URL works.
+9. Update the existing APK distribution location:
+   `src/main/resources/static/downloads/renaissance-teacher.apk`
+10. Update the version manifest/update API consumed by the existing in-app update checker.
+11. Ensure the update checker correctly detects the new version.
+12. Verify that the app downloads and installs the update.
+13. Verify that the installed version is actually the new version.
+
+Do not distribute a debug APK as a production release.
+
+If the original production signing key is unavailable, STOP before publishing an incompatible APK. Report the issue and request the required signing configuration.
+
+Do not overwrite or expose signing keys or passwords in source code.
+
+---
+
+## 9. PRESERVE ALL EXISTING FEATURES
+
+Do not break:
+
+- Teacher login/logout.
+- Admin authentication and credentials.
+- Teacher profile.
+- Real backend and MongoDB integration.
+- Timetable.
+- Student management.
+- Attendance marking and history.
+- CSV export.
+- GPS geofencing (exactly 40 metres).
+- BLE attendance verification.
+- Existing BLE RSSI threshold.
+- APK update checker.
+- Teacher authorization and role restrictions.
+
+Do not introduce fake data or weaken backend security.
+
+Do not modify production attendance records or user accounts.
+
+---
+
+## 10. FINAL ACCEPTANCE CRITERIA
+
+This task is NOT complete merely because:
+
+- The code compiles.
+- Unit tests pass.
+- The APK builds.
+- A single login works.
+- A report claims that the issue is fixed.
+
+The task is complete only when:
+
+1. The actual recurring root cause has been identified.
+2. The Android/backend code has been corrected.
+3. The production session restoration flow works.
+4. Dashboard APIs consistently return valid data.
+5. App restart and force-stop scenarios work.
+6. Network recovery and retry work.
+7. The production release APK is built and signed correctly.
+8. The in-app update mechanism serves the new version correctly.
+9. The installed updated APK is tested end to end.
+
+### FINAL DELIVERABLES
+
+Provide:
+
+- Detailed root-cause analysis.
+- Evidence of the original failing behavior.
+- Explanation of every fix.
+- List of modified files.
+- Backend changes, if any.
+- API diagnostics and response timings.
+- Actual test results with PASS/FAIL status.
+- Tests not performed, with reasons.
+- New versionCode and versionName.
+- APK signing verification result.
+- Final signed production APK.
+- Updated APK download URL.
+- Updated version manifest/API details.
+- Confirmation that the in-app update mechanism works.
+
+**FINAL INSTRUCTION: Take ownership of this bug and fix it end to end. Do not stop after analysis. Do not just give me recommendations or another theoretical report. Investigate, implement, build, test, and deliver the updated working application. You are authorized to make the necessary changes.**
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-11-08T14:29:14+05:30.
+</ADDITIONAL_METADATA>

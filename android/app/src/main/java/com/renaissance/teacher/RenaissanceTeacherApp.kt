@@ -26,8 +26,8 @@ class RenaissanceTeacherApp : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        sessionPreferences = SessionPreferences(this)
-        apiClient = ApiClient(this)
+        sessionPreferences = SessionPreferences.getInstance(this)
+        apiClient = ApiClient(this, sessionPreferences)
         locationService = LocationService(this)
         bleAdvertiser = BleAdvertiserManager(this)
         bleScanner = BleScannerManager(this)

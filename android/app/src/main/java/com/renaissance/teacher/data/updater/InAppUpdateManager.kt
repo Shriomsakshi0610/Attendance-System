@@ -74,7 +74,7 @@ class InAppUpdateManager(
 
         val baseUrl = apiClient.run {
             // resolve absolute URL
-            val base = com.renaissance.teacher.data.security.SessionPreferences(context).getBaseUrl()
+            val base = apiClient.sessionPrefs.getBaseUrl()
             if (updateInfo.downloadUrl.startsWith("http")) updateInfo.downloadUrl
             else if (base.endsWith("/") && updateInfo.downloadUrl.startsWith("/")) base + updateInfo.downloadUrl.substring(1)
             else base + updateInfo.downloadUrl
