@@ -70,6 +70,7 @@ public class SecurityConfig {
                 // Public REST endpoints for student attendance and initial dropdowns
                 .requestMatchers(
                     "/api/auth/login",
+                    "/api/auth/refresh",
                     "/api/auth/status",
                     "/api/public/**",
                     "/api/attendance/mark",

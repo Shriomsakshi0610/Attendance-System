@@ -95,6 +95,7 @@ fun LoginScreen(
                     val body = response.body()!!
                     if (body.success) {
                         val teacher = body.data?.teacher
+                        val refreshToken = body.data?.refreshToken ?: body.refreshToken
                         val rawSetCookie = response.headers()["Set-Cookie"]
                         val cleanCookie = if (!rawSetCookie.isNullOrBlank() && rawSetCookie.contains("=")) {
                             rawSetCookie.split(";").firstOrNull()?.trim() ?: rawSetCookie
@@ -107,7 +108,8 @@ fun LoginScreen(
                             name = teacher?.name ?: body.displayName ?: body.username ?: u,
                             teacherId = teacher?.id ?: body.teacherId,
                             email = teacher?.email ?: body.username ?: u,
-                            department = deptName
+                            department = deptName,
+                            refreshToken = refreshToken
                         )
                         apiClient.restoreSession()
                         onLoginSuccess()

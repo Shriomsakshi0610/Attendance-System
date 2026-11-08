@@ -41,6 +41,7 @@ class SessionPreferences private constructor(context: Context) {
         private const val KEY_SESSION_COOKIE = "session_cookie"
         private const val KEY_SESSION_COOKIE_NAME = "session_cookie_name"
         private const val KEY_SESSION_COOKIE_VALUE = "session_cookie_value"
+        private const val KEY_REFRESH_TOKEN = "refresh_token"
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
         private const val KEY_TEACHER_NAME = "teacher_name"
         private const val KEY_TEACHER_ID = "teacher_id"
@@ -141,9 +142,16 @@ class SessionPreferences private constructor(context: Context) {
     }
 
     @Synchronized
-    fun saveSession(cookie: String, name: String, teacherId: String?, email: String, department: String?) {
+    fun saveSession(
+        cookie: String,
+        name: String,
+        teacherId: String?,
+        email: String,
+        department: String?,
+        refreshToken: String? = null
+    ) {
         val (cName, cVal, cleanHeader) = parseCookieTokens(cookie)
-        prefs.edit()
+        val editor = prefs.edit()
             .putString(KEY_SESSION_COOKIE, cleanHeader)
             .putString(KEY_SESSION_COOKIE_NAME, cName)
             .putString(KEY_SESSION_COOKIE_VALUE, cVal)
@@ -152,9 +160,21 @@ class SessionPreferences private constructor(context: Context) {
             .putString(KEY_TEACHER_ID, teacherId)
             .putString(KEY_TEACHER_EMAIL, email)
             .putString(KEY_DEPARTMENT, department)
-            .commit() // Synchronous atomic flush to disk
-        Log.i(TAG, "[Session Saved] Cookie: $cName (len=${cVal.length}), Teacher: $name ($email)")
+
+        if (!refreshToken.isNullOrBlank()) {
+            editor.putString(KEY_REFRESH_TOKEN, refreshToken)
+        }
+        editor.commit() // Synchronous atomic flush to disk
+        Log.i(TAG, "[Session Saved] Cookie: $cName (len=${cVal.length}), HasRefresh: ${!refreshToken.isNullOrBlank()}, Teacher: $name ($email)")
     }
+
+    @Synchronized
+    fun saveRefreshToken(token: String) {
+        prefs.edit().putString(KEY_REFRESH_TOKEN, token).commit()
+        Log.i(TAG, "[Refresh Token Saved] len=${token.length}")
+    }
+
+    fun getRefreshToken(): String? = prefs.getString(KEY_REFRESH_TOKEN, null)
 
     @Synchronized
     fun saveSessionCookie(rawCookie: String, name: String? = null, value: String? = null) {
@@ -195,7 +215,8 @@ class SessionPreferences private constructor(context: Context) {
     fun isLoggedIn(): Boolean {
         val hasFlag = prefs.getBoolean(KEY_IS_LOGGED_IN, false)
         val hasCookie = !getSessionCookieValue().isNullOrBlank()
-        return hasFlag && hasCookie
+        val hasRefreshToken = !getRefreshToken().isNullOrBlank()
+        return hasFlag && (hasCookie || hasRefreshToken)
     }
 
     fun getTeacherName(): String = prefs.getString(KEY_TEACHER_NAME, "Faculty") ?: "Faculty"
@@ -217,6 +238,7 @@ class SessionPreferences private constructor(context: Context) {
             .remove(KEY_SESSION_COOKIE)
             .remove(KEY_SESSION_COOKIE_NAME)
             .remove(KEY_SESSION_COOKIE_VALUE)
+            .remove(KEY_REFRESH_TOKEN)
             .putBoolean(KEY_IS_LOGGED_IN, false)
             .remove(KEY_TEACHER_NAME)
             .remove(KEY_TEACHER_ID)

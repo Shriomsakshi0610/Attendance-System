@@ -18,7 +18,9 @@ data class LoginRequest(
 data class TeacherLoginData(
     val message: String? = null,
     val teacher: TeacherProfile? = null,
-    val authenticated: Boolean? = null
+    val authenticated: Boolean? = null,
+    val refreshToken: String? = null,
+    val sessionTimeoutSeconds: Long? = null
 )
 
 data class LoginResponse(
@@ -29,7 +31,20 @@ data class LoginResponse(
     val role: String? = null,
     val displayName: String? = null,
     val teacherId: String? = null,
-    val department: String? = null
+    val department: String? = null,
+    val refreshToken: String? = null,
+    val sessionTimeoutSeconds: Long? = null
+)
+
+data class RefreshTokenRequest(
+    val refreshToken: String,
+    val deviceInfo: String? = null
+)
+
+data class RefreshTokenResponse(
+    val refreshToken: String?,
+    val teacher: TeacherProfile?,
+    val expiresInSeconds: Long? = null
 )
 
 data class TeacherProfile(

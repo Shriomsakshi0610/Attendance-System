@@ -102,8 +102,10 @@ class DashboardViewModel(
                 } else {
                     val code = classesRes.code()
                     newClasses = currentClasses
-                    newClassesState = if (code == 401 || code == 403) {
+                    newClassesState = if (code == 401) {
                         ResourceState.AuthError("Session expired. Please log in again.")
+                    } else if (code == 403) {
+                        ResourceState.ServerError(403, "Access denied: Insufficient privileges.")
                     } else {
                         ResourceState.ServerError(code, "Failed to load classes (HTTP $code)")
                     }
@@ -124,8 +126,10 @@ class DashboardViewModel(
                 } else {
                     val code = subjectsRes.code()
                     newSubjects = currentSubjects
-                    newSubjectsState = if (code == 401 || code == 403) {
+                    newSubjectsState = if (code == 401) {
                         ResourceState.AuthError("Session expired. Please log in again.")
+                    } else if (code == 403) {
+                        ResourceState.ServerError(403, "Access denied: Insufficient privileges.")
                     } else {
                         ResourceState.ServerError(code, "Failed to load subjects (HTTP $code)")
                     }
@@ -142,9 +146,9 @@ class DashboardViewModel(
                     _uiState.value.activeSession
                 }
 
-                val isAuthExpired = classesRes.code() == 401 || classesRes.code() == 403 ||
-                        subjectsRes.code() == 401 || subjectsRes.code() == 403 ||
-                        activeSessionsRes.code() == 401 || activeSessionsRes.code() == 403
+                val isAuthExpired = classesRes.code() == 401 ||
+                        subjectsRes.code() == 401 ||
+                        activeSessionsRes.code() == 401
 
                 val hasAnyError = newClassesState.isError || newSubjectsState.isError
                 val hasCachedData = newClasses.isNotEmpty() || newSubjects.isNotEmpty()

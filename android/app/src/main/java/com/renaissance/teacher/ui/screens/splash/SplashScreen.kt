@@ -94,10 +94,12 @@ fun SplashScreen(
                     onNavigateToDashboard()
                 } else {
                     val code = response.code()
-                    if (code == 401 || code == 403) {
-                        // Session has expired on backend
+                    if (code == 401) {
+                        // Session has expired and could not be renewed
                         apiClient.clearSessionCookies()
                         onNavigateToLogin("Your session has expired. Please log in again.")
+                    } else if (code == 403) {
+                        errorMessage = "Access denied (HTTP 403). Insufficient faculty privileges."
                     } else {
                         errorMessage = "Server returned error (HTTP $code). Please try again."
                     }
