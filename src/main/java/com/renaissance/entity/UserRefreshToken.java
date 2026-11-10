@@ -37,6 +37,13 @@ public class UserRefreshToken {
 
     private boolean revoked = false;
 
+    private boolean rotated = false;
+
+    @Indexed
+    private LocalDateTime rotatedAt;
+
+    private String replacedByToken;
+
     private LocalDateTime lastUsedAt = LocalDateTime.now();
 
     public UserRefreshToken() {
@@ -132,6 +139,35 @@ public class UserRefreshToken {
 
     public void setLastUsedAt(LocalDateTime lastUsedAt) {
         this.lastUsedAt = lastUsedAt;
+    }
+
+    public boolean isRotated() {
+        return rotated;
+    }
+
+    public void setRotated(boolean rotated) {
+        this.rotated = rotated;
+    }
+
+    public LocalDateTime getRotatedAt() {
+        return rotatedAt;
+    }
+
+    public void setRotatedAt(LocalDateTime rotatedAt) {
+        this.rotatedAt = rotatedAt;
+    }
+
+    public String getReplacedByToken() {
+        return replacedByToken;
+    }
+
+    public void setReplacedByToken(String replacedByToken) {
+        this.replacedByToken = replacedByToken;
+    }
+
+    public boolean isWithinGracePeriod(long gracePeriodSeconds) {
+        return rotated && rotatedAt != null &&
+                rotatedAt.isAfter(LocalDateTime.now().minusSeconds(gracePeriodSeconds));
     }
 
     public boolean isExpired() {

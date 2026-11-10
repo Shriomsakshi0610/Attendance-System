@@ -28,21 +28,20 @@ public class AppVersionController {
 
     private static final Logger log = LoggerFactory.getLogger(AppVersionController.class);
 
-    private static final int CURRENT_VERSION_CODE = 7;
-    private static final String CURRENT_VERSION_NAME = "1.3.3";
+    private static final int CURRENT_VERSION_CODE = 8;
+    private static final String CURRENT_VERSION_NAME = "1.3.4";
     private static final int MIN_SUPPORTED_VERSION_CODE = 1;
     private static final String DEFAULT_RELEASE_NOTES =
-            "Renaissance Teacher App v1.3.3:\n" +
-            "• Permanent Persistent Login & Silent Session Renewal: Teachers stay logged in across app restarts and server reboots\n" +
-            "• MongoDB Refresh Token Architecture: Survives Render Free Tier container sleep cycles\n" +
-            "• Multi-threaded Concurrency-Safe Renewal with OkHttp Authenticator\n" +
-            "• Subject-Specific Student Attendance History: Strict filtering by selected class & subject ID\n" +
-            "• Mobile Responsive Portal Home Page on Website\n" +
-            "• Direct in-app streaming APK download with live progress indicator\n" +
-            "• Dedicated Student-wise Attendance Details & Analytics\n" +
-            "• One-tap CSV Export: Class, Subject, Date-range, and Student summaries\n" +
-            "• Native Android Share / Save Sheet integration\n" +
-            "• 40-meter GPS Geofencing & BLE Proximity Verification";
+            "Renaissance Teacher App v1.3.4:\n" +
+            "• Permanent Fix for Automatic Session Logout: Teachers stay logged in without 1-2 hour unexpected logouts\n" +
+            "• RFC 6819 Token Rotation Grace Window: Concurrent requests safely reuse recently rotated tokens\n" +
+            "• Atomic Pre-Lock Token Resolution: Eliminates 401 race condition in concurrent dashboard coroutines\n" +
+            "• Dynamic OkHttp In-Memory CookieJar Synchronization: Prevents stale session cookie loops\n" +
+            "• Server-Side Refresh Token Revocation on Explicit Logout\n" +
+            "• MongoDB Persistent Refresh Tokens: 30-day longevity surviving container restarts\n" +
+            "• Subject-Specific Student Attendance History with Class & Subject filtering\n" +
+            "• 40-meter GPS Geofencing & BLE Proximity Verification\n" +
+            "• Direct in-app streaming APK download with live progress indicator";
 
     @Value("${app.apk.path:src/main/resources/static/downloads/renaissance-teacher.apk}")
     private String configuredApkPath;

@@ -68,12 +68,26 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> logout(
             @RequestBody(required = false) RefreshTokenRequest request,
             @RequestHeader(value = "X-Refresh-Token", required = false) String headerToken,
-            HttpServletRequest httpRequest) {
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
         String token = (request != null && request.getRefreshToken() != null && !request.getRefreshToken().isBlank())
                 ? request.getRefreshToken()
                 : headerToken;
 
         authService.logout(httpRequest, token);
+
+        jakarta.servlet.http.Cookie sessionCookie = new jakarta.servlet.http.Cookie("RENAISSANCE_SESSION", "");
+        sessionCookie.setPath("/");
+        sessionCookie.setMaxAge(0);
+        sessionCookie.setHttpOnly(true);
+        httpResponse.addCookie(sessionCookie);
+
+        jakarta.servlet.http.Cookie jsessionCookie = new jakarta.servlet.http.Cookie("JSESSIONID", "");
+        jsessionCookie.setPath("/");
+        jsessionCookie.setMaxAge(0);
+        jsessionCookie.setHttpOnly(true);
+        httpResponse.addCookie(jsessionCookie);
+
         return ResponseEntity.ok(ApiResponse.ok("Logged out successfully", null));
     }
 

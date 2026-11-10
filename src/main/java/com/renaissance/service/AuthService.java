@@ -32,6 +32,7 @@ public class AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
     private static final long REFRESH_TOKEN_VALIDITY_DAYS = 30L;
     private static final long SESSION_TIMEOUT_SECONDS = 30L * 24 * 3600; // 30 days total persistent session
+    private static final long ROTATION_GRACE_PERIOD_SECONDS = 60L; // 60s grace window for concurrent requests
 
     private final AuthenticationManager authenticationManager;
     private final TeacherRepository teacherRepository;
@@ -87,11 +88,11 @@ public class AuthService {
     }
 
     /**
-     * Synchronized, atomic silent session renewal.
-     * Validates persistent refresh token from MongoDB, rotates token, creates fresh authenticated session,
-     * and returns updated credentials.
+     * Synchronized, atomic silent session renewal with RFC 6819 Token Rotation Grace Period.
+     * Validates persistent refresh token from MongoDB, supports concurrent requests within a 60-second grace window,
+     * creates fresh authenticated session, and returns updated credentials.
      */
-    public RefreshResponse silentRenew(String rawToken, String deviceInfo, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
+    public synchronized RefreshResponse silentRenew(String rawToken, String deviceInfo, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         if (rawToken == null || rawToken.trim().isEmpty()) {
             throw new UnauthorizedException("Refresh token is required for session renewal.");
         }
@@ -99,20 +100,32 @@ public class AuthService {
         UserRefreshToken tokenEntity = refreshTokenRepository.findByToken(rawToken.trim())
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token. Please log in again."));
 
-        if (!tokenEntity.isValid()) {
+        // 1. Concurrent Grace Period Handling:
+        // If this token was already rotated within the last 60s, return the active replacement token
+        if (tokenEntity.isWithinGracePeriod(ROTATION_GRACE_PERIOD_SECONDS)) {
+            String replacedBy = tokenEntity.getReplacedByToken();
+            if (replacedBy != null && !replacedBy.isBlank()) {
+                var activeReplacement = refreshTokenRepository.findByToken(replacedBy);
+                if (activeReplacement.isPresent() && activeReplacement.get().isValid()) {
+                    Teacher teacher = resolveTeacherForToken(activeReplacement.get());
+                    if (teacher != null && teacher.isActive()) {
+                        establishAuthenticatedSession(teacher, httpRequest);
+                        log.info("Concurrent renewal request satisfied within 60s grace period for teacher {} ({})",
+                                teacher.getName(), teacher.getEmail());
+                        return new RefreshResponse(replacedBy, toTeacherDto(teacher), REFRESH_TOKEN_VALIDITY_DAYS * 24 * 3600);
+                    }
+                }
+            }
+        }
+
+        // 2. Reject already rotated tokens outside grace period, revoked, or expired tokens
+        if (tokenEntity.isRotated() || !tokenEntity.isValid()) {
             log.warn("Attempt to use invalid/expired/revoked refresh token for teacherId: {}", tokenEntity.getTeacherId());
             refreshTokenRepository.delete(tokenEntity);
             throw new UnauthorizedException("Refresh token has expired or was revoked. Please log in again.");
         }
 
-        Teacher teacher = null;
-        if (tokenEntity.getTeacherId() != null) {
-            teacher = teacherRepository.findById(tokenEntity.getTeacherId()).orElse(null);
-        }
-        if (teacher == null && tokenEntity.getEmail() != null) {
-            teacher = teacherRepository.findByEmailIgnoreCase(tokenEntity.getEmail()).orElse(null);
-        }
-
+        Teacher teacher = resolveTeacherForToken(tokenEntity);
         if (teacher == null) {
             refreshTokenRepository.delete(tokenEntity);
             throw new UnauthorizedException("Faculty account not found. Please log in again.");
@@ -123,13 +136,17 @@ public class AuthService {
             throw new UnauthorizedException("Faculty account is inactive. Please contact administrator.");
         }
 
-        // Token rotation: Revoke old token and issue fresh rotated token with 30-day validity
-        refreshTokenRepository.delete(tokenEntity);
-
+        // 3. Token rotation with grace period: Mark old token as rotated and save reference to new token
         String rotatedToken = UUID.randomUUID().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "");
         String updatedDeviceInfo = deviceInfo != null && !deviceInfo.isBlank() ? deviceInfo :
                 (httpRequest != null ? httpRequest.getHeader("User-Agent") : "Rotated Token");
         LocalDateTime newExpiresAt = LocalDateTime.now().plusDays(REFRESH_TOKEN_VALIDITY_DAYS);
+
+        tokenEntity.setRotated(true);
+        tokenEntity.setRotatedAt(LocalDateTime.now());
+        tokenEntity.setReplacedByToken(rotatedToken);
+        tokenEntity.setLastUsedAt(LocalDateTime.now());
+        refreshTokenRepository.save(tokenEntity);
 
         UserRefreshToken rotatedEntity = new UserRefreshToken(
                 rotatedToken,
@@ -141,7 +158,34 @@ public class AuthService {
         );
         refreshTokenRepository.save(rotatedEntity);
 
+        // Opportunistic cleanup of stale rotated tokens older than 10 minutes
+        try {
+            refreshTokenRepository.deleteByRotatedTrueAndRotatedAtBefore(LocalDateTime.now().minusMinutes(10));
+        } catch (Exception e) {
+            log.debug("Rotated token cleanup non-critical exception: {}", e.getMessage());
+        }
+
         // Re-authenticate and establish fresh Spring Security HttpSession
+        establishAuthenticatedSession(teacher, httpRequest);
+
+        log.info("Successfully renewed session silently for faculty {} ({}) via persistent token",
+                teacher.getName(), teacher.getEmail());
+
+        return new RefreshResponse(rotatedToken, toTeacherDto(teacher), REFRESH_TOKEN_VALIDITY_DAYS * 24 * 3600);
+    }
+
+    private Teacher resolveTeacherForToken(UserRefreshToken tokenEntity) {
+        Teacher teacher = null;
+        if (tokenEntity.getTeacherId() != null) {
+            teacher = teacherRepository.findById(tokenEntity.getTeacherId()).orElse(null);
+        }
+        if (teacher == null && tokenEntity.getEmail() != null) {
+            teacher = teacherRepository.findByEmailIgnoreCase(tokenEntity.getEmail()).orElse(null);
+        }
+        return teacher;
+    }
+
+    private void establishAuthenticatedSession(Teacher teacher, HttpServletRequest httpRequest) {
         SecurityUser userDetails = new SecurityUser(teacher);
         Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
@@ -152,11 +196,6 @@ public class AuthService {
             HttpSession session = httpRequest.getSession(true);
             session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
         }
-
-        log.info("Successfully renewed session silently for faculty {} ({}) via persistent token",
-                teacher.getName(), teacher.getEmail());
-
-        return new RefreshResponse(rotatedToken, toTeacherDto(teacher), REFRESH_TOKEN_VALIDITY_DAYS * 24 * 3600);
     }
 
     public void logout(HttpServletRequest request) {

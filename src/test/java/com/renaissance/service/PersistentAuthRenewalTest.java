@@ -101,7 +101,7 @@ class PersistentAuthRenewalTest {
     }
 
     @Test
-    @DisplayName("Silent renewal successfully validates token, rotates token, and re-authenticates session")
+    @DisplayName("Silent renewal successfully validates token, rotates token with grace period, and re-authenticates session")
     void testSilentRenewalSuccess() {
         String oldToken = "old-refresh-token-xyz-123";
         UserRefreshToken tokenEntity = new UserRefreshToken(
@@ -124,19 +124,92 @@ class PersistentAuthRenewalTest {
         assertNotEquals(oldToken, refreshResponse.getRefreshToken(), "Token rotation must issue a new token");
         assertEquals("Dr. Alan Turing", refreshResponse.getTeacher().getName());
 
-        // Verify old token was deleted/revoked
-        verify(refreshTokenRepository, times(1)).delete(tokenEntity);
+        // Verify old token was marked rotated with replacement reference rather than deleted immediately
+        assertTrue(tokenEntity.isRotated());
+        assertEquals(refreshResponse.getRefreshToken(), tokenEntity.getReplacedByToken());
+        verify(refreshTokenRepository, times(1)).save(tokenEntity);
 
         // Verify new rotated token was saved
         verify(refreshTokenRepository, times(1)).save(argThat(saved ->
                 saved.getToken().equals(refreshResponse.getRefreshToken()) &&
-                saved.getTeacherId().equals("teacher-123")
+                saved.getTeacherId().equals("teacher-123") &&
+                !saved.isRotated()
         ));
 
         // Verify fresh authenticated SecurityContext was stored in session
         verify(httpSession, times(1)).setAttribute(eq(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY), any());
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
         assertEquals("turing@renaissance.edu", SecurityContextHolder.getContext().getAuthentication().getName());
+    }
+
+    @Test
+    @DisplayName("Silent renewal satisfies concurrent requests within 60-second grace window")
+    void testSilentRenewalGracePeriodForConcurrentRequests() {
+        String rotatedToken = "prior-token-rotated-abc";
+        String activeReplacementToken = "active-replacement-token-xyz";
+
+        UserRefreshToken rotatedEntity = new UserRefreshToken(
+                rotatedToken,
+                "teacher-123",
+                "turing@renaissance.edu",
+                "ROLE_TEACHER",
+                "Android Pixel 8",
+                LocalDateTime.now().plusDays(15)
+        );
+        rotatedEntity.setRotated(true);
+        rotatedEntity.setRotatedAt(LocalDateTime.now().minusSeconds(5)); // Rotated 5 seconds ago
+        rotatedEntity.setReplacedByToken(activeReplacementToken);
+
+        UserRefreshToken activeEntity = new UserRefreshToken(
+                activeReplacementToken,
+                "teacher-123",
+                "turing@renaissance.edu",
+                "ROLE_TEACHER",
+                "Android Pixel 8",
+                LocalDateTime.now().plusDays(30)
+        );
+
+        when(refreshTokenRepository.findByToken(rotatedToken)).thenReturn(Optional.of(rotatedEntity));
+        when(refreshTokenRepository.findByToken(activeReplacementToken)).thenReturn(Optional.of(activeEntity));
+        when(teacherRepository.findById("teacher-123")).thenReturn(Optional.of(testTeacher));
+        when(httpRequest.getSession(true)).thenReturn(httpSession);
+
+        // Concurrent call sending the prior token within grace period
+        RefreshResponse refreshResponse = authService.silentRenew(rotatedToken, "Android Pixel 8", httpRequest, httpResponse);
+
+        assertNotNull(refreshResponse);
+        assertEquals(activeReplacementToken, refreshResponse.getRefreshToken(), "Must return the active replacement token");
+        assertEquals("Dr. Alan Turing", refreshResponse.getTeacher().getName());
+
+        // Verify fresh authenticated SecurityContext was stored in session
+        verify(httpSession, times(1)).setAttribute(eq(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY), any());
+        assertNotNull(SecurityContextHolder.getContext().getAuthentication());
+    }
+
+    @Test
+    @DisplayName("Silent renewal rejects rotated token if grace window has expired")
+    void testSilentRenewalRejectsRotatedTokenPastGracePeriod() {
+        String staleToken = "stale-rotated-token-expired";
+        UserRefreshToken staleEntity = new UserRefreshToken(
+                staleToken,
+                "teacher-123",
+                "turing@renaissance.edu",
+                "ROLE_TEACHER",
+                "Android Pixel 8",
+                LocalDateTime.now().plusDays(15)
+        );
+        staleEntity.setRotated(true);
+        staleEntity.setRotatedAt(LocalDateTime.now().minusSeconds(120)); // Rotated 2 minutes ago (>60s)
+        staleEntity.setReplacedByToken("some-other-token");
+
+        when(refreshTokenRepository.findByToken(staleToken)).thenReturn(Optional.of(staleEntity));
+
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () ->
+                authService.silentRenew(staleToken, "Device", httpRequest, httpResponse)
+        );
+
+        assertTrue(exception.getMessage().contains("expired or was revoked"));
+        verify(refreshTokenRepository, times(1)).delete(staleEntity);
     }
 
     @Test

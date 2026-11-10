@@ -72,6 +72,7 @@ public class SecurityConfig {
                     "/api/auth/login",
                     "/api/auth/refresh",
                     "/api/auth/status",
+                    "/api/auth/logout",
                     "/api/public/**",
                     "/api/attendance/mark",
                     "/api/attendance/session-info/**",
@@ -133,7 +134,7 @@ public class SecurityConfig {
                 })
             )
             .logout(logout -> logout
-                .logoutUrl("/api/auth/logout")
+                .logoutUrl("/logout")
                 .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler())
                 .invalidateHttpSession(true)
                 .deleteCookies("RENAISSANCE_SESSION", "JSESSIONID")

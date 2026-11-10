@@ -13,6 +13,7 @@ import okhttp3.Authenticator
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -37,6 +38,39 @@ class ApiClient(
 
     private val cookieStore = ConcurrentHashMap<String, List<Cookie>>()
     private val sessionRenewalLock = Any()
+    @Volatile private var lastRenewalTimestamp = 0L
+
+    fun syncCookieStoreFromPrefs(host: String? = null) {
+        val targetHost = host ?: try {
+            val base = sessionPrefs.getBaseUrl().replace("https://", "").replace("http://", "").split("/")[0]
+            base.split(":")[0]
+        } catch (_: Exception) { null } ?: return
+
+        val cookieName = sessionPrefs.getSessionCookieName()
+        val cookieVal = sessionPrefs.getSessionCookieValue()
+
+        if (!cookieVal.isNullOrBlank()) {
+            try {
+                val isHttps = sessionPrefs.getBaseUrl().startsWith("https")
+                val cookie = Cookie.Builder()
+                    .name(cookieName)
+                    .value(cookieVal)
+                    .hostOnlyDomain(targetHost)
+                    .path("/")
+                    .apply {
+                        if (isHttps) secure()
+                        httpOnly()
+                    }
+                    .build()
+                cookieStore[targetHost] = listOf(cookie)
+                Log.i("AttendanceNetworkDiag", "[CookieJar] Synchronized cookieStore with persistent cookie: ${cookie.name} for $targetHost")
+            } catch (e: Exception) {
+                Log.e("AttendanceNetworkDiag", "[CookieJar] Error syncing cookieStore: ${e.message}")
+            }
+        } else {
+            cookieStore.remove(targetHost)
+        }
+    }
 
     private val cookieJar = object : CookieJar {
         override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
@@ -60,16 +94,17 @@ class ApiClient(
         }
 
         override fun loadForRequest(url: HttpUrl): List<Cookie> {
+            val cookieVal = sessionPrefs.getSessionCookieValue()
+            val cookieName = sessionPrefs.getSessionCookieName()
             val inMemory = cookieStore[url.host]
-            if (!inMemory.isNullOrEmpty()) {
+
+            // Return inMemory if it exists and matches the latest cookie from SessionPreferences
+            val inMemoryCookie = inMemory?.firstOrNull { it.name == cookieName }
+            if (inMemoryCookie != null && inMemoryCookie.value == cookieVal && !cookieVal.isNullOrBlank()) {
                 return inMemory
             }
 
-            // Restore from persistent storage on fresh start / process recreation
-            val restoredList = mutableListOf<Cookie>()
-            val cookieName = sessionPrefs.getSessionCookieName()
-            val cookieVal = sessionPrefs.getSessionCookieValue()
-
+            // Restore / synchronize from persistent storage on process recreation or after token rotation
             if (!cookieVal.isNullOrBlank()) {
                 try {
                     val cookie = Cookie.Builder()
@@ -82,14 +117,15 @@ class ApiClient(
                             httpOnly()
                         }
                         .build()
-                    restoredList.add(cookie)
-                    cookieStore[url.host] = restoredList
-                    Log.i("AttendanceNetworkDiag", "[CookieJar] Restored persistent cookie: ${cookie.name} for ${url.host}")
+                    val list = listOf(cookie)
+                    cookieStore[url.host] = list
+                    Log.i("AttendanceNetworkDiag", "[CookieJar] Restored/refreshed cookie: ${cookie.name} for ${url.host}")
+                    return list
                 } catch (e: Exception) {
                     Log.e("AttendanceNetworkDiag", "[CookieJar] Error restoring cookie: ${e.message}")
                 }
             }
-            return restoredList
+            return inMemory ?: emptyList()
         }
     }
 
@@ -282,27 +318,44 @@ class ApiClient(
             return@Authenticator null
         }
 
-        val currentRefreshToken = sessionPrefs.getRefreshToken()
-        if (currentRefreshToken.isNullOrBlank()) {
-            Log.w("AttendanceNetworkDiag", "[Authenticator] No refresh token available in preferences. Cannot renew session.")
-            return@Authenticator null
-        }
+        val requestSentAt = response.sentRequestAtMillis
 
         synchronized(sessionRenewalLock) {
-            // 1. Check if another concurrent thread already renewed the session while this thread waited
+            // Read refresh token INSIDE the lock to ensure we always have the freshest post-rotation token
+            val currentRefreshToken = sessionPrefs.getRefreshToken()
+            if (currentRefreshToken.isNullOrBlank()) {
+                Log.w("AttendanceNetworkDiag", "[Authenticator] No refresh token available in preferences. Cannot renew session.")
+                return@Authenticator null
+            }
+
             val latestCookie = sessionPrefs.getSessionCookieHeader()
             val requestCookie = response.request.header("Cookie")
-            if (!latestCookie.isNullOrBlank() && latestCookie != requestCookie && !requestCookie.isNullOrBlank()) {
-                Log.i("AttendanceNetworkDiag", "[Authenticator] Session already renewed by another thread. Retrying with fresh cookie.")
+            val host = response.request.url.host
+
+            // 1. Check if another concurrent thread already renewed the session after this request was sent
+            if (lastRenewalTimestamp > requestSentAt && !latestCookie.isNullOrBlank()) {
+                Log.i("AttendanceNetworkDiag", "[Authenticator] Session already renewed by another thread at $lastRenewalTimestamp > $requestSentAt. Retrying with latest cookie.")
+                syncCookieStoreFromPrefs(host)
                 return@Authenticator response.request.newBuilder()
                     .header("Cookie", latestCookie)
                     .build()
             }
 
-            // 2. Perform synchronized silent renewal
+            // 2. Check if the latest cookie in preferences is different from the request's cookie
+            if (!latestCookie.isNullOrBlank() && latestCookie != requestCookie && !requestCookie.isNullOrBlank()) {
+                Log.i("AttendanceNetworkDiag", "[Authenticator] Session already renewed (cookie mismatch). Retrying with fresh cookie.")
+                syncCookieStoreFromPrefs(host)
+                return@Authenticator response.request.newBuilder()
+                    .header("Cookie", latestCookie)
+                    .build()
+            }
+
+            // 3. Perform synchronized silent renewal
             Log.i("AttendanceNetworkDiag", "[Authenticator] Triggering synchronized silent renewal via /api/auth/refresh...")
             val success = performSynchronousTokenRefresh(currentRefreshToken)
             if (success) {
+                lastRenewalTimestamp = System.currentTimeMillis()
+                syncCookieStoreFromPrefs(host)
                 val newCookie = sessionPrefs.getSessionCookieHeader()
                 Log.i("AttendanceNetworkDiag", "[Authenticator] Silent renewal SUCCEEDED. Retrying original request: $path")
                 val builder = response.request.newBuilder()
@@ -366,6 +419,12 @@ class ApiClient(
                     }
                 }
 
+                // Synchronize in-memory cookieStore for host
+                val host = try { refreshUrl.toHttpUrlOrNull()?.host } catch (_: Exception) { null }
+                if (host != null) {
+                    syncCookieStoreFromPrefs(host)
+                }
+
                 // 2. Parse response body to update rotated refresh token and teacher profile
                 try {
                     val root = JsonParser.parseString(bodyString).asJsonObject
@@ -396,10 +455,16 @@ class ApiClient(
             } else {
                 Log.w("AttendanceNetworkDiag", "[Authenticator] Refresh endpoint returned HTTP $code: $bodyString")
                 if (code == 401 || code == 403) {
-                    // Truly invalid / revoked / expired refresh token or deactivated account
-                    Log.e("AttendanceNetworkDiag", "[Authenticator] Refresh token is genuinely invalid or revoked. Clearing credentials.")
-                    cookieStore.clear()
-                    sessionPrefs.clearSession()
+                    // Only wipe credentials if the token that failed is STILL the one in preferences
+                    // (i.e. another thread didn't already rotate it successfully)
+                    val activeTokenInPrefs = sessionPrefs.getRefreshToken()
+                    if (activeTokenInPrefs == token) {
+                        Log.e("AttendanceNetworkDiag", "[Authenticator] Refresh token is genuinely invalid or revoked. Clearing credentials.")
+                        cookieStore.clear()
+                        sessionPrefs.clearSession()
+                    } else {
+                        Log.w("AttendanceNetworkDiag", "[Authenticator] Refresh token was already rotated by another thread. Not clearing credentials.")
+                    }
                 }
                 // If 500, 503, timeout, etc., do NOT clear session! Return false to allow retry
                 false
@@ -412,10 +477,14 @@ class ApiClient(
     }
 
     suspend fun silentRenewSession(): Boolean {
-        val token = sessionPrefs.getRefreshToken() ?: return false
         return withContext(Dispatchers.IO) {
             synchronized(sessionRenewalLock) {
-                performSynchronousTokenRefresh(token)
+                val token = sessionPrefs.getRefreshToken() ?: return@synchronized false
+                val success = performSynchronousTokenRefresh(token)
+                if (success) {
+                    lastRenewalTimestamp = System.currentTimeMillis()
+                }
+                success
             }
         }
     }
@@ -457,14 +526,14 @@ class ApiClient(
     fun clearSessionCookies() {
         cookieStore.clear()
         sessionPrefs.clearSession()
+        lastRenewalTimestamp = 0L
         Log.i("AttendanceNetworkDiag", "[ApiClient] Session cookies and preferences cleared.")
     }
 
     fun restoreSession() {
         try {
-            val host = sessionPrefs.getBaseUrl().replace("https://", "").replace("http://", "").split("/")[0]
-            val testUrl = HttpUrl.Builder().scheme("https").host(host).build()
-            cookieJar.loadForRequest(testUrl)
+            val host = sessionPrefs.getBaseUrl().replace("https://", "").replace("http://", "").split("/")[0].split(":")[0]
+            syncCookieStoreFromPrefs(host)
         } catch (_: Exception) {}
     }
 

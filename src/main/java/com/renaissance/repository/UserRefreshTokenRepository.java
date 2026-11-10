@@ -22,4 +22,6 @@ public interface UserRefreshTokenRepository extends MongoRepository<UserRefreshT
     void deleteByExpiresAtBefore(LocalDateTime dateTime);
 
     void deleteByTeacherId(String teacherId);
+
+    void deleteByRotatedTrueAndRotatedAtBefore(LocalDateTime dateTime);
 }
