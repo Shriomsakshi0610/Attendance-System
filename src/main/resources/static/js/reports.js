@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const filterClass = document.getElementById('report-class');
     const filterSubject = document.getElementById('report-subject');
     const exportCsvBtn = document.getElementById('export-summary-csv-btn');
+    const exportRegisterExcelBtn = document.getElementById('export-register-excel-btn');
     const recordsTableBody = document.getElementById('attendance-summary-table-body');
 
     // Student Profile Modal Elements
@@ -201,7 +202,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // 4. Export CSV Handlers
+    // 4. Export CSV & Excel Register Handlers
+    if (exportRegisterExcelBtn) {
+        exportRegisterExcelBtn.addEventListener('click', async () => {
+            const classId = filterClass.value;
+            const subjectId = filterSubject.value;
+
+            let url = '/api/reports/export/register-excel?';
+            if (classId) url += `classId=${encodeURIComponent(classId)}&`;
+            if (subjectId) url += `subjectId=${encodeURIComponent(subjectId)}&`;
+
+            try {
+                exportRegisterExcelBtn.disabled = true;
+                exportRegisterExcelBtn.textContent = 'Generating Excel...';
+
+                const res = await API.get(url);
+                if (res.isFile) {
+                    const downloadUrl = window.URL.createObjectURL(res.blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = `Theory_Attendance_Register.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(downloadUrl);
+                    App.showToast('Theory Attendance Register (.xlsx) downloaded!', 'success');
+                }
+            } catch (err) {
+                App.showToast('Failed to export Excel register: ' + err.message, 'danger');
+            } finally {
+                exportRegisterExcelBtn.disabled = false;
+                exportRegisterExcelBtn.textContent = '📊 Download Register (.xlsx)';
+            }
+        });
+    }
+
     exportCsvBtn.addEventListener('click', async () => {
         const classId = filterClass.value;
         const subjectId = filterSubject.value;

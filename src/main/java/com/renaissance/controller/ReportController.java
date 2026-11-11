@@ -6,6 +6,7 @@ import com.renaissance.dto.DashboardStatsDto;
 import com.renaissance.dto.DateWiseAttendanceRecordDto;
 import com.renaissance.dto.StudentProfileDto;
 import com.renaissance.service.CsvExportService;
+import com.renaissance.service.ExcelExportService;
 import com.renaissance.service.ReportService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -23,10 +24,12 @@ public class ReportController {
 
     private final ReportService reportService;
     private final CsvExportService csvExportService;
+    private final ExcelExportService excelExportService;
 
-    public ReportController(ReportService reportService, CsvExportService csvExportService) {
+    public ReportController(ReportService reportService, CsvExportService csvExportService, ExcelExportService excelExportService) {
         this.reportService = reportService;
         this.csvExportService = csvExportService;
+        this.excelExportService = excelExportService;
     }
 
     @GetMapping("/dashboard")
@@ -77,6 +80,21 @@ public class ReportController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
                 .body(csvData);
+    }
+
+    @GetMapping({"/export/register-excel", "/export/summary-excel"})
+    public ResponseEntity<byte[]> exportRegisterExcel(
+            @RequestParam(required = false) String classId,
+            @RequestParam(required = false) String subjectId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        byte[] excelData = excelExportService.exportAttendanceRegisterExcel(classId, subjectId, startDate, endDate);
+        String filename = "Theory_Attendance_Register_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(excelData);
     }
 
     @GetMapping("/export/datewise-csv")
