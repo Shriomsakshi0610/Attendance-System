@@ -68,16 +68,26 @@ public class SecurityConfig {
                 ).permitAll()
 
                 // Public REST endpoints for student attendance and initial dropdowns
-                .requestMatchers(
-                    "/api/auth/login",
-                    "/api/auth/refresh",
-                    "/api/auth/status",
-                    "/api/auth/logout",
-                    "/api/public/**",
-                    "/api/attendance/mark",
-                    "/api/attendance/session-info/**",
-                    "/ws/**"
-                ).permitAll()
+                
+.requestMatchers(
+    "/",
+    "/health",
+    "/index.html",
+    "/student-attendance.html",
+    "/teacher-login.html",
+    "/admin-login.html",
+
+    // SEO files - publicly accessible
+    "/sitemap.xml",
+    "/robots.txt",
+
+    // Static assets
+    "/css/**",
+    "/js/**",
+    "/images/**",
+    "/favicon.ico"
+).permitAll()
+
 
                 // Admin dashboard HTML page
                 .requestMatchers("/admin-dashboard.html").hasRole("ADMIN")
