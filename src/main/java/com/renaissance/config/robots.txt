@@ -1,5 +1,0 @@
-
-User-agent: *
-Allow: /
-
-Sitemap: https://attendance-system-ivna.onrender.com/sitemap.xml

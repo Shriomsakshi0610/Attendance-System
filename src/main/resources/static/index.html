@@ -361,6 +361,66 @@
                 font-size: 1.1rem;
             }
         }
+
+.seo-section {
+    max-width: 1040px;
+    width: calc(100% - 2rem);
+    margin: 0 auto 3rem;
+    padding: 2rem;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    line-height: 1.8;
+}
+
+.seo-section h2 {
+    color: var(--primary-900);
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+}
+
+.seo-section p,
+.seo-section li {
+    color: var(--text-secondary);
+    font-size: 0.98rem;
+}
+
+.seo-section li {
+    margin-bottom: 0.5rem;
+}
+
+.seo-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.seo-feature {
+    padding: 1.25rem;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+}
+
+.seo-feature h3 {
+    color: var(--primary-900);
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+}
+
+.seo-feature p {
+    margin: 0;
+}
+
+@media (max-width: 480px) {
+    .seo-section {
+        padding: 1.25rem;
+    }
+
+    .seo-section h2 {
+        font-size: 1.3rem;
+    }
+}
+
     </style>
 </head>
 <body class="landing-body">
@@ -434,10 +494,83 @@
                 </a>
             </div>
         </section>
+
+<!-- About Renaissance -->
+<section class="seo-section">
+    <h2>About Renaissance Attendance System</h2>
+    <p>
+        Renaissance is a smart college attendance management system
+        designed to simplify and digitize classroom attendance.
+        It combines GPS-based location verification and Bluetooth
+        Low Energy (BLE) authentication to help verify student
+        presence during active class sessions.
+    </p>
+    <p>
+        The platform provides dedicated student, faculty and
+        administrator portals to manage attendance sessions,
+        monitor participation and maintain digital attendance
+        records through a centralized system.
+    </p>
+</section>
+
+<!-- Key Features -->
+<section class="seo-section">
+    <h2>Key Features of Renaissance</h2>
+    <div class="seo-feature-grid">
+        <article class="seo-feature">
+            <h3>GPS Location Verification</h3>
+            <p>Verifies student location against the configured classroom geofence.</p>
+        </article>
+        <article class="seo-feature">
+            <h3>Bluetooth Low Energy</h3>
+            <p>Uses BLE-based proximity verification as an additional attendance check.</p>
+        </article>
+        <article class="seo-feature">
+            <h3>Secure Attendance Sessions</h3>
+            <p>Uses session-based verification to help prevent unauthorized attendance.</p>
+        </article>
+        <article class="seo-feature">
+            <h3>Faculty Dashboard</h3>
+            <p>Allows faculty to activate sessions, monitor attendance and access reports.</p>
+        </article>
+        <article class="seo-feature">
+            <h3>Student Attendance Portal</h3>
+            <p>Provides students with a dedicated interface to mark attendance.</p>
+        </article>
+        <article class="seo-feature">
+            <h3>Academic Administration</h3>
+            <p>Supports management of departments, classes, subjects and timetables.</p>
+        </article>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="seo-section">
+    <h2>How Renaissance Attendance Works</h2>
+    <ol>
+        <li>Faculty activates an attendance session.</li>
+        <li>Students access the attendance portal.</li>
+        <li>The system performs the configured location and BLE checks.</li>
+        <li>Attendance is recorded after successful verification.</li>
+        <li>Faculty can monitor attendance and access session records.</li>
+    </ol>
+</section>
+
+<!-- Technology Stack -->
+<section class="seo-section">
+    <h2>Technology Behind Renaissance</h2>
+    <p>
+        Renaissance is built using Java Spring Boot for backend
+        services and HTML, CSS and JavaScript for its web interface.
+        The platform uses GPS and Bluetooth-based verification
+        technologies to support digital college attendance management.
+    </p>
+</section>
+
     </main>
 
     <footer class="home-footer">
-        <p>© 2026 Renaissance Smart Attendance Management System. Built with Java Spring Boot & Pure Vanilla Web Stack.</p>
+        <p>© 2026 Renaissance Smart Attendance Management System.</p>
     </footer>
 </body>
 </html>
