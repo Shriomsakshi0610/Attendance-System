@@ -53,7 +53,7 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
             )
             .authorizeHttpRequests(auth -> auth
-                // Static assets & public web pages
+                // Static assets, public web pages, and SEO files
                 .requestMatchers(
                     "/",
                     "/health",
@@ -61,32 +61,26 @@ public class SecurityConfig {
                     "/student-attendance.html",
                     "/teacher-login.html",
                     "/admin-login.html",
+                    "/sitemap.xml",
+                    "/robots.txt",
                     "/css/**",
                     "/js/**",
                     "/images/**",
-                    "/favicon.ico"
+                    "/favicon.ico",
+                    "/downloads/**"
                 ).permitAll()
 
-                // Public REST endpoints for student attendance and initial dropdowns
-                
-.requestMatchers(
-    "/",
-    "/health",
-    "/index.html",
-    "/student-attendance.html",
-    "/teacher-login.html",
-    "/admin-login.html",
-
-    // SEO files - publicly accessible
-    "/sitemap.xml",
-    "/robots.txt",
-
-    // Static assets
-    "/css/**",
-    "/js/**",
-    "/images/**",
-    "/favicon.ico"
-).permitAll()
+                // Public REST endpoints for authentication, student attendance, app updates, and websockets
+                .requestMatchers(
+                    "/api/auth/login",
+                    "/api/auth/refresh",
+                    "/api/auth/status",
+                    "/api/auth/logout",
+                    "/api/public/**",
+                    "/api/attendance/mark",
+                    "/api/attendance/session-info/**",
+                    "/ws/**"
+                ).permitAll()
 
 
                 // Admin dashboard HTML page
