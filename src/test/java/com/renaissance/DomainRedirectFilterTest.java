@@ -22,7 +22,7 @@ public class DomainRedirectFilterTest {
     void setUp() {
         filter = new DomainRedirectFilter();
         filter.setRedirectEnabled(true);
-        filter.setTargetDomain("relianceattendance.site");
+        filter.setTargetDomain("renaissanceattendance.site");
         filter.setTargetScheme("https");
         filter.setOldDomainsConfig("attendance-system-ivna.onrender.com,attendance-system-gfr7.onrender.com");
     }
@@ -30,8 +30,8 @@ public class DomainRedirectFilterTest {
     @Test
     @DisplayName("Verify cleanHost utility strips schemes, ports, and trailing slashes")
     void testCleanHost() {
-        assertEquals("relianceattendance.site", DomainRedirectFilter.cleanHost("https://relianceattendance.site"));
-        assertEquals("relianceattendance.site", DomainRedirectFilter.cleanHost("http://relianceattendance.site:8080/"));
+        assertEquals("renaissanceattendance.site", DomainRedirectFilter.cleanHost("https://renaissanceattendance.site"));
+        assertEquals("renaissanceattendance.site", DomainRedirectFilter.cleanHost("http://renaissanceattendance.site:8080/"));
         assertEquals("attendance-system-ivna.onrender.com", DomainRedirectFilter.cleanHost("attendance-system-ivna.onrender.com:443"));
         assertEquals("attendance-system-ivna.onrender.com", DomainRedirectFilter.cleanHost("  attendance-system-ivna.onrender.com  "));
         assertEquals("", DomainRedirectFilter.cleanHost(null));
@@ -47,9 +47,9 @@ public class DomainRedirectFilterTest {
         assertTrue(filter.isOldDomain("attendance-system-ivna.onrender.com:443"));
 
         // Target domain and www subdomain (MUST NEVER REDIRECT - NO LOOPS)
-        assertFalse(filter.isOldDomain("relianceattendance.site"));
-        assertFalse(filter.isOldDomain("www.relianceattendance.site"));
-        assertFalse(filter.isOldDomain("https://relianceattendance.site"));
+        assertFalse(filter.isOldDomain("renaissanceattendance.site"));
+        assertFalse(filter.isOldDomain("www.renaissanceattendance.site"));
+        assertFalse(filter.isOldDomain("https://renaissanceattendance.site"));
 
         // Local / test environments
         assertFalse(filter.isOldDomain("localhost"));
@@ -74,7 +74,7 @@ public class DomainRedirectFilterTest {
         filter.doFilter(request, response, filterChain);
 
         assertEquals(HttpServletResponse.SC_MOVED_PERMANENTLY, response.getStatus());
-        assertEquals("https://relianceattendance.site/", response.getHeader("Location"));
+        assertEquals("https://renaissanceattendance.site/", response.getHeader("Location"));
         assertNotNull(response.getHeader("Cache-Control"));
     }
 
@@ -90,7 +90,7 @@ public class DomainRedirectFilterTest {
         filter.doFilter(request, response, filterChain);
 
         assertEquals(HttpServletResponse.SC_MOVED_PERMANENTLY, response.getStatus());
-        assertEquals("https://relianceattendance.site/student-attendance.html?sessionId=65fa1234&source=qr",
+        assertEquals("https://renaissanceattendance.site/student-attendance.html?sessionId=65fa1234&source=qr",
                 response.getHeader("Location"));
     }
 
@@ -106,7 +106,7 @@ public class DomainRedirectFilterTest {
         filter.doFilter(request, response, filterChain);
 
         assertEquals(HttpServletResponse.SC_MOVED_PERMANENTLY, response.getStatus());
-        assertEquals("https://relianceattendance.site/teacher-login.html", response.getHeader("Location"));
+        assertEquals("https://renaissanceattendance.site/teacher-login.html", response.getHeader("Location"));
     }
 
     @Test
@@ -120,14 +120,14 @@ public class DomainRedirectFilterTest {
         filter.doFilter(request, response, filterChain);
 
         assertEquals(HttpServletResponse.SC_MOVED_PERMANENTLY, response.getStatus());
-        assertEquals("https://relianceattendance.site/admin-login.html", response.getHeader("Location"));
+        assertEquals("https://renaissanceattendance.site/admin-login.html", response.getHeader("Location"));
     }
 
     @Test
-    @DisplayName("Requests to new custom domain relianceattendance.site are NOT redirected (No loop)")
+    @DisplayName("Requests to new custom domain renaissanceattendance.site are NOT redirected (No loop)")
     void testNoRedirectOnTargetDomain() throws ServletException, IOException {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/");
-        request.setServerName("relianceattendance.site");
+        request.setServerName("renaissanceattendance.site");
         MockHttpServletResponse response = new MockHttpServletResponse();
         TestFilterChain filterChain = new TestFilterChain();
 
@@ -139,10 +139,10 @@ public class DomainRedirectFilterTest {
     }
 
     @Test
-    @DisplayName("Requests to www.relianceattendance.site are NOT redirected by this filter")
+    @DisplayName("Requests to www.renaissanceattendance.site are NOT redirected by this filter")
     void testNoRedirectOnWwwTargetDomain() throws ServletException, IOException {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/index.html");
-        request.setServerName("www.relianceattendance.site");
+        request.setServerName("www.renaissanceattendance.site");
         MockHttpServletResponse response = new MockHttpServletResponse();
         TestFilterChain filterChain = new TestFilterChain();
 
@@ -268,7 +268,7 @@ public class DomainRedirectFilterTest {
 
         filter.doFilter(sitemapReq, sitemapRes, sitemapChain);
         assertEquals(HttpServletResponse.SC_MOVED_PERMANENTLY, sitemapRes.getStatus());
-        assertEquals("https://relianceattendance.site/sitemap.xml", sitemapRes.getHeader("Location"));
+        assertEquals("https://renaissanceattendance.site/sitemap.xml", sitemapRes.getHeader("Location"));
 
         MockHttpServletRequest robotsReq = new MockHttpServletRequest("GET", "/robots.txt");
         robotsReq.setServerName("attendance-system-ivna.onrender.com");
@@ -277,7 +277,7 @@ public class DomainRedirectFilterTest {
 
         filter.doFilter(robotsReq, robotsRes, robotsChain);
         assertEquals(HttpServletResponse.SC_MOVED_PERMANENTLY, robotsRes.getStatus());
-        assertEquals("https://relianceattendance.site/robots.txt", robotsRes.getHeader("Location"));
+        assertEquals("https://renaissanceattendance.site/robots.txt", robotsRes.getHeader("Location"));
     }
 
     @Test

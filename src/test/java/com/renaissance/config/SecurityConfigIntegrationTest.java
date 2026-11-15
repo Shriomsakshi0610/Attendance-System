@@ -188,13 +188,13 @@ public class SecurityConfigIntegrationTest {
     }
 
     @Test
-    @DisplayName("Verify old Render domain GET / returns 301 Permanent Redirect to https://relianceattendance.site/")
+    @DisplayName("Verify old Render domain GET / returns 301 Permanent Redirect to https://renaissanceattendance.site/")
     void testOldDomainRedirectsToCanonicalDomain() throws Exception {
         mockMvc.perform(get("/")
                         .header("X-Forwarded-Host", "attendance-system-ivna.onrender.com")
                         .header("X-Forwarded-Proto", "https"))
                 .andExpect(status().isMovedPermanently())
-                .andExpect(header().string("Location", "https://relianceattendance.site/"));
+                .andExpect(header().string("Location", "https://renaissanceattendance.site/"));
     }
 
     @Test
@@ -206,7 +206,7 @@ public class SecurityConfigIntegrationTest {
                         .header("X-Forwarded-Host", "attendance-system-ivna.onrender.com")
                         .header("X-Forwarded-Proto", "https"))
                 .andExpect(status().isMovedPermanently())
-                .andExpect(header().string("Location", "https://relianceattendance.site/student-attendance.html?sessionId=session-999&source=qr"));
+                .andExpect(header().string("Location", "https://renaissanceattendance.site/student-attendance.html?sessionId=session-999&source=qr"));
     }
 
     @Test
@@ -216,7 +216,7 @@ public class SecurityConfigIntegrationTest {
                         .header("X-Forwarded-Host", "attendance-system-ivna.onrender.com")
                         .header("X-Forwarded-Proto", "https"))
                 .andExpect(status().isMovedPermanently())
-                .andExpect(header().string("Location", "https://relianceattendance.site/dashboard.html"));
+                .andExpect(header().string("Location", "https://renaissanceattendance.site/dashboard.html"));
     }
 
     @Test
@@ -228,10 +228,10 @@ public class SecurityConfigIntegrationTest {
     }
 
     @Test
-    @DisplayName("Verify new custom domain relianceattendance.site does NOT redirect (No loop)")
+    @DisplayName("Verify new custom domain renaissanceattendance.site does NOT redirect (No loop)")
     void testNewCustomDomainDoesNotRedirect() throws Exception {
         mockMvc.perform(get("/")
-                        .header("X-Forwarded-Host", "relianceattendance.site")
+                        .header("X-Forwarded-Host", "renaissanceattendance.site")
                         .header("X-Forwarded-Proto", "https"))
                 .andExpect(status().isOk());
     }

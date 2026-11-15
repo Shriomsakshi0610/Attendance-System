@@ -2,4 +2,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://relianceattendance.site/sitemap.xml
+Sitemap: https://renaissanceattendance.site/sitemap.xml

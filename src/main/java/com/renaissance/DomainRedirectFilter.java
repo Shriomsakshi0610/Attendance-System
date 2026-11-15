@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * DomainRedirectFilter
  *
  * Implements an HTTP 301 (Permanent Redirect) from deprecated Render domains
- * (e.g. *.onrender.com) to the new canonical custom domain (e.g. https://relianceattendance.site).
+ * (e.g. *.onrender.com) to the new canonical custom domain (e.g. https://renaissanceattendance.site).
  *
  * Executes before Spring Security (Order: Ordered.HIGHEST_PRECEDENCE + 10)
  * to ensure that browser page navigation on old domains is immediately redirected
@@ -45,8 +45,8 @@ public class DomainRedirectFilter extends OncePerRequestFilter {
     @Value("${app.redirect.enabled:true}")
     private boolean redirectEnabled = true;
 
-    @Value("${app.redirect.target-domain:relianceattendance.site}")
-    private String targetDomain = "relianceattendance.site";
+    @Value("${app.redirect.target-domain:renaissanceattendance.site}")
+    private String targetDomain = "renaissanceattendance.site";
 
     @Value("${app.redirect.target-scheme:https}")
     private String targetScheme = "https";
