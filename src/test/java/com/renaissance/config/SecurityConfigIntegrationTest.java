@@ -186,4 +186,53 @@ public class SecurityConfigIntegrationTest {
         mockMvc.perform(get("/api/teacher/departments").session(session))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    @DisplayName("Verify old Render domain GET / returns 301 Permanent Redirect to https://relianceattendance.site/")
+    void testOldDomainRedirectsToCanonicalDomain() throws Exception {
+        mockMvc.perform(get("/")
+                        .header("X-Forwarded-Host", "attendance-system-ivna.onrender.com")
+                        .header("X-Forwarded-Proto", "https"))
+                .andExpect(status().isMovedPermanently())
+                .andExpect(header().string("Location", "https://relianceattendance.site/"));
+    }
+
+    @Test
+    @DisplayName("Verify old Render domain GET page with query parameters preserves path and query string")
+    void testOldDomainPreservesPathAndQueryParams() throws Exception {
+        mockMvc.perform(get("/student-attendance.html")
+                        .param("sessionId", "session-999")
+                        .param("source", "qr")
+                        .header("X-Forwarded-Host", "attendance-system-ivna.onrender.com")
+                        .header("X-Forwarded-Proto", "https"))
+                .andExpect(status().isMovedPermanently())
+                .andExpect(header().string("Location", "https://relianceattendance.site/student-attendance.html?sessionId=session-999&source=qr"));
+    }
+
+    @Test
+    @DisplayName("Verify protected page on old domain redirects to new domain before Spring Security intercepts")
+    void testOldDomainProtectedPageRedirectsBeforeSecurity() throws Exception {
+        mockMvc.perform(get("/dashboard.html")
+                        .header("X-Forwarded-Host", "attendance-system-ivna.onrender.com")
+                        .header("X-Forwarded-Proto", "https"))
+                .andExpect(status().isMovedPermanently())
+                .andExpect(header().string("Location", "https://relianceattendance.site/dashboard.html"));
+    }
+
+    @Test
+    @DisplayName("Verify health check on old domain is NOT redirected (Render monitoring preserved)")
+    void testHealthCheckNotRedirectedOnOldDomain() throws Exception {
+        mockMvc.perform(get("/health")
+                        .header("X-Forwarded-Host", "attendance-system-ivna.onrender.com"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Verify new custom domain relianceattendance.site does NOT redirect (No loop)")
+    void testNewCustomDomainDoesNotRedirect() throws Exception {
+        mockMvc.perform(get("/")
+                        .header("X-Forwarded-Host", "relianceattendance.site")
+                        .header("X-Forwarded-Proto", "https"))
+                .andExpect(status().isOk());
+    }
 }
