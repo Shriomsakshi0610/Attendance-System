@@ -22,18 +22,18 @@ class AppVersionControllerTest {
     }
 
     @Test
-    @DisplayName("Should return latest version 1.3.4 with versionCode 8")
+    @DisplayName("Should return latest version 1.4.0 with versionCode 9")
     void testGetAppVersion() {
         ResponseEntity<AppVersionResponse> response = controller.getAppVersion();
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
 
         AppVersionResponse body = response.getBody();
-        assertEquals(8, body.getVersionCode(), "Server versionCode must be 8");
-        assertEquals("1.3.4", body.getVersionName(), "Server versionName must be 1.3.4");
+        assertEquals(9, body.getVersionCode(), "Server versionCode must be 9");
+        assertEquals("1.4.0", body.getVersionName(), "Server versionName must be 1.4.0");
         assertEquals(1, body.getMinVersionCode());
         assertEquals("/api/public/app/download", body.getDownloadUrl());
-        assertTrue(body.getReleaseNotes().contains("Session Logout"), "Release notes should mention Session Logout fix");
+        assertTrue(body.getReleaseNotes().contains("5-Minute Attendance Window"), "Release notes should mention 5-Minute Attendance Window");
         assertTrue(body.getFileSizeBytes() > 0, "File size must be greater than 0");
         assertFalse(body.getSha256().isBlank(), "SHA-256 must be calculated and non-empty");
     }
@@ -47,7 +47,7 @@ class AppVersionControllerTest {
 
         String contentDisposition = response.getHeaders().getFirst("Content-Disposition");
         assertNotNull(contentDisposition);
-        assertTrue(contentDisposition.contains("renaissance-teacher-v1.3.4.apk"));
+        assertTrue(contentDisposition.contains("renaissance-teacher-v1.4.0.apk"));
 
         assertTrue(response.getBody() instanceof Resource);
         Resource resource = (Resource) response.getBody();

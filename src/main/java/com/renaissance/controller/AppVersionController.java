@@ -28,18 +28,17 @@ public class AppVersionController {
 
     private static final Logger log = LoggerFactory.getLogger(AppVersionController.class);
 
-    private static final int CURRENT_VERSION_CODE = 8;
-    private static final String CURRENT_VERSION_NAME = "1.3.4";
+    private static final int CURRENT_VERSION_CODE = 9;
+    private static final String CURRENT_VERSION_NAME = "1.4.0";
     private static final int MIN_SUPPORTED_VERSION_CODE = 1;
     private static final String DEFAULT_RELEASE_NOTES =
-            "Renaissance Teacher App v1.3.4:\n" +
-            "• Permanent Fix for Automatic Session Logout: Teachers stay logged in without 1-2 hour unexpected logouts\n" +
-            "• RFC 6819 Token Rotation Grace Window: Concurrent requests safely reuse recently rotated tokens\n" +
-            "• Atomic Pre-Lock Token Resolution: Eliminates 401 race condition in concurrent dashboard coroutines\n" +
-            "• Dynamic OkHttp In-Memory CookieJar Synchronization: Prevents stale session cookie loops\n" +
-            "• Server-Side Refresh Token Revocation on Explicit Logout\n" +
-            "• MongoDB Persistent Refresh Tokens: 30-day longevity surviving container restarts\n" +
-            "• Subject-Specific Student Attendance History with Class & Subject filtering\n" +
+            "Renaissance Teacher App v1.4.0:\n" +
+            "• Strict 5-Minute Attendance Window: Official backend-enforced 5-minute session duration\n" +
+            "• Live Countdown Timers: Synchronized real-time countdown in Active Session & Dashboard screens\n" +
+            "• Monotonic Timer Engine: System.nanoTime() based clock immune to device time shifts and backgrounding\n" +
+            "• Immediate Expiration State: Dynamic UI transition to Attendance Window Closed upon 00:00\n" +
+            "• High-Performance RAM Caching: Near-instant teacher dashboard and schedule loading with warm-up\n" +
+            "• Permanent Login & Session Preservation: RFC 6819 token rotation grace window & cookie jar sync\n" +
             "• 40-meter GPS Geofencing & BLE Proximity Verification\n" +
             "• Direct in-app streaming APK download with live progress indicator";
 
