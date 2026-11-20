@@ -24,6 +24,8 @@ public class SessionDto {
     private Integer bleRssiThreshold;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private LocalDateTime serverTime;
+    private Long remainingSeconds;
     private String status;
     private long presentCount;
     private long totalEnrolled;
@@ -198,6 +200,22 @@ public class SessionDto {
 
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
+    }
+
+    public LocalDateTime getServerTime() {
+        return serverTime;
+    }
+
+    public void setServerTime(LocalDateTime serverTime) {
+        this.serverTime = serverTime;
+    }
+
+    public Long getRemainingSeconds() {
+        return remainingSeconds;
+    }
+
+    public void setRemainingSeconds(Long remainingSeconds) {
+        this.remainingSeconds = remainingSeconds;
     }
 
     public String getStatus() {

@@ -10,7 +10,9 @@ const AdminApp = (() => {
     let teachersCache = [];
     let subjectsCache = [];
     let searchDebounceTimer = null;
+    let deviceSearchDebounceTimer = null;
     let pollingTimer = null;
+    let cachedHistoricalPreviewData = null;
 
     // ----------------------------------------------------
     // INITIALIZATION & AUTH
@@ -42,6 +44,8 @@ const AdminApp = (() => {
 
             // Initial load of active view data
             loadOverviewStats();
+            loadCacheMetrics();
+            loadDevices();
             loadStudents();
             loadTimetable();
             loadActiveSessions();
@@ -89,12 +93,17 @@ const AdminApp = (() => {
             'tab-teachers': 'Faculty & Teacher Directory',
             'tab-students': 'Student Roster Management',
             'tab-timetable': 'Class Timetable & Schedule Management',
-            'tab-sessions': 'Live Campus Attendance Sessions'
+            'tab-sessions': 'Live Campus Attendance Sessions',
+            'tab-historical-import': 'Historical Attendance CSV Import',
+            'tab-devices': 'Student Device Authorization Management'
         };
         document.getElementById('current-page-title').textContent = titles[tabId] || 'Admin Portal';
 
         // Refresh tab-specific data
-        if (tabId === 'tab-overview') loadOverviewStats();
+        if (tabId === 'tab-overview') {
+            loadOverviewStats();
+            loadCacheMetrics();
+        }
         if (tabId === 'tab-departments') loadDepartments();
         if (tabId === 'tab-classes') loadClasses();
         if (tabId === 'tab-subjects') loadSubjects();
@@ -102,6 +111,7 @@ const AdminApp = (() => {
         if (tabId === 'tab-students') loadStudents();
         if (tabId === 'tab-timetable') loadTimetable();
         if (tabId === 'tab-sessions') loadActiveSessions();
+        if (tabId === 'tab-devices') loadDevices();
 
         // Close mobile sidebar if open
         const sidebar = document.getElementById('admin-sidebar');
@@ -1573,7 +1583,492 @@ const AdminApp = (() => {
         loadTimetable();
         loadActiveSessions();
         loadOverviewStats();
+        loadCacheMetrics();
+        loadDevices();
         showToast('All administrative caches refreshed', 'info');
+    }
+
+    // ----------------------------------------------------
+    // MODULE 5: CAFFEINE CACHE METRICS & MONITORING
+    // ----------------------------------------------------
+
+    async function loadCacheMetrics() {
+        try {
+            const res = await fetch('/api/admin/system/cache-metrics', { credentials: 'include' });
+            const data = await res.json();
+            if (data.success && data.data) {
+                const m = data.data;
+                const hitRateEl = document.getElementById('cache-overall-hit-rate');
+                const hitsEl = document.getElementById('cache-total-hits');
+                const missesEl = document.getElementById('cache-total-misses');
+                const evictionsEl = document.getElementById('cache-total-evictions');
+                const storesEl = document.getElementById('cache-total-stores');
+
+                if (hitRateEl) hitRateEl.textContent = m.overallHitRate || '0%';
+                if (hitsEl) hitsEl.textContent = Number(m.totalHits || 0).toLocaleString();
+                if (missesEl) missesEl.textContent = Number(m.totalMisses || 0).toLocaleString();
+                if (evictionsEl) evictionsEl.textContent = Number(m.totalEvictions || 0).toLocaleString();
+                if (storesEl) storesEl.textContent = m.totalCaches || 0;
+
+                const tbody = document.getElementById('cache-metrics-tbody');
+                if (tbody && m.caches) {
+                    const entries = Object.entries(m.caches);
+                    if (entries.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--text-secondary);">No active cache entries currently registered.</td></tr>';
+                    } else {
+                        tbody.innerHTML = entries.map(([name, s]) => `
+                            <tr>
+                                <td><code style="background:var(--slate-100); padding:2px 6px; border-radius:4px; font-weight:600; color:var(--slate-800);">${escapeHtml(name)}</code></td>
+                                <td><strong>${Number(s.estimatedSize || 0).toLocaleString()}</strong> in RAM</td>
+                                <td>
+                                    <span class="badge" style="background:#ecfdf5; color:#065f46; font-weight:700;">
+                                        ${escapeHtml(s.hitRate || '0%')}
+                                    </span>
+                                </td>
+                                <td>${Number(s.hitCount || 0).toLocaleString()} / ${Number(s.missCount || 0).toLocaleString()}</td>
+                                <td>${Number(s.evictionCount || 0).toLocaleString()}</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Error loading cache metrics:', err);
+        }
+    }
+
+    // ----------------------------------------------------
+    // MODULE 2: HISTORICAL ATTENDANCE CSV IMPORT
+    // ----------------------------------------------------
+
+    function downloadHistoricalCsvTemplate() {
+        const header = "USN,SubjectCode,SubjectName,Semester,Section,Date,Session,Status,TeacherID\n";
+        const sample1 = "2GI24IS123,CS301,Data Structures,3,A,2026-09-15,1,PRESENT,EMP001\n";
+        const sample2 = "2GI24IS124,CS301,Data Structures,3,A,2026-09-15,1,ABSENT,EMP001\n";
+        const blob = new Blob([header + sample1 + sample2], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "historical_attendance_template.csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    async function submitHistoricalCsvPreview(event) {
+        event.preventDefault();
+        const fileInput = document.getElementById('historical-csv-file');
+        if (!fileInput || !fileInput.files.length) {
+            showToast('Please select a CSV file to validate', 'error');
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const submitBtn = document.getElementById('btn-preview-historical-csv');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span>⏳</span> <span>Validating CSV...</span>';
+        }
+
+        try {
+            const res = await fetch('/api/admin/attendance/import/preview', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+                showToast(data.message || 'Validation failed on CSV file', 'error');
+                return;
+            }
+
+            cachedHistoricalPreviewData = data.data;
+            renderHistoricalPreview(cachedHistoricalPreviewData, file.name);
+            showToast(`CSV preview generated: ${cachedHistoricalPreviewData.validRows} valid, ${cachedHistoricalPreviewData.invalidRows} invalid`, 'info');
+
+        } catch (err) {
+            console.error('Error previewing historical attendance:', err);
+            showToast('Network error during CSV preview', 'error');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span>🔍</span> <span>Validate & Preview CSV</span>';
+            }
+        }
+    }
+
+    function renderHistoricalPreview(preview, fileName) {
+        const container = document.getElementById('historical-preview-container');
+        if (!container) return;
+
+        document.getElementById('preview-stat-total').textContent = preview.totalRows || 0;
+        document.getElementById('preview-stat-valid').textContent = preview.validRows || 0;
+        document.getElementById('preview-stat-invalid').textContent = preview.invalidRows || 0;
+        document.getElementById('preview-stat-sessions').textContent = preview.sessionsCreated || 0;
+        document.getElementById('preview-filename-label').textContent = fileName ? `File: ${fileName}` : '';
+
+        const errorBtn = document.getElementById('btn-download-error-csv');
+        if (errorBtn) {
+            if (preview.invalidRows > 0 && preview.errors && preview.errors.length > 0) {
+                errorBtn.style.display = 'inline-flex';
+                errorBtn.innerHTML = `<span>⚠️</span> <span>Download Error Report (${preview.errors.length})</span>`;
+            } else {
+                errorBtn.style.display = 'none';
+            }
+        }
+
+        const confirmBtn = document.getElementById('btn-confirm-historical-import');
+        if (confirmBtn) {
+            confirmBtn.disabled = preview.validRows === 0;
+            confirmBtn.innerHTML = `<span>🚀</span> <span>Commit ${preview.validRows} Valid Records to Database</span>`;
+        }
+
+        const tbody = document.getElementById('historical-preview-tbody');
+        if (tbody) {
+            const rows = preview.rows || [];
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem;">No rows processed.</td></tr>';
+            } else {
+                tbody.innerHTML = rows.map((r, i) => {
+                    const isValid = r.valid;
+                    const statusClass = isValid ? 'background:#ecfdf5; color:#065f46;' : 'background:#fef2f2; color:#991b1b;';
+                    const icon = isValid ? '✔ Valid' : '✖ ' + escapeHtml(r.validationMessage || 'Error');
+                    return `
+                        <tr style="${isValid ? '' : 'background: #fff5f5;'}">
+                            <td>${i + 1}</td>
+                            <td><strong style="font-family: monospace;">${escapeHtml(r.usn || '—')}</strong></td>
+                            <td><code>${escapeHtml(r.subjectCode || '—')}</code></td>
+                            <td>${escapeHtml(r.subjectName || '—')}</td>
+                            <td>${escapeHtml((r.semester || '') + ' ' + (r.section || ''))}</td>
+                            <td>${escapeHtml(r.date || '—')}</td>
+                            <td>Slot ${escapeHtml(r.session || '1')}</td>
+                            <td>
+                                <span class="badge" style="background:#f1f5f9; color:#334155;">
+                                    ${escapeHtml(r.status || 'PRESENT')}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge" style="${statusClass}">
+                                    ${icon}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        container.style.display = 'block';
+    }
+
+    async function downloadImportErrorCsv() {
+        if (!cachedHistoricalPreviewData || !cachedHistoricalPreviewData.errors || !cachedHistoricalPreviewData.errors.length) {
+            showToast('No errors to download', 'info');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/admin/attendance/import/error-csv', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ errors: cachedHistoricalPreviewData.errors })
+            });
+
+            if (!res.ok) {
+                showToast('Failed to generate error report CSV', 'error');
+                return;
+            }
+
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "historical_attendance_import_errors.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Downloaded error report CSV', 'success');
+        } catch (err) {
+            console.error('Error downloading error CSV:', err);
+            showToast('Network error generating error report', 'error');
+        }
+    }
+
+    function confirmHistoricalImport() {
+        if (!cachedHistoricalPreviewData || cachedHistoricalPreviewData.validRows === 0) {
+            showToast('No valid rows available to commit', 'error');
+            return;
+        }
+
+        showConfirmModal(
+            'Confirm Historical Attendance Import',
+            `Are you sure you want to commit ${cachedHistoricalPreviewData.validRows} attendance records into MongoDB Atlas? This action will create historical sessions and bind student attendance records.`,
+            async () => {
+                const confirmBtn = document.getElementById('btn-confirm-historical-import');
+                if (confirmBtn) {
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerHTML = '<span>⏳</span> <span>Committing to Database...</span>';
+                }
+
+                try {
+                    const res = await fetch('/api/admin/attendance/import/confirm', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(cachedHistoricalPreviewData)
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        showToast(data.message || 'Historical attendance imported successfully!', 'success');
+                        document.getElementById('historical-preview-container').style.display = 'none';
+                        const fileInput = document.getElementById('historical-csv-file');
+                        if (fileInput) fileInput.value = '';
+                        cachedHistoricalPreviewData = null;
+                        loadOverviewStats();
+                    } else {
+                        showToast(data.message || 'Import confirmation failed', 'error');
+                    }
+                } catch (err) {
+                    console.error('Error confirming historical import:', err);
+                    showToast('Network error during import confirmation', 'error');
+                } finally {
+                    if (confirmBtn) {
+                        confirmBtn.disabled = false;
+                        confirmBtn.innerHTML = '<span>🚀</span> <span>Commit Valid Records to Database</span>';
+                    }
+                }
+            }
+        );
+    }
+
+    // ----------------------------------------------------
+    // MODULE 4: STUDENT DEVICE REGISTRATION & MANAGEMENT
+    // ----------------------------------------------------
+
+    async function loadDevices() {
+        try {
+            // Load stats first
+            const statsRes = await fetch('/api/admin/devices/stats', { credentials: 'include' });
+            const statsData = await statsRes.json();
+            if (statsData.success && statsData.data) {
+                const st = statsData.data;
+                const total = (st.PENDING || 0) + (st.APPROVED || 0) + (st.REJECTED || 0) + (st.REVOKED || 0);
+                const pending = st.PENDING || 0;
+                const approved = st.APPROVED || 0;
+                const rejected = (st.REJECTED || 0) + (st.REVOKED || 0);
+
+                const elTotal = document.getElementById('device-stat-total');
+                const elPending = document.getElementById('device-stat-pending');
+                const elApproved = document.getElementById('device-stat-approved');
+                const elRejected = document.getElementById('device-stat-rejected');
+                const elBadge = document.getElementById('sidebar-pending-devices-count');
+
+                if (elTotal) elTotal.textContent = total;
+                if (elPending) elPending.textContent = pending;
+                if (elApproved) elApproved.textContent = approved;
+                if (elRejected) elRejected.textContent = rejected;
+
+                if (elBadge) {
+                    if (pending > 0) {
+                        elBadge.textContent = pending;
+                        elBadge.style.display = 'inline-block';
+                    } else {
+                        elBadge.style.display = 'none';
+                    }
+                }
+            }
+
+            // Load list with filters
+            const statusFilter = document.getElementById('filter-device-status')?.value || '';
+            const keyword = document.getElementById('filter-device-keyword')?.value?.trim() || '';
+
+            const params = new URLSearchParams();
+            if (statusFilter) params.append('status', statusFilter);
+            if (keyword) params.append('keyword', keyword);
+
+            const url = `/api/admin/devices${params.toString() ? '?' + params.toString() : ''}`;
+            const res = await fetch(url, { credentials: 'include' });
+            const data = await res.json();
+
+            const tbody = document.getElementById('devices-tbody');
+            if (!tbody) return;
+
+            if (!data.success || !data.data || data.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-secondary);">No student devices found matching criteria.</td></tr>';
+                return;
+            }
+
+            const devices = data.data;
+            tbody.innerHTML = devices.map(d => {
+                const statusBadge = getDeviceStatusBadge(d.status);
+                const maskedToken = d.deviceToken ? d.deviceToken.substring(0, 10) + '...' : '—';
+                const devDetails = `${escapeHtml(d.deviceName || 'Device')} <br><span style="font-size:0.75rem; color:var(--text-secondary);">${escapeHtml(d.osName || '')} • ${escapeHtml(d.browserName || '')} • <code>${maskedToken}</code></span>`;
+                const reviewedInfo = d.approvedBy ? `${escapeHtml(d.approvedBy)}<br><span style="font-size:0.75rem; color:var(--text-secondary);">${formatDateTime(d.approvedAt)}</span>` : '—';
+                const reason = d.rejectionReason ? `<span style="color:#ef4444; font-size:0.8rem;">${escapeHtml(d.rejectionReason)}</span>` : '—';
+
+                let actionBtns = '';
+                if (d.status === 'PENDING') {
+                    actionBtns = `
+                        <div style="display:flex; gap:0.4rem;">
+                            <button class="btn btn-sm btn-outline" style="color: #10b981; border-color: #10b981; padding: 2px 8px;" onclick="AdminApp.approveDevice('${d.id}')">✔ Approve</button>
+                            <button class="btn btn-sm btn-outline" style="color: #ef4444; border-color: #ef4444; padding: 2px 8px;" onclick="AdminApp.openDeviceActionModal('${d.id}', 'REJECT')">✖ Reject</button>
+                        </div>
+                    `;
+                } else if (d.status === 'APPROVED') {
+                    actionBtns = `
+                        <button class="btn btn-sm btn-outline" style="color: #f59e0b; border-color: #f59e0b; padding: 2px 8px;" onclick="AdminApp.openDeviceActionModal('${d.id}', 'REVOKE')">🚫 Revoke</button>
+                    `;
+                } else {
+                    actionBtns = `
+                        <button class="btn btn-sm btn-outline" style="color: #10b981; border-color: #10b981; padding: 2px 8px;" onclick="AdminApp.approveDevice('${d.id}')">🔄 Re-Approve</button>
+                    `;
+                }
+
+                return `
+                    <tr>
+                        <td><strong style="font-family: monospace; font-size: 0.95rem;">${escapeHtml(d.usn || '—')}</strong></td>
+                        <td>${escapeHtml(d.studentName || '—')}</td>
+                        <td>${devDetails}</td>
+                        <td>${statusBadge}</td>
+                        <td><span style="font-size:0.85rem;">${formatDateTime(d.requestedAt)}</span></td>
+                        <td>${reviewedInfo}</td>
+                        <td>${reason}</td>
+                        <td>${actionBtns}</td>
+                    </tr>
+                `;
+            }).join('');
+
+        } catch (err) {
+            console.error('Error loading devices:', err);
+        }
+    }
+
+    function getDeviceStatusBadge(status) {
+        if (status === 'APPROVED') {
+            return '<span class="badge" style="background:#ecfdf5; color:#065f46; font-weight:700;">✔ APPROVED</span>';
+        } else if (status === 'PENDING') {
+            return '<span class="badge" style="background:#fef3c7; color:#92400e; font-weight:700;">⏳ PENDING</span>';
+        } else if (status === 'REJECTED') {
+            return '<span class="badge" style="background:#fef2f2; color:#991b1b; font-weight:700;">✖ REJECTED</span>';
+        } else if (status === 'REVOKED') {
+            return '<span class="badge" style="background:#f3f4f6; color:#4b5563; font-weight:700;">🚫 REVOKED</span>';
+        }
+        return `<span class="badge">${escapeHtml(status || 'UNKNOWN')}</span>`;
+    }
+
+    function formatDateTime(isoStr) {
+        if (!isoStr) return '—';
+        try {
+            const d = new Date(isoStr);
+            if (!isNaN(d.getTime())) {
+                return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' +
+                       d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+        } catch (e) {}
+        return isoStr;
+    }
+
+    function debouncedLoadDevices() {
+        clearTimeout(deviceSearchDebounceTimer);
+        deviceSearchDebounceTimer = setTimeout(() => {
+            loadDevices();
+        }, 300);
+    }
+
+    async function approveDevice(deviceId) {
+        showConfirmModal(
+            'Approve Student Device',
+            'Authorize this device for student attendance marking? The student will be allowed to submit attendance from this hardware token.',
+            async () => {
+                try {
+                    const res = await fetch(`/api/admin/devices/${deviceId}/approve`, {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast('Student device approved successfully', 'success');
+                        await loadDevices();
+                    } else {
+                        showToast(data.message || 'Failed to approve device', 'error');
+                    }
+                } catch (err) {
+                    console.error('Error approving device:', err);
+                    showToast('Network error approving device', 'error');
+                }
+            }
+        );
+    }
+
+    function openDeviceActionModal(deviceId, actionType) {
+        document.getElementById('device-action-id').value = deviceId;
+        document.getElementById('device-action-type').value = actionType;
+        const titleEl = document.getElementById('modal-device-action-title');
+        const promptEl = document.getElementById('device-action-prompt');
+        const submitBtn = document.getElementById('device-action-submit-btn');
+        const reasonInput = document.getElementById('device-action-reason');
+
+        if (actionType === 'REJECT') {
+            if (titleEl) titleEl.textContent = 'Reject Device Authorization';
+            if (promptEl) promptEl.textContent = 'Please state why this device registration request is being rejected.';
+            if (submitBtn) {
+                submitBtn.textContent = 'Reject Device';
+                submitBtn.className = 'btn btn-danger';
+            }
+            if (reasonInput) reasonInput.placeholder = 'e.g. Unrecognized hardware / Suspicious device';
+        } else {
+            if (titleEl) titleEl.textContent = 'Revoke Device Authorization';
+            if (promptEl) promptEl.textContent = 'Please state why this approved device authorization is being revoked.';
+            if (submitBtn) {
+                submitBtn.textContent = 'Revoke Authorization';
+                submitBtn.className = 'btn btn-danger';
+            }
+            if (reasonInput) reasonInput.placeholder = 'e.g. Student reported lost phone / Security reset';
+        }
+
+        if (reasonInput) reasonInput.value = '';
+        openModal('modal-device-action');
+    }
+
+    async function submitDeviceAction(event) {
+        event.preventDefault();
+        const id = document.getElementById('device-action-id').value;
+        const type = document.getElementById('device-action-type').value;
+        const reason = document.getElementById('device-action-reason').value.trim();
+
+        if (!reason) {
+            showToast('Reason is required', 'error');
+            return;
+        }
+
+        try {
+            const endpoint = `/api/admin/devices/${id}/${type.toLowerCase()}`;
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ reason })
+            });
+            const data = await res.json();
+            if (data.success) {
+                closeModal('modal-device-action');
+                showToast(data.message || `Device ${type.toLowerCase()}ed successfully`, 'success');
+                await loadDevices();
+            } else {
+                showToast(data.message || 'Operation failed', 'error');
+            }
+        } catch (err) {
+            console.error('Error submitting device action:', err);
+            showToast('Network error performing device action', 'error');
+        }
     }
 
     function formatTime(isoOrTimeStr) {
@@ -1637,7 +2132,17 @@ const AdminApp = (() => {
         saveTimetableSchedule,
         deleteTimetableSchedule,
         loadActiveSessions,
-        terminateSession
+        terminateSession,
+        loadCacheMetrics,
+        downloadHistoricalCsvTemplate,
+        submitHistoricalCsvPreview,
+        downloadImportErrorCsv,
+        confirmHistoricalImport,
+        loadDevices,
+        debouncedLoadDevices,
+        approveDevice,
+        openDeviceActionModal,
+        submitDeviceAction
     };
 })();
 

@@ -88,6 +88,22 @@
                     </a>
                 </li>
 
+                <!-- Group 5: ATTENDANCE & SECURITY -->
+                <li class="nav-group-title">Attendance & Security</li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" class="nav-link" data-tab="tab-historical-import">
+                        <span class="nav-icon">📥</span>
+                        <span>Import Attendance</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0)" class="nav-link" data-tab="tab-devices">
+                        <span class="nav-icon">📱</span>
+                        <span>Student Devices</span>
+                        <span id="sidebar-pending-devices-count" class="badge" style="background:#f59e0b; color:#fff; font-size:0.7rem; padding: 2px 7px; border-radius: 999px; margin-left: auto; display: none;">0</span>
+                    </a>
+                </li>
+
                 <!-- Group 5: ACCOUNT & SYSTEM -->
                 <li class="nav-group-title">Account</li>
                 <li class="nav-item" style="margin-bottom: 1rem;">
@@ -272,6 +288,63 @@
                                         <span><strong>Integrity Protection:</strong> Deletion blocked for entities with historical attendance records.</span>
                                     </li>
                                 </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Caffeine RAM Cache Performance Monitor -->
+                    <div class="card" style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <span style="font-size: 1.25rem;">⚡</span>
+                                <div>
+                                    <h3 style="font-size: 1.05rem; font-weight: 700; margin: 0;">In-Memory Caffeine L1 Cache Performance</h3>
+                                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">Zero-latency RAM cache layer shielding MongoDB Atlas</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" onclick="AdminApp.loadCacheMetrics()">
+                                <span>🔄 Refresh Metrics</span>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+                                <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1rem; text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: #10b981;" id="cache-overall-hit-rate">—</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Overall Hit Rate</div>
+                                </div>
+                                <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1rem; text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: #2563eb;" id="cache-total-hits">0</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Total Cache Hits</div>
+                                </div>
+                                <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1rem; text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: #f59e0b;" id="cache-total-misses">0</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Total Cache Misses</div>
+                                </div>
+                                <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1rem; text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: #8b5cf6;" id="cache-total-evictions">0</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">TTL/LRU Evictions</div>
+                                </div>
+                                <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1rem; text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: #0f172a;" id="cache-total-stores">0</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Managed Caches</div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Cache Name</th>
+                                            <th>Estimated Entries</th>
+                                            <th>Hit Rate</th>
+                                            <th>Hits / Misses</th>
+                                            <th>Evictions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cache-metrics-tbody">
+                                        <tr><td colspan="5" style="text-align:center; padding: 1rem; color: var(--text-secondary);">Loading cache telemetry...</td></tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -608,6 +681,232 @@
                                     </thead>
                                     <tbody id="active-sessions-tbody">
                                         <tr><td colspan="9" style="text-align:center; padding: 2rem;">Loading active sessions...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 8: HISTORICAL ATTENDANCE IMPORT -->
+                <section id="tab-historical-import" class="tab-pane">
+                    <div class="tab-header">
+                        <div class="tab-header-info">
+                            <h3>Historical Attendance CSV Import</h3>
+                            <p>Import past attendance logs in batch with validation against registered students, classes, and subjects.</p>
+                        </div>
+                        <div class="tab-header-actions">
+                            <button class="btn btn-secondary" onclick="AdminApp.downloadHistoricalCsvTemplate()">
+                                <span>📄</span> <span>Download CSV Template</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Instructions Card -->
+                    <div class="card" style="margin-bottom: 1.5rem;">
+                        <div class="card-body">
+                            <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem;">CSV File Format Specifications</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                                Your CSV file must contain the following required header columns:
+                            </p>
+                            <code style="display: block; background: var(--slate-100); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); font-size: 0.85rem; color: var(--slate-800); overflow-x: auto; white-space: nowrap;">
+                                USN,SubjectCode,SubjectName,Semester,Section,Date,Session,Status,TeacherID
+                            </code>
+                            <ul style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.75rem; padding-left: 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.4rem;">
+                                <li><strong>Date:</strong> Format <code>YYYY-MM-DD</code> (e.g. 2026-09-15)</li>
+                                <li><strong>Status:</strong> <code>PRESENT</code>, <code>ABSENT</code>, <code>LATE</code>, or <code>EXCUSED</code></li>
+                                <li><strong>Session:</strong> Session slot number (e.g. 1, 2)</li>
+                                <li><strong>TeacherID:</strong> Faculty Employee ID or system ID (optional)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Upload Form Card -->
+                    <div class="card" style="margin-bottom: 1.5rem;">
+                        <div class="card-header">
+                            <h3 style="font-size: 1.05rem; font-weight: 700;">Upload & Validate Attendance CSV</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="form-historical-import-upload" onsubmit="AdminApp.submitHistoricalCsvPreview(event)">
+                                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                                    <div style="flex: 1; min-width: 250px;">
+                                        <input type="file" id="historical-csv-file" class="form-control" accept=".csv" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary" id="btn-preview-historical-csv">
+                                        <span>🔍</span> <span>Validate & Preview CSV</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Preview Container (initially hidden) -->
+                    <div id="historical-preview-container" style="display: none;">
+                        <!-- Summary Stats -->
+                        <div class="admin-overview-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 1.5rem;">
+                            <div class="stat-card-admin">
+                                <div class="stat-icon-wrapper icon-blue">📊</div>
+                                <div>
+                                    <div class="stat-value" id="preview-stat-total">0</div>
+                                    <div class="stat-label">Total CSV Rows</div>
+                                </div>
+                            </div>
+                            <div class="stat-card-admin">
+                                <div class="stat-icon-wrapper icon-emerald">✅</div>
+                                <div>
+                                    <div class="stat-value" id="preview-stat-valid" style="color: #10b981;">0</div>
+                                    <div class="stat-label">Valid Records</div>
+                                </div>
+                            </div>
+                            <div class="stat-card-admin">
+                                <div class="stat-icon-wrapper icon-rose">⚠️</div>
+                                <div>
+                                    <div class="stat-value" id="preview-stat-invalid" style="color: #ef4444;">0</div>
+                                    <div class="stat-label">Invalid Rows</div>
+                                </div>
+                            </div>
+                            <div class="stat-card-admin">
+                                <div class="stat-icon-wrapper icon-purple">🕒</div>
+                                <div>
+                                    <div class="stat-value" id="preview-stat-sessions">0</div>
+                                    <div class="stat-label">Sessions Created</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions Bar -->
+                        <div class="card" style="margin-bottom: 1.5rem;">
+                            <div class="card-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                                <div>
+                                    <span id="preview-status-badge" class="badge" style="background:#e0e7ff; color:#3730a3; padding: 6px 12px; font-size: 0.85rem; font-weight: 600;">
+                                        Validation Complete
+                                    </span>
+                                    <span id="preview-filename-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-left: 0.75rem;"></span>
+                                </div>
+                                <div style="display: flex; gap: 0.75rem;">
+                                    <button class="btn btn-secondary" id="btn-download-error-csv" onclick="AdminApp.downloadImportErrorCsv()" style="display: none;">
+                                        <span>⚠️</span> <span>Download Error Report CSV</span>
+                                    </button>
+                                    <button class="btn btn-primary" id="btn-confirm-historical-import" onclick="AdminApp.confirmHistoricalImport()">
+                                        <span>🚀</span> <span>Commit Valid Records to Database</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview Table -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 style="font-size: 1.05rem; font-weight: 700;">Row Validation Preview</h3>
+                            </div>
+                            <div class="card-body" style="padding: 0;">
+                                <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>USN</th>
+                                                <th>Subject Code</th>
+                                                <th>Subject Name</th>
+                                                <th>Sem / Sec</th>
+                                                <th>Date</th>
+                                                <th>Session</th>
+                                                <th>Status</th>
+                                                <th>Validation</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="historical-preview-tbody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 9: STUDENT DEVICES -->
+                <section id="tab-devices" class="tab-pane">
+                    <div class="tab-header">
+                        <div class="tab-header-info">
+                            <h3>Student Device Authorization</h3>
+                            <p>Manage and verify student hardware devices. Only approved devices can submit GPS/BLE attendance.</p>
+                        </div>
+                        <div class="tab-header-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="AdminApp.loadDevices()">
+                                <span>🔄 Refresh</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Device Summary Stats -->
+                    <div class="admin-overview-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 1.5rem;">
+                        <div class="stat-card-admin">
+                            <div class="stat-icon-wrapper icon-blue">📱</div>
+                            <div>
+                                <div class="stat-value" id="device-stat-total">0</div>
+                                <div class="stat-label">Total Registered</div>
+                            </div>
+                        </div>
+                        <div class="stat-card-admin">
+                            <div class="stat-icon-wrapper icon-amber">⏳</div>
+                            <div>
+                                <div class="stat-value" id="device-stat-pending" style="color: #f59e0b;">0</div>
+                                <div class="stat-label">Pending Approval</div>
+                            </div>
+                        </div>
+                        <div class="stat-card-admin">
+                            <div class="stat-icon-wrapper icon-emerald">✅</div>
+                            <div>
+                                <div class="stat-value" id="device-stat-approved" style="color: #10b981;">0</div>
+                                <div class="stat-label">Approved & Active</div>
+                            </div>
+                        </div>
+                        <div class="stat-card-admin">
+                            <div class="stat-icon-wrapper icon-rose">🚫</div>
+                            <div>
+                                <div class="stat-value" id="device-stat-rejected" style="color: #ef4444;">0</div>
+                                <div class="stat-label">Rejected / Revoked</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="card" style="margin-bottom: 1.5rem;">
+                        <div class="card-body" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <input type="text" id="filter-device-keyword" class="form-control" placeholder="Search by USN, Device Name, OS..." oninput="AdminApp.debouncedLoadDevices()">
+                            </div>
+                            <div style="width: auto; min-width: 170px;">
+                                <select id="filter-device-status" class="form-control" onchange="AdminApp.loadDevices()">
+                                    <option value="">All Statuses</option>
+                                    <option value="PENDING">Pending Approval</option>
+                                    <option value="APPROVED">Approved</option>
+                                    <option value="REJECTED">Rejected</option>
+                                    <option value="REVOKED">Revoked</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Devices Table -->
+                    <div class="card">
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Student USN</th>
+                                            <th>Student Name</th>
+                                            <th>Device Details</th>
+                                            <th>Status</th>
+                                            <th>Registered At</th>
+                                            <th>Reviewed At / By</th>
+                                            <th>Remarks</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="devices-tbody">
+                                        <tr><td colspan="8" style="text-align:center; padding: 2rem;">Loading student devices...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -1071,6 +1370,33 @@
                 <button type="button" class="btn btn-secondary" onclick="AdminApp.closeModal('modal-confirm')">Cancel</button>
                 <button type="button" class="btn btn-danger" id="confirm-modal-btn">Confirm</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Reject / Revoke Device Action Modal -->
+    <div id="modal-device-action" class="modal-overlay">
+        <div class="modal-container" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 id="modal-device-action-title">Device Authorization Action</h3>
+                <button class="modal-close-btn" onclick="AdminApp.closeModal('modal-device-action')">&times;</button>
+            </div>
+            <form id="form-device-action" onsubmit="AdminApp.submitDeviceAction(event)">
+                <input type="hidden" id="device-action-id">
+                <input type="hidden" id="device-action-type">
+                <div class="modal-body">
+                    <p id="device-action-prompt" style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        Please provide a reason for this device action.
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label">Reason *</label>
+                        <input type="text" id="device-action-reason" class="form-control" placeholder="e.g. Unrecognized hardware / Security revocation" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="AdminApp.closeModal('modal-device-action')">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="device-action-submit-btn">Confirm Action</button>
+                </div>
+            </form>
         </div>
     </div>
 

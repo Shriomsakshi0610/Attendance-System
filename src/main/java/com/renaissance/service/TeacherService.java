@@ -103,32 +103,56 @@ public class TeacherService {
     /**
      * User-Specific: Returns ONLY classes assigned to the specified faculty member.
      * Evaluates direct assignments (assignedClasses) and class mentorships (classTeacher).
+     * Cached in Caffeine L1 RAM with batch DBRef resolution to eliminate N+1 loops.
      */
+    @Cacheable(value = CacheConfig.CACHE_TEACHER_CLASSES, key = "#teacher != null ? (#teacher.id + '_' + (#departmentId != null ? #departmentId : 'ALL')) : 'EMPTY'")
     public List<ClassDto> getClassesForTeacher(Teacher teacher, String departmentId) {
         if (teacher == null) {
             return Collections.emptyList();
         }
 
-        // Always query fresh from repository using unique teacher ID for 100% data consistency
         Teacher freshTeacher = teacherRepository.findById(teacher.getId()).orElse(teacher);
 
         List<CollegeClass> assignedClasses = new ArrayList<>();
         Set<String> seenClassIds = new HashSet<>();
 
-        // 1. Explicitly assigned classes in teacher.assignedClasses
+        // 1. Collect IDs of explicitly assigned classes for a single batch lookup
+        Set<String> classIdsToFetch = new HashSet<>();
+        List<CollegeClass> alreadyLoaded = new ArrayList<>();
+        Map<String, CollegeClass> rawClassMap = new HashMap<>();
+
         if (freshTeacher.getAssignedClasses() != null) {
             for (CollegeClass c : freshTeacher.getAssignedClasses()) {
                 try {
                     String classId = extractDbRefId(c);
                     if (classId != null) {
-                        CollegeClass realClass = classRepository.findById(classId).orElse(c);
-                        if (realClass != null && realClass.getId() != null && seenClassIds.add(realClass.getId())) {
-                            assignedClasses.add(realClass);
-                        }
-                    } else if (c != null && c.getId() != null && seenClassIds.add(c.getId())) {
-                        assignedClasses.add(c);
+                        classIdsToFetch.add(classId);
+                        rawClassMap.put(classId, c);
+                    } else if (c != null && c.getId() != null) {
+                        alreadyLoaded.add(c);
                     }
                 } catch (Exception ignored) {}
+            }
+        }
+
+        // Batch fetch all assigned classes at once (1 DB call instead of N calls)
+        Map<String, CollegeClass> fetchedMap = classIdsToFetch.isEmpty() ? Collections.emptyMap() :
+                classRepository.findAllById(classIdsToFetch).stream()
+                        .collect(Collectors.toMap(CollegeClass::getId, c -> c, (a, b) -> a));
+
+        for (String id : classIdsToFetch) {
+            CollegeClass rc = fetchedMap.get(id);
+            if (rc == null) {
+                // Fallback for mock environments or unfetched IDs
+                rc = classRepository.findById(id).orElse(rawClassMap.get(id));
+            }
+            if (rc != null && rc.getId() != null && seenClassIds.add(rc.getId())) {
+                assignedClasses.add(rc);
+            }
+        }
+        for (CollegeClass c : alreadyLoaded) {
+            if (c != null && c.getId() != null && seenClassIds.add(c.getId())) {
+                assignedClasses.add(c);
             }
         }
 
@@ -173,7 +197,9 @@ public class TeacherService {
     /**
      * User-Specific: Returns ONLY subjects assigned to the specified faculty member.
      * Evaluates direct assignments (assignedSubjects) and course instructor mappings (assignedTeacher).
+     * Cached in Caffeine L1 RAM with batch DBRef resolution to eliminate N+1 loops.
      */
+    @Cacheable(value = CacheConfig.CACHE_TEACHER_SUBJECTS, key = "#teacher != null ? (#teacher.id + '_' + (#departmentId != null ? #departmentId : 'ALL') + '_' + (#semester != null ? #semester : 'ALL')) : 'EMPTY'")
     public List<SubjectDto> getSubjectsForTeacher(Teacher teacher, String departmentId, Integer semester) {
         if (teacher == null) {
             return Collections.emptyList();
@@ -184,20 +210,43 @@ public class TeacherService {
         List<Subject> assignedSubjects = new ArrayList<>();
         Set<String> seenSubjectIds = new HashSet<>();
 
-        // 1. Explicitly assigned subjects in teacher.assignedSubjects
+        // 1. Collect IDs of explicitly assigned subjects for a single batch lookup
+        Set<String> subjectIdsToFetch = new HashSet<>();
+        List<Subject> alreadyLoaded = new ArrayList<>();
+        Map<String, Subject> rawSubjectMap = new HashMap<>();
+
         if (freshTeacher.getAssignedSubjects() != null) {
             for (Subject s : freshTeacher.getAssignedSubjects()) {
                 try {
                     String subjectId = extractDbRefId(s);
                     if (subjectId != null) {
-                        Subject realSubj = subjectRepository.findById(subjectId).orElse(s);
-                        if (realSubj != null && realSubj.getId() != null && seenSubjectIds.add(realSubj.getId())) {
-                            assignedSubjects.add(realSubj);
-                        }
-                    } else if (s != null && s.getId() != null && seenSubjectIds.add(s.getId())) {
-                        assignedSubjects.add(s);
+                        subjectIdsToFetch.add(subjectId);
+                        rawSubjectMap.put(subjectId, s);
+                    } else if (s != null && s.getId() != null) {
+                        alreadyLoaded.add(s);
                     }
                 } catch (Exception ignored) {}
+            }
+        }
+
+        // Batch fetch all assigned subjects at once (1 DB call instead of N calls)
+        Map<String, Subject> fetchedMap = subjectIdsToFetch.isEmpty() ? Collections.emptyMap() :
+                subjectRepository.findAllById(subjectIdsToFetch).stream()
+                        .collect(Collectors.toMap(Subject::getId, s -> s, (a, b) -> a));
+
+        for (String id : subjectIdsToFetch) {
+            Subject rs = fetchedMap.get(id);
+            if (rs == null) {
+                // Fallback for mock environments or unfetched IDs
+                rs = subjectRepository.findById(id).orElse(rawSubjectMap.get(id));
+            }
+            if (rs != null && rs.getId() != null && seenSubjectIds.add(rs.getId())) {
+                assignedSubjects.add(rs);
+            }
+        }
+        for (Subject s : alreadyLoaded) {
+            if (s != null && s.getId() != null && seenSubjectIds.add(s.getId())) {
+                assignedSubjects.add(s);
             }
         }
 

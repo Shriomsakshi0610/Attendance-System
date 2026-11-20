@@ -83,8 +83,8 @@ public class SessionService {
             attempts++;
         } while (sessionRepository.findBySessionCodeIgnoreCase(sessionCode).isPresent() && attempts < 10);
 
-        int duration = request.getDurationMinutes() != null && request.getDurationMinutes() > 0 ?
-                request.getDurationMinutes() : 15;
+        // Module 3: Strict 5-minute attendance marking window enforced by backend
+        int duration = 5;
 
         LocalDateTime startTime = now;
         LocalDateTime endTime = startTime.plusMinutes(duration);
@@ -239,6 +239,16 @@ public class SessionService {
         dto.setStartTime(session.getStartTime());
         dto.setEndTime(session.getEndTime());
         dto.setStatus(session.getStatus().name());
+
+        // Module 3: Server-side remaining seconds for client countdown timer
+        LocalDateTime nowUtc = LocalDateTime.now();
+        dto.setServerTime(nowUtc);
+        long remainingSecs = 0L;
+        if (session.getStatus() == AttendanceSession.SessionStatus.ACTIVE && session.getEndTime() != null) {
+            long diff = java.time.Duration.between(nowUtc, session.getEndTime()).getSeconds();
+            remainingSecs = Math.max(0L, diff);
+        }
+        dto.setRemainingSeconds(remainingSecs);
         dto.setPresentCount(presentCount);
         dto.setTotalEnrolled(enrolledCount);
         dto.setAttendanceLink("/student-attendance.html?code=" + session.getSessionCode());

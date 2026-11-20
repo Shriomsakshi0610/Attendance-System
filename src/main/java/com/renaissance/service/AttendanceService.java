@@ -27,6 +27,12 @@ public class AttendanceService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private org.springframework.cache.CacheManager cacheManager;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private StudentDeviceRepository deviceRepository;
+
+    @org.springframework.beans.factory.annotation.Value("${renaissance.security.device-verification.enabled:true}")
+    private boolean deviceVerificationEnabled = true;
+
     public AttendanceService(AttendanceSessionRepository sessionRepository,
                              StudentRepository studentRepository,
                              AttendanceRecordRepository recordRepository,
@@ -62,7 +68,7 @@ public class AttendanceService {
             throw new AttendanceValidationException("Invalid attendance code.", "INVALID_CODE");
         }
 
-        // 2. Check Session Expiration and Status
+        // 2. Check Session Expiration and Status (Strict 5-minute marking window)
         if (session.getStatus() != AttendanceSession.SessionStatus.ACTIVE || session.isExpired()) {
             if (session.getStatus() == AttendanceSession.SessionStatus.ACTIVE) {
                 session.setStatus(AttendanceSession.SessionStatus.EXPIRED);
@@ -94,6 +100,37 @@ public class AttendanceService {
         if (recordRepository.existsBySessionIdAndStudentId(session.getId(), student.getId())) {
             logAttempt(session.getId(), code, usn, "FAILED", "ALREADY_MARKED", request, null, clientIp, userAgent);
             throw new AttendanceValidationException("Attendance has already been marked.", "ALREADY_MARKED");
+        }
+
+        // 4b. Student Device Registration & Verification (Module 4)
+        if (deviceVerificationEnabled && deviceRepository != null) {
+            String deviceToken = request.getDeviceToken();
+            if (deviceToken != null && !deviceToken.isBlank()) {
+                StudentDevice device = deviceRepository.findByDeviceToken(deviceToken.trim()).orElse(null);
+                if (device == null || device.getStatus() != StudentDevice.DeviceStatus.APPROVED) {
+                    logAttempt(session.getId(), code, usn, "FAILED", "DEVICE_NOT_APPROVED", request, null, clientIp, userAgent);
+                    throw new AttendanceValidationException(
+                            "Device verification failed: This device is not registered or approved for attendance.",
+                            "DEVICE_NOT_APPROVED"
+                    );
+                }
+                if (!device.getUsn().equalsIgnoreCase(student.getUsn())) {
+                    logAttempt(session.getId(), code, usn, "FAILED", "DEVICE_STUDENT_MISMATCH", request, null, clientIp, userAgent);
+                    throw new AttendanceValidationException(
+                            "Device verification failed: This device is registered to another student (" + device.getUsn() + ").",
+                            "DEVICE_STUDENT_MISMATCH"
+                    );
+                }
+                device.setLastUsedAt(LocalDateTime.now());
+                deviceRepository.save(device);
+            } else if (deviceRepository.countByUsnIgnoreCaseAndStatus(student.getUsn(), StudentDevice.DeviceStatus.APPROVED) > 0) {
+                // If student has an approved registered device, device token is mandatory
+                logAttempt(session.getId(), code, usn, "FAILED", "DEVICE_TOKEN_REQUIRED", request, null, clientIp, userAgent);
+                throw new AttendanceValidationException(
+                        "Device verification failed: Device token is missing. Please mark attendance from your approved registered device.",
+                        "DEVICE_TOKEN_REQUIRED"
+                );
+            }
         }
 
         // 5. GPS Location & Geofencing Verification (40-Meter Geofence)
@@ -165,7 +202,7 @@ public class AttendanceService {
         // 8. Broadcast Real-Time STOMP Update to Teacher Dashboard
         try {
             long presentCount = recordRepository.countBySessionId(session.getId());
-            long totalEnrolled = studentRepository.findByCollegeClassId(session.getCollegeClass().getId()).size();
+            long totalEnrolled = studentRepository.countByCollegeClassId(session.getCollegeClass().getId());
             double currentPercentage = totalEnrolled > 0 ? ((double) presentCount / totalEnrolled) * 100.0 : 0.0;
 
             LiveAttendanceUpdateDto liveUpdate = new LiveAttendanceUpdateDto(

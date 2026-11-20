@@ -12,6 +12,8 @@ public interface SubjectRepository extends MongoRepository<Subject, String> {
 
     Optional<Subject> findByCodeIgnoreCase(String code);
 
+    Optional<Subject> findByNameIgnoreCase(String name);
+
     List<Subject> findByDepartment_Id(String departmentId);
 
     default List<Subject> findByDepartmentId(String departmentId) {

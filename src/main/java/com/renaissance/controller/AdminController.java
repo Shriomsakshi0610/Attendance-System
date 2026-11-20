@@ -2,12 +2,20 @@ package com.renaissance.controller;
 
 import com.renaissance.dto.*;
 import com.renaissance.service.AdminService;
+import com.renaissance.service.DeviceRegistrationService;
+import com.renaissance.service.HistoricalAttendanceImportService;
 import com.renaissance.service.TimetableService;
 import jakarta.validation.Valid;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,11 +26,22 @@ public class AdminController {
     private final AdminService adminService;
     private final TimetableService timetableService;
     private final com.renaissance.service.AuthService authService;
+    private final DeviceRegistrationService deviceRegistrationService;
+    private final HistoricalAttendanceImportService historicalAttendanceImportService;
+    private final CacheManager cacheManager;
 
-    public AdminController(AdminService adminService, TimetableService timetableService, com.renaissance.service.AuthService authService) {
+    public AdminController(AdminService adminService,
+                           TimetableService timetableService,
+                           com.renaissance.service.AuthService authService,
+                           DeviceRegistrationService deviceRegistrationService,
+                           HistoricalAttendanceImportService historicalAttendanceImportService,
+                           @org.springframework.beans.factory.annotation.Autowired(required = false) CacheManager cacheManager) {
         this.adminService = adminService;
         this.timetableService = timetableService;
         this.authService = authService;
+        this.deviceRegistrationService = deviceRegistrationService;
+        this.historicalAttendanceImportService = historicalAttendanceImportService;
+        this.cacheManager = cacheManager;
     }
 
     // ----------------------------------------------------
@@ -333,5 +352,135 @@ public class AdminController {
     public ResponseEntity<ApiResponse<SessionDto>> terminateSession(@PathVariable String id) {
         SessionDto terminated = adminService.terminateSession(id);
         return ResponseEntity.ok(ApiResponse.ok("Attendance session terminated successfully by administrator", terminated));
+    }
+
+    // ----------------------------------------------------
+    // MODULE 4: STUDENT DEVICE REGISTRATION & MANAGEMENT
+    // ----------------------------------------------------
+
+    @GetMapping("/devices")
+    public ResponseEntity<ApiResponse<List<DeviceDto>>> getAllDevices(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String keyword) {
+        List<DeviceDto> devices = deviceRegistrationService.getAllDevices(status, keyword);
+        return ResponseEntity.ok(ApiResponse.ok(devices));
+    }
+
+    @PostMapping("/devices/{id}/approve")
+    public ResponseEntity<ApiResponse<DeviceDto>> approveDevice(@PathVariable String id) {
+        com.renaissance.entity.Teacher current = authService.getCurrentTeacher();
+        DeviceDto approved = deviceRegistrationService.approveDevice(id, current.getEmail());
+        return ResponseEntity.ok(ApiResponse.ok("Student device approved successfully", approved));
+    }
+
+    @PostMapping("/devices/{id}/reject")
+    public ResponseEntity<ApiResponse<DeviceDto>> rejectDevice(
+            @PathVariable String id,
+            @RequestBody(required = false) Map<String, String> body) {
+        com.renaissance.entity.Teacher current = authService.getCurrentTeacher();
+        String reason = body != null ? body.get("reason") : "Rejected by administrator";
+        DeviceDto rejected = deviceRegistrationService.rejectDevice(id, reason, current.getEmail());
+        return ResponseEntity.ok(ApiResponse.ok("Student device rejected", rejected));
+    }
+
+    @PostMapping("/devices/{id}/revoke")
+    public ResponseEntity<ApiResponse<DeviceDto>> revokeDevice(
+            @PathVariable String id,
+            @RequestBody(required = false) Map<String, String> body) {
+        com.renaissance.entity.Teacher current = authService.getCurrentTeacher();
+        String reason = body != null ? body.get("reason") : "Revoked by administrator";
+        DeviceDto revoked = deviceRegistrationService.revokeDevice(id, reason, current.getEmail());
+        return ResponseEntity.ok(ApiResponse.ok("Student device authorization revoked", revoked));
+    }
+
+    @GetMapping("/devices/stats")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getDeviceStats() {
+        Map<String, Long> stats = deviceRegistrationService.getDeviceStats();
+        return ResponseEntity.ok(ApiResponse.ok(stats));
+    }
+
+    // ----------------------------------------------------
+    // MODULE 2: HISTORICAL ATTENDANCE CSV IMPORT
+    // ----------------------------------------------------
+
+    @PostMapping("/attendance/import/preview")
+    public ResponseEntity<ApiResponse<HistoricalImportPreviewDto>> previewHistoricalAttendance(
+            @RequestParam("file") MultipartFile file) {
+        com.renaissance.entity.Teacher current = authService.getCurrentTeacher();
+        HistoricalImportPreviewDto preview = historicalAttendanceImportService.previewHistoricalAttendanceCsv(file, current.getEmail());
+        return ResponseEntity.ok(ApiResponse.ok("Historical attendance CSV parsed successfully", preview));
+    }
+
+    @PostMapping("/attendance/import/confirm")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> confirmHistoricalImport(
+            @RequestBody Map<String, String> body) {
+        String importToken = body.get("importToken");
+        String fileName = body.get("fileName");
+        com.renaissance.entity.Teacher current = authService.getCurrentTeacher();
+        Map<String, Object> result = historicalAttendanceImportService.confirmHistoricalImport(importToken, fileName, current.getEmail());
+        return ResponseEntity.ok(ApiResponse.ok("Historical attendance imported successfully", result));
+    }
+
+    @PostMapping("/attendance/import/error-csv")
+    public ResponseEntity<byte[]> downloadErrorReportCsv(@RequestBody Map<String, List<String>> body) {
+        List<String> errors = body.get("errors");
+        byte[] csv = historicalAttendanceImportService.generateErrorReportCsv(errors);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"historical_attendance_import_errors.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csv);
+    }
+
+    // ----------------------------------------------------
+    // MODULE 5: CAFFEINE CACHE METRICS & MONITORING
+    // ----------------------------------------------------
+
+    @GetMapping("/system/cache-metrics")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getCacheMetrics() {
+        Map<String, Object> result = new LinkedHashMap<>();
+
+        if (cacheManager instanceof CaffeineCacheManager ccm) {
+            Map<String, Object> cachesStats = new LinkedHashMap<>();
+            long totalHits = 0;
+            long totalMisses = 0;
+            long totalEvictions = 0;
+
+            for (String cacheName : ccm.getCacheNames()) {
+                org.springframework.cache.Cache springCache = ccm.getCache(cacheName);
+                if (springCache != null && springCache.getNativeCache() instanceof com.github.benmanes.caffeine.cache.Cache<?, ?> nativeCache) {
+                    com.github.benmanes.caffeine.cache.stats.CacheStats stats = nativeCache.stats();
+
+                    Map<String, Object> s = new LinkedHashMap<>();
+                    s.put("hitCount", stats.hitCount());
+                    s.put("missCount", stats.missCount());
+                    s.put("hitRate", Math.round(stats.hitRate() * 1000.0) / 10.0 + "%");
+                    s.put("missRate", Math.round(stats.missRate() * 1000.0) / 10.0 + "%");
+                    s.put("evictionCount", stats.evictionCount());
+                    s.put("estimatedSize", nativeCache.estimatedSize());
+
+                    totalHits += stats.hitCount();
+                    totalMisses += stats.missCount();
+                    totalEvictions += stats.evictionCount();
+
+                    cachesStats.put(cacheName, s);
+                }
+            }
+
+            long totalRequests = totalHits + totalMisses;
+            double overallHitRate = totalRequests > 0 ? ((double) totalHits / totalRequests) * 100.0 : 0.0;
+
+            result.put("cacheType", "Caffeine (In-Process L1 RAM)");
+            result.put("totalCaches", cachesStats.size());
+            result.put("overallHitRate", Math.round(overallHitRate * 10.0) / 10.0 + "%");
+            result.put("totalHits", totalHits);
+            result.put("totalMisses", totalMisses);
+            result.put("totalEvictions", totalEvictions);
+            result.put("caches", cachesStats);
+        } else {
+            result.put("cacheType", cacheManager != null ? cacheManager.getClass().getSimpleName() : "None");
+            result.put("message", "Cache statistics not available for current cache manager");
+        }
+
+        return ResponseEntity.ok(ApiResponse.ok("System cache performance metrics", result));
     }
 }

@@ -23,6 +23,7 @@ public class MarkAttendanceRequest {
 
     private String bleBeaconUuid; // optional/required if BLE enabled for session
     private Integer bleRssi; // signal strength in dBm
+    private String deviceToken; // Module 4: Registered student device token
 
     public MarkAttendanceRequest() {
     }
@@ -109,5 +110,13 @@ public class MarkAttendanceRequest {
 
     public void setAccuracy(Double accuracy) {
         this.accuracy = accuracy;
+    }
+
+    public String getDeviceToken() {
+        return deviceToken;
+    }
+
+    public void setDeviceToken(String deviceToken) {
+        this.deviceToken = deviceToken;
     }
 }

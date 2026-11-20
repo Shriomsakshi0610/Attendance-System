@@ -1,5 +1,7 @@
 package com.renaissance.service;
 
+import com.renaissance.config.CacheConfig;
+import com.renaissance.dto.StudentDetectionResponse;
 import com.renaissance.dto.StudentDto;
 import com.renaissance.entity.CollegeClass;
 import com.renaissance.entity.Department;
@@ -13,6 +15,7 @@ import com.renaissance.repository.StudentRepository;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.mongodb.core.convert.LazyLoadingProxy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -201,6 +204,56 @@ public class StudentService {
             throw new ResourceNotFoundException("Student not found with ID: " + id);
         }
         studentRepository.deleteById(id);
+    }
+
+    /**
+     * Module 1: Smart USN Detection & Auto-fill.
+     * Identifies the student's complete institutional USN using the selected class and last 3 digits.
+     */
+    @Cacheable(value = CacheConfig.CACHE_STUDENT_LOOKUPS, key = "#classId + '_' + #lastThreeDigits", unless = "#result == null || !#result.success")
+    public StudentDetectionResponse detectStudentByLastThreeDigits(String classId, String lastThreeDigits) {
+        if (lastThreeDigits == null || !lastThreeDigits.trim().matches("^\\d{3}$")) {
+            return StudentDetectionResponse.invalidInput("Please enter exactly three numeric digits (e.g. 045, 123).");
+        }
+        if (classId == null || classId.isBlank()) {
+            return StudentDetectionResponse.invalidInput("Please select your class first.");
+        }
+
+        CollegeClass collegeClass = classRepository.findById(classId).orElse(null);
+        if (collegeClass == null) {
+            return StudentDetectionResponse.notFound("Selected class not found.");
+        }
+
+        String suffix = lastThreeDigits.trim();
+        List<Student> classStudents = studentRepository.findByCollegeClassId(classId);
+
+        List<Student> matchingStudents = classStudents.stream()
+                .filter(s -> s != null && s.isActive() && s.getUsn() != null && s.getUsn().endsWith(suffix))
+                .collect(Collectors.toList());
+
+        if (matchingStudents.isEmpty()) {
+            return StudentDetectionResponse.notFound(
+                    "No registered student found in " + collegeClass.getDisplayName() + " with USN ending in '" + suffix + "'."
+            );
+        }
+
+        if (matchingStudents.size() > 1) {
+            List<String> candidates = matchingStudents.stream().map(Student::getUsn).collect(Collectors.toList());
+            return StudentDetectionResponse.multipleMatches(candidates,
+                    "Multiple students in this class have USN ending in '" + suffix + "'. Please enter your complete USN for confirmation.");
+        }
+
+        Student matched = matchingStudents.get(0);
+        Department dept = matched.getDepartment();
+
+        return StudentDetectionResponse.exactMatch(
+                matched.getUsn(),
+                matched.getName(),
+                dept != null ? dept.getName() : null,
+                dept != null ? dept.getCode() : null,
+                collegeClass.getSemester(),
+                collegeClass.getSection()
+        );
     }
 
     public Map<String, Object> importStudentsFromCsv(MultipartFile file) {

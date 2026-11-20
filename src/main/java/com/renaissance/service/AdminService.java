@@ -178,7 +178,7 @@ public class AdminService {
         return toClassDto(c);
     }
 
-    @CacheEvict(value = {CacheConfig.CACHE_CLASSES, CacheConfig.CACHE_DEPARTMENTS}, allEntries = true)
+    @CacheEvict(value = {CacheConfig.CACHE_CLASSES, CacheConfig.CACHE_DEPARTMENTS, CacheConfig.CACHE_TEACHER_CLASSES, CacheConfig.CACHE_CLASS_STUDENT_COUNTS}, allEntries = true)
     public ClassDto createClass(CreateClassRequest req) {
         Department dept = departmentRepository.findById(req.getDepartmentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with ID: " + req.getDepartmentId()));
@@ -209,7 +209,7 @@ public class AdminService {
         return toClassDto(saved);
     }
 
-    @CacheEvict(value = {CacheConfig.CACHE_CLASSES, CacheConfig.CACHE_DEPARTMENTS}, allEntries = true)
+    @CacheEvict(value = {CacheConfig.CACHE_CLASSES, CacheConfig.CACHE_DEPARTMENTS, CacheConfig.CACHE_TEACHER_CLASSES, CacheConfig.CACHE_CLASS_STUDENT_COUNTS}, allEntries = true)
     public ClassDto updateClass(String id, CreateClassRequest req) {
         CollegeClass c = classRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found with ID: " + id));
@@ -239,7 +239,7 @@ public class AdminService {
         return toClassDto(updated);
     }
 
-    @CacheEvict(value = {CacheConfig.CACHE_CLASSES, CacheConfig.CACHE_DEPARTMENTS}, allEntries = true)
+    @CacheEvict(value = {CacheConfig.CACHE_CLASSES, CacheConfig.CACHE_DEPARTMENTS, CacheConfig.CACHE_TEACHER_CLASSES, CacheConfig.CACHE_CLASS_STUDENT_COUNTS}, allEntries = true)
     public ClassDto toggleClassStatus(String id) {
         CollegeClass c = classRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found with ID: " + id));
@@ -248,7 +248,7 @@ public class AdminService {
         return toClassDto(updated);
     }
 
-    @CacheEvict(value = {CacheConfig.CACHE_CLASSES, CacheConfig.CACHE_DEPARTMENTS}, allEntries = true)
+    @CacheEvict(value = {CacheConfig.CACHE_CLASSES, CacheConfig.CACHE_DEPARTMENTS, CacheConfig.CACHE_TEACHER_CLASSES, CacheConfig.CACHE_CLASS_STUDENT_COUNTS}, allEntries = true)
     public void deleteClass(String id) {
         CollegeClass c = classRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found with ID: " + id));
@@ -315,7 +315,7 @@ public class AdminService {
         return toSubjectDto(s);
     }
 
-    @CacheEvict(value = CacheConfig.CACHE_SUBJECTS, allEntries = true)
+    @CacheEvict(value = {CacheConfig.CACHE_SUBJECTS, CacheConfig.CACHE_TEACHER_SUBJECTS}, allEntries = true)
     public SubjectDto createSubject(CreateSubjectRequest req) {
         String code = req.getCode().trim().toUpperCase();
         if (subjectRepository.findByCodeIgnoreCase(code).isPresent()) {
@@ -345,7 +345,7 @@ public class AdminService {
         return toSubjectDto(saved);
     }
 
-    @CacheEvict(value = CacheConfig.CACHE_SUBJECTS, allEntries = true)
+    @CacheEvict(value = {CacheConfig.CACHE_SUBJECTS, CacheConfig.CACHE_TEACHER_SUBJECTS}, allEntries = true)
     public SubjectDto updateSubject(String id, CreateSubjectRequest req) {
         Subject s = subjectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Subject not found with ID: " + id));
@@ -380,7 +380,7 @@ public class AdminService {
         return toSubjectDto(updated);
     }
 
-    @CacheEvict(value = CacheConfig.CACHE_SUBJECTS, allEntries = true)
+    @CacheEvict(value = {CacheConfig.CACHE_SUBJECTS, CacheConfig.CACHE_TEACHER_SUBJECTS}, allEntries = true)
     public SubjectDto toggleSubjectStatus(String id) {
         Subject s = subjectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Subject not found with ID: " + id));
@@ -389,7 +389,7 @@ public class AdminService {
         return toSubjectDto(updated);
     }
 
-    @CacheEvict(value = CacheConfig.CACHE_SUBJECTS, allEntries = true)
+    @CacheEvict(value = {CacheConfig.CACHE_SUBJECTS, CacheConfig.CACHE_TEACHER_SUBJECTS}, allEntries = true)
     public void deleteSubject(String id) {
         Subject s = subjectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Subject not found with ID: " + id));
@@ -515,14 +515,20 @@ public class AdminService {
 
     private void evictTeacherCache(String teacherId) {
         if (cacheManager != null) {
-            org.springframework.cache.Cache cache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_DASHBOARD_STATS);
-            if (cache != null) {
+            org.springframework.cache.Cache dashCache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_DASHBOARD_STATS);
+            if (dashCache != null) {
                 if (teacherId != null && !teacherId.isBlank()) {
-                    cache.evict("TEACHER_" + teacherId);
+                    dashCache.evict("TEACHER_" + teacherId);
                 } else {
-                    cache.clear();
+                    dashCache.clear();
                 }
             }
+            org.springframework.cache.Cache classCache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_TEACHER_CLASSES);
+            if (classCache != null) classCache.clear();
+            org.springframework.cache.Cache subjCache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_TEACHER_SUBJECTS);
+            if (subjCache != null) subjCache.clear();
+            org.springframework.cache.Cache profCache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_TEACHER_PROFILES);
+            if (profCache != null) profCache.clear();
         }
     }
 

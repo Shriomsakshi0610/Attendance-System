@@ -8,6 +8,58 @@
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/student.css">
     <link rel="stylesheet" href="/css/responsive.css">
+    <style>
+        .timer-badge-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        .timer-badge-container.open {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .timer-badge-container.closed {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .timer-countdown {
+            font-family: monospace;
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+        }
+        .detected-student-box {
+            background: #f8fafc;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 0.85rem 1rem;
+            margin-top: 0.5rem;
+            margin-bottom: 1.25rem;
+            text-align: left;
+            animation: fadeIn 0.25s ease;
+        }
+        .device-badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.65rem;
+            border-radius: 999px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body class="student-app">
 
@@ -20,36 +72,98 @@
         </div>
 
         <div class="student-body">
+            <!-- Strict 5-Minute Session Countdown Timer (Module 3) -->
+            <div id="session-timer-widget" style="display: none;">
+                <div class="timer-badge-container open" id="timer-badge">
+                    <span id="timer-dot">🟢</span>
+                    <span id="timer-status-text">Attendance Open:</span>
+                    <span class="timer-countdown" id="timer-countdown-text">05:00</span>
+                </div>
+            </div>
+
+            <!-- Device Registration Banner (Module 4) -->
+            <div id="device-banner" style="display: none; margin-bottom: 1.25rem;">
+                <div id="device-alert-box" class="alert alert-warning" style="text-align: left; padding: 0.85rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
+                        <strong id="device-alert-title">Device Verification Required</strong>
+                        <span id="device-status-pill" class="device-badge-pill" style="background:#fef3c7; color:#92400e;">Unregistered</span>
+                    </div>
+                    <p id="device-alert-desc" style="font-size: 0.8rem; margin: 0 0 0.65rem 0; color: var(--text-secondary);">
+                        Only administrator-approved student devices can mark attendance.
+                    </p>
+                    <button type="button" id="btn-request-device-reg" class="btn btn-secondary btn-sm btn-block">
+                        📱 Request Device Registration
+                    </button>
+                </div>
+            </div>
+
             <!-- 1. Attendance Form -->
             <div id="attendance-form-section">
-                <div style="margin-bottom: 1.5rem; text-align: center;">
-                    <span class="badge badge-primary">Geofence Radius: 40 Meters</span>
-                    <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-muted);">
-                        Please allow device location access when prompted to verify your presence in class.
+                <div style="margin-bottom: 1.25rem; text-align: center;">
+                    <span class="badge badge-primary">Geofence: 40m &bull; Window: 5 Mins</span>
+                    <p style="font-size: 0.825rem; margin-top: 0.4rem; color: var(--text-muted);">
+                        Select your class and enter only your 3-digit roll number.
                     </p>
                 </div>
 
                 <form id="student-attendance-form" onsubmit="return false;">
-                    <!-- Choose Class Dropdown -->
+                    <!-- Step 1: Choose Class / Section -->
                     <div class="form-group">
-                        <label class="form-label" for="class-select">Choose Your Class</label>
+                        <label class="form-label" for="class-select">1. Select Your Class & Section</label>
                         <select id="class-select" class="form-select" required>
                             <option value="">-- Choose Your Class --</option>
                         </select>
                     </div>
 
-                    <!-- USN Input -->
+                    <!-- Step 2: Smart 3-Digit USN Detection (Module 1) -->
                     <div class="form-group">
-                        <label class="form-label" for="usn-input">University Seat Number (USN)</label>
-                        <input type="text" id="usn-input" class="form-control" placeholder="e.g. 1MS21CS001" style="text-transform: uppercase;" required autocomplete="off">
+                        <label class="form-label" for="usn-digits-input">
+                            2. Last 3 Digits of USN
+                        </label>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <input type="text" id="usn-digits-input" class="form-control" maxlength="3" pattern="\d{3}"
+                                   inputmode="numeric" placeholder="e.g. 123"
+                                   style="font-size: 1.25rem; font-weight: 700; text-align: center; letter-spacing: 0.15em;"
+                                   required autocomplete="off">
+                            <button type="button" id="btn-detect-usn" class="btn btn-secondary btn-sm" style="white-space: nowrap; height: 46px; min-width: 90px;">
+                                <span>🔍 Detect</span>
+                            </button>
+                        </div>
+                        <div id="usn-feedback-text" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
+                            Enter only 3 numeric digits. Full institutional USN will be auto-resolved.
+                        </div>
                     </div>
 
-                    <!-- Attendance Code Input -->
+                    <!-- Detected Student Card -->
+                    <div id="detected-student-card" class="detected-student-box" style="display: none;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-size: 0.75rem; font-weight: 700; color: var(--success-accent); text-transform: uppercase;">
+                                ✓ Verified Student
+                            </span>
+                            <a href="javascript:void(0)" id="btn-change-digits" style="font-size: 0.75rem; color: var(--text-muted);">Change</a>
+                        </div>
+                        <div id="detected-student-name" style="font-weight: 700; font-size: 1.05rem; color: var(--primary-900); margin-top: 0.25rem;">
+                            -
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.35rem; flex-wrap: wrap;">
+                            <span id="detected-student-usn" class="badge badge-primary" style="font-family: monospace; font-size: 0.85rem;">-</span>
+                            <span id="detected-student-dept" class="badge" style="background:#e0e7ff; color:#3730a3; font-size: 0.75rem;">-</span>
+                            <span id="detected-student-class" class="badge" style="background:#f1f5f9; color:#475569; font-size: 0.75rem;">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Manual Full USN Input Fallback (for multiple match disambiguation) -->
+                    <div class="form-group" id="manual-usn-group" style="display: none;">
+                        <label class="form-label" for="usn-input">Confirm Full USN</label>
+                        <input type="text" id="usn-input" class="form-control" placeholder="e.g. 2GI24IS123" style="text-transform: uppercase;" autocomplete="off">
+                    </div>
+
+                    <!-- Step 3: Session Attendance Code Input -->
                     <div class="form-group">
-                        <label class="form-label" for="code-input">Session Attendance Code</label>
+                        <label class="form-label" for="code-input">3. Session Attendance Code</label>
                         <input type="text" id="code-input" class="form-control attendance-code-input" maxlength="6" placeholder="XXXXXX" required autocomplete="off">
                         <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 0.35rem;">
-                            Enter the 6-character code shared by your teacher.
+                            Enter the 6-character code announced by your teacher.
                         </div>
                     </div>
 
@@ -67,7 +181,7 @@
                         Requesting GPS Coordinates...
                     </div>
                     <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; text-align: center;">
-                        Verifying that your coordinates fall within the teacher's 40-meter classroom perimeter.
+                        Verifying classroom perimeter (40m), approved device, and 5-minute session deadline.
                     </p>
                 </div>
             </div>
@@ -77,7 +191,7 @@
                 <div class="result-icon-wrapper success">✓</div>
                 <h2 style="color: var(--success-accent); font-size: 1.4rem;">Attendance Marked!</h2>
                 <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">
-                    Your location has been verified inside the classroom.
+                    Location and device verified within the authoritative 40-meter classroom perimeter.
                 </p>
 
                 <div class="result-details-card">
@@ -122,17 +236,18 @@
             <div id="attendance-error-section" style="display: none;" class="result-screen">
                 <div class="result-icon-wrapper failure">✕</div>
                 <h2 style="color: var(--danger-accent); font-size: 1.4rem;">Verification Failed</h2>
-                
+
                 <div class="alert alert-danger" style="margin-top: 1.25rem; text-align: left;">
                     <div id="error-message-text" style="font-weight: 600;">
-                        Unable to verify your location.
+                        Unable to verify attendance.
                     </div>
                 </div>
 
                 <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 1.5rem; text-align: left; line-height: 1.5;">
-                    • Ensure you are physically inside the classroom within 40 meters of the teacher.<br>
-                    • Enable High Accuracy GPS in device settings.<br>
-                    • Make sure the attendance code matches the teacher's active session.
+                    &bull; Ensure you are physically inside the classroom within 40 meters of the teacher.<br>
+                    &bull; Attendance marking is only permitted within the strict 5-minute session window.<br>
+                    &bull; Your device must be registered and approved by the administrator.<br>
+                    &bull; Enable High Accuracy GPS in device settings.
                 </p>
 
                 <div style="display: flex; gap: 0.75rem;">
