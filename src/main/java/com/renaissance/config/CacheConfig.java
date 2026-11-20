@@ -94,11 +94,11 @@ public class CacheConfig {
                         .recordStats()
                         .build());
 
-        // 5. Dashboard Summary Statistics: Short TTL (30 seconds), self-refreshing
+        // 5. Dashboard Summary Statistics: 15-minute TTL in RAM, event-driven eviction on attendance/session changes
         manager.registerCustomCache(CACHE_DASHBOARD_STATS,
                 Caffeine.newBuilder()
-                        .maximumSize(200)
-                        .expireAfterWrite(Duration.ofSeconds(30))
+                        .maximumSize(500)
+                        .expireAfterWrite(Duration.ofMinutes(15))
                         .recordStats()
                         .build());
 

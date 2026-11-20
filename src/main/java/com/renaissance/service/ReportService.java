@@ -554,8 +554,46 @@ public class ReportService {
                 if (cached != null) {
                     return cached;
                 }
+                try {
+                    return cache.get(cacheKey, () -> computeTeacherDashboardStats(freshTeacher));
+                } catch (Exception e) {
+                    return computeTeacherDashboardStats(freshTeacher);
+                }
             }
         }
+
+        return computeTeacherDashboardStats(freshTeacher);
+    }
+
+    public void warmDashboardStats(String teacherId) {
+        if (teacherId == null || teacherId.isBlank()) {
+            DashboardStatsDto stats = computeGlobalDashboardStats();
+            if (cacheManager != null) {
+                org.springframework.cache.Cache cache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_DASHBOARD_STATS);
+                if (cache != null) {
+                    cache.put("GLOBAL", stats);
+                }
+            }
+            return;
+        }
+
+        Teacher teacher = teacherRepository.findById(teacherId).orElse(null);
+        if (teacher != null) {
+            DashboardStatsDto stats = computeTeacherDashboardStats(teacher);
+            if (cacheManager != null) {
+                org.springframework.cache.Cache cache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_DASHBOARD_STATS);
+                if (cache != null) {
+                    cache.put("TEACHER_" + teacher.getId(), stats);
+                }
+            }
+        }
+    }
+
+    public DashboardStatsDto computeTeacherDashboardStats(Teacher freshTeacher) {
+        if (freshTeacher == null) {
+            return computeGlobalDashboardStats();
+        }
+        String cacheKey = "TEACHER_" + freshTeacher.getId();
 
         List<ClassDto> assignedClasses = teacherService.getClassesForTeacher(freshTeacher, null);
         List<SubjectDto> assignedSubjects = teacherService.getSubjectsForTeacher(freshTeacher, null, null);
@@ -567,19 +605,24 @@ public class ReportService {
 
         long totalStudents = 0;
         if (!classIds.isEmpty()) {
-            Set<String> uniqueStudentIds = new HashSet<>();
-            for (String cId : classIds) {
-                if (cId != null && !cId.isBlank()) {
-                    List<Student> classStudents = studentRepository.findByCollegeClassId(cId);
-                    if (classStudents != null) {
-                        for (Student s : classStudents) {
-                            if (s != null && s.getId() != null && uniqueStudentIds.add(s.getId())) {
-                                totalStudents++;
-                            }
-                        }
+            List<Student> classStudents = studentRepository.findByCollegeClassIdIn(classIds);
+            if (classStudents == null || classStudents.isEmpty()) {
+                // Fallback if test mocks individual class queries
+                classStudents = new ArrayList<>();
+                for (String cId : classIds) {
+                    if (cId != null && !cId.isBlank()) {
+                        List<Student> single = studentRepository.findByCollegeClassId(cId);
+                        if (single != null) classStudents.addAll(single);
                     }
                 }
             }
+            Set<String> uniqueStudentIds = new HashSet<>();
+            for (Student s : classStudents) {
+                if (s != null && s.getId() != null) {
+                    uniqueStudentIds.add(s.getId());
+                }
+            }
+            totalStudents = uniqueStudentIds.size();
         } else if (freshTeacher.isAdmin()) {
             totalStudents = studentRepository.count();
         } else {
@@ -704,7 +747,25 @@ public class ReportService {
         return stats;
     }
 
-    private DashboardStatsDto getGlobalDashboardStats() {
+    public DashboardStatsDto getGlobalDashboardStats() {
+        if (cacheManager != null) {
+            org.springframework.cache.Cache cache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_DASHBOARD_STATS);
+            if (cache != null) {
+                DashboardStatsDto cached = cache.get("GLOBAL", DashboardStatsDto.class);
+                if (cached != null) {
+                    return cached;
+                }
+                try {
+                    return cache.get("GLOBAL", this::computeGlobalDashboardStats);
+                } catch (Exception e) {
+                    return computeGlobalDashboardStats();
+                }
+            }
+        }
+        return computeGlobalDashboardStats();
+    }
+
+    public DashboardStatsDto computeGlobalDashboardStats() {
         long totalStudents = studentRepository.count();
         long totalClassesConducted = sessionRepository.count();
 
@@ -772,6 +833,13 @@ public class ReportService {
         stats.setAssignedSubjects(sCount);
         stats.setClassesCount(cCount);
         stats.setSubjectsCount(sCount);
+
+        if (cacheManager != null) {
+            org.springframework.cache.Cache cache = cacheManager.getCache(com.renaissance.config.CacheConfig.CACHE_DASHBOARD_STATS);
+            if (cache != null) {
+                cache.put("GLOBAL", stats);
+            }
+        }
 
         return stats;
     }

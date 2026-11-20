@@ -186,10 +186,10 @@
                     if (res && res.success) {
                         const user = res.data?.teacher || res.data;
                         if (user && user.role === 'ROLE_ADMIN') {
-                            App.showToast('Admin authorized! Opening control center...', 'success');
-                            setTimeout(() => {
-                                window.location.href = '/admin-dashboard.html';
-                            }, 500);
+                            try {
+                                sessionStorage.setItem('current_user', JSON.stringify(user));
+                            } catch (e) {}
+                            window.location.href = '/admin-dashboard.html';
                         } else {
                             errorAlert.textContent = 'Access Denied: Your account does not have Administrator privileges. Please use the Faculty Portal.';
                             errorAlert.style.display = 'block';

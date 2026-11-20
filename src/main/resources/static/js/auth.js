@@ -6,6 +6,33 @@ const Auth = (() => {
     let authPromise = null;
     let cachedUser = null;
 
+    // Helper to get locally stored user immediately (0ms)
+    const getCachedUser = () => {
+        if (cachedUser) return cachedUser;
+        try {
+            const stored = sessionStorage.getItem('current_user');
+            if (stored) {
+                cachedUser = JSON.parse(stored);
+                return cachedUser;
+            }
+        } catch (e) {}
+        return null;
+    };
+
+    const populateUserDisplay = (user) => {
+        if (!user) return;
+        const nameEl = document.getElementById('teacher-name-display');
+        const roleEl = document.getElementById('teacher-role-display');
+        const avatarEl = document.getElementById('teacher-avatar-display');
+
+        if (nameEl && user.name) nameEl.textContent = user.name;
+        if (roleEl) roleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Administrator' : `${user.departmentCode || 'CSE'} Faculty`;
+        if (avatarEl && user.name) {
+            const initials = user.name.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            avatarEl.textContent = initials;
+        }
+    };
+
     // Check if current user is logged in (memoized to avoid duplicate concurrent calls)
     const checkAuthStatus = async (forceRefresh = false) => {
         if (!forceRefresh && cachedUser) {
@@ -21,9 +48,15 @@ const Auth = (() => {
                 const res = await API.get('/api/auth/status');
                 if (res && res.success && res.data) {
                     cachedUser = res.data;
+                    try {
+                        sessionStorage.setItem('current_user', JSON.stringify(res.data));
+                    } catch (e) {}
                     return res.data;
                 }
                 cachedUser = null;
+                try {
+                    sessionStorage.removeItem('current_user');
+                } catch (e) {}
                 return null;
             } catch (e) {
                 cachedUser = null;
@@ -38,24 +71,21 @@ const Auth = (() => {
 
     // Ensure teacher/admin is authenticated on faculty pages
     const requireAuth = async () => {
+        const preUser = getCachedUser();
+        if (preUser) {
+            populateUserDisplay(preUser);
+        }
+
         const user = await checkAuthStatus();
         if (!user) {
+            try {
+                sessionStorage.removeItem('current_user');
+            } catch (e) {}
             window.location.href = '/teacher-login.html?expired=true';
             return null;
         }
 
-        // Populate user info in sidebar/topbar if elements exist
-        const nameEl = document.getElementById('teacher-name-display');
-        const roleEl = document.getElementById('teacher-role-display');
-        const avatarEl = document.getElementById('teacher-avatar-display');
-
-        if (nameEl) nameEl.textContent = user.name;
-        if (roleEl) roleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Administrator' : `${user.departmentCode || 'CSE'} Faculty`;
-        if (avatarEl) {
-            const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-            avatarEl.textContent = initials;
-        }
-
+        populateUserDisplay(user);
         return user;
     };
 
@@ -94,6 +124,9 @@ const Auth = (() => {
     // Logout function
     const logout = async (targetLoginUrl) => {
         cachedUser = null;
+        try {
+            sessionStorage.removeItem('current_user');
+        } catch (e) {}
         if (typeof API.clearCache === 'function') API.clearCache();
         try {
             await API.post('/api/auth/logout');
@@ -117,6 +150,7 @@ const Auth = (() => {
 
     return {
         checkAuthStatus,
+        getCachedUser,
         requireAuth,
         requireAdminAuth,
         login,

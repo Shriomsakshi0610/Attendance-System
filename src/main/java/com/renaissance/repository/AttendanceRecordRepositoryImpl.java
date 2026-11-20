@@ -199,22 +199,18 @@ public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositor
     public Map<String, Long> countRecordsBySessionIds(java.util.Collection<String> sessionIds) {
         if (sessionIds == null || sessionIds.isEmpty()) return new HashMap<>();
 
-        List<Criteria> orList = new ArrayList<>();
+        java.util.Set<Object> idTargets = new java.util.HashSet<>();
         for (String sId : sessionIds) {
             if (sId != null && !sId.isBlank()) {
+                idTargets.add(sId);
                 if (ObjectId.isValid(sId)) {
-                    orList.add(new Criteria().orOperator(
-                            Criteria.where("session.$id").is(sId),
-                            Criteria.where("session.$id").is(new ObjectId(sId))
-                    ));
-                } else {
-                    orList.add(Criteria.where("session.$id").is(sId));
+                    idTargets.add(new ObjectId(sId));
                 }
             }
         }
-        if (orList.isEmpty()) return new HashMap<>();
+        if (idTargets.isEmpty()) return new HashMap<>();
 
-        MatchOperation match = Aggregation.match(new Criteria().orOperator(orList.toArray(new Criteria[0])));
+        MatchOperation match = Aggregation.match(Criteria.where("session.$id").in(idTargets));
         GroupOperation group = Aggregation.group("session.$id").count().as("count");
         Aggregation agg = Aggregation.newAggregation(match, group);
 
@@ -235,24 +231,20 @@ public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositor
     public Map<String, Long> countPresentBySessionIds(java.util.Collection<String> sessionIds) {
         if (sessionIds == null || sessionIds.isEmpty()) return new HashMap<>();
 
-        List<Criteria> orList = new ArrayList<>();
+        java.util.Set<Object> idTargets = new java.util.HashSet<>();
         for (String sId : sessionIds) {
             if (sId != null && !sId.isBlank()) {
+                idTargets.add(sId);
                 if (ObjectId.isValid(sId)) {
-                    orList.add(new Criteria().orOperator(
-                            Criteria.where("session.$id").is(sId),
-                            Criteria.where("session.$id").is(new ObjectId(sId))
-                    ));
-                } else {
-                    orList.add(Criteria.where("session.$id").is(sId));
+                    idTargets.add(new ObjectId(sId));
                 }
             }
         }
-        if (orList.isEmpty()) return new HashMap<>();
+        if (idTargets.isEmpty()) return new HashMap<>();
 
         Criteria matchCriteria = new Criteria().andOperator(
                 Criteria.where("status").is(AttendanceRecord.AttendanceStatus.PRESENT.name()),
-                new Criteria().orOperator(orList.toArray(new Criteria[0]))
+                Criteria.where("session.$id").in(idTargets)
         );
 
         MatchOperation match = Aggregation.match(matchCriteria);

@@ -192,15 +192,17 @@
                 try {
                     const res = await Auth.login(email, password);
                     if (res && res.success) {
-                        App.showToast('Login successful! Redirecting...', 'success');
                         const user = res.data?.teacher || res.data;
-                        setTimeout(() => {
-                            if (user && user.role === 'ROLE_ADMIN') {
-                                window.location.href = '/admin-dashboard.html';
-                            } else {
-                                window.location.href = '/dashboard.html';
-                            }
-                        }, 500);
+                        if (user) {
+                            try {
+                                sessionStorage.setItem('current_user', JSON.stringify(user));
+                            } catch (e) {}
+                        }
+                        if (user && user.role === 'ROLE_ADMIN') {
+                            window.location.href = '/admin-dashboard.html';
+                        } else {
+                            window.location.href = '/dashboard.html';
+                        }
                     }
                 } catch (err) {
                     errorAlert.textContent = err.message || 'Invalid email or password.';

@@ -15,6 +15,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.renaissance.event.TeacherLoginEvent;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -37,13 +40,33 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final TeacherRepository teacherRepository;
     private final UserRefreshTokenRepository refreshTokenRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AuthService(AuthenticationManager authenticationManager,
                        TeacherRepository teacherRepository,
                        UserRefreshTokenRepository refreshTokenRepository) {
+        this(authenticationManager, teacherRepository, refreshTokenRepository, null);
+    }
+
+    @Autowired
+    public AuthService(AuthenticationManager authenticationManager,
+                       TeacherRepository teacherRepository,
+                       UserRefreshTokenRepository refreshTokenRepository,
+                       @Autowired(required = false) ApplicationEventPublisher eventPublisher) {
         this.authenticationManager = authenticationManager;
         this.teacherRepository = teacherRepository;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.eventPublisher = eventPublisher;
+    }
+
+    private void publishTeacherLoginEvent(Teacher teacher) {
+        if (eventPublisher != null && teacher != null) {
+            try {
+                eventPublisher.publishEvent(new TeacherLoginEvent(teacher));
+            } catch (Exception e) {
+                log.debug("Could not publish TeacherLoginEvent: {}", e.getMessage());
+            }
+        }
     }
 
     public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
@@ -80,6 +103,7 @@ public class AuthService {
                     teacher.getName(), teacher.getEmail(), REFRESH_TOKEN_VALIDITY_DAYS);
 
             TeacherDto dto = toTeacherDto(teacher);
+            publishTeacherLoginEvent(teacher);
             return new LoginResponse("Login successful", dto, true, rawToken, SESSION_TIMEOUT_SECONDS);
         } catch (Exception e) {
             log.warn("Login failed for user {}: {}", request.getEmail(), e.getMessage());
@@ -110,6 +134,7 @@ public class AuthService {
                     Teacher teacher = resolveTeacherForToken(activeReplacement.get());
                     if (teacher != null && teacher.isActive()) {
                         establishAuthenticatedSession(teacher, httpRequest);
+                        publishTeacherLoginEvent(teacher);
                         log.info("Concurrent renewal request satisfied within 60s grace period for teacher {} ({})",
                                 teacher.getName(), teacher.getEmail());
                         return new RefreshResponse(replacedBy, toTeacherDto(teacher), REFRESH_TOKEN_VALIDITY_DAYS * 24 * 3600);
@@ -167,6 +192,7 @@ public class AuthService {
 
         // Re-authenticate and establish fresh Spring Security HttpSession
         establishAuthenticatedSession(teacher, httpRequest);
+        publishTeacherLoginEvent(teacher);
 
         log.info("Successfully renewed session silently for faculty {} ({}) via persistent token",
                 teacher.getName(), teacher.getEmail());

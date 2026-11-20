@@ -3,9 +3,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Ensure teacher is logged in
-    const teacher = await Auth.requireAuth();
-    if (!teacher) return;
+    // 1. Concurrently launch authentication verification with data retrieval
+    const authPromise = Auth.requireAuth();
 
     let weeklyChartInstance = null;
     let subjectChartInstance = null;
@@ -15,18 +14,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     const todayDayName = dayNames[todayIndex];
     let activeDay = (todayDayName === 'SUNDAY') ? 'MONDAY' : todayDayName;
 
-    const loadDashboardData = async () => {
+    const loadDashboardData = async (isInitialLoad = false) => {
         try {
-            // Load dashboard stats and weekly timetable in parallel
-            const [res, ttRes] = await Promise.all([
+            // Load dashboard stats, weekly timetable, and auth check concurrently in parallel
+            const fetchPromises = [
                 API.get('/api/reports/dashboard').catch(err => ({ success: false, error: err })),
                 API.get('/api/timetable/my-schedule').catch(err => ({ success: false, error: err }))
-            ]);
+            ];
+            if (isInitialLoad) {
+                fetchPromises.push(authPromise);
+            }
+
+            const results = await Promise.all(fetchPromises);
+            const res = results[0];
+            const ttRes = results[1];
+            if (isInitialLoad) {
+                const user = results[2];
+                if (!user) return; // If unauthenticated, redirect is handled by requireAuth
+            }
 
             if (res && res.success && res.data) {
+                // Instantly paint critical numerical statistics and active sessions first
                 renderStats(res.data);
-                renderCharts(res.data);
                 renderActiveSessions(res.data.recentActiveSessions);
+
+                // Render heavier analytical charts in animation frame to keep UI thread fluid
+                requestAnimationFrame(() => {
+                    renderCharts(res.data);
+                });
             }
 
             if (ttRes && ttRes.success && Array.isArray(ttRes.data)) {
@@ -346,12 +361,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     setupTimetableTabs();
-    await loadDashboardData();
+    await loadDashboardData(true);
 
     // Auto-refresh stats periodically only when tab is active (preserves bandwidth and Atlas connections)
     setInterval(() => {
         if (!document.hidden) {
-            loadDashboardData();
+            loadDashboardData(false);
         }
     }, 30000);
 });

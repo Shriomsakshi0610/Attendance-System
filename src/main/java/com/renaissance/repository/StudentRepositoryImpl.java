@@ -76,23 +76,19 @@ public class StudentRepositoryImpl implements StudentRepositoryCustom {
     public java.util.Map<String, Long> countStudentsByClassIds(java.util.Collection<String> classIds) {
         if (classIds == null || classIds.isEmpty()) return new java.util.HashMap<>();
 
-        List<Criteria> orList = new ArrayList<>();
+        java.util.Set<Object> idTargets = new java.util.HashSet<>();
         for (String cId : classIds) {
             if (cId != null && !cId.isBlank()) {
+                idTargets.add(cId);
                 if (ObjectId.isValid(cId)) {
-                    orList.add(new Criteria().orOperator(
-                            Criteria.where("collegeClass.$id").is(cId),
-                            Criteria.where("collegeClass.$id").is(new ObjectId(cId))
-                    ));
-                } else {
-                    orList.add(Criteria.where("collegeClass.$id").is(cId));
+                    idTargets.add(new ObjectId(cId));
                 }
             }
         }
-        if (orList.isEmpty()) return new java.util.HashMap<>();
+        if (idTargets.isEmpty()) return new java.util.HashMap<>();
 
         org.springframework.data.mongodb.core.aggregation.MatchOperation match =
-                org.springframework.data.mongodb.core.aggregation.Aggregation.match(new Criteria().orOperator(orList.toArray(new Criteria[0])));
+                org.springframework.data.mongodb.core.aggregation.Aggregation.match(Criteria.where("collegeClass.$id").in(idTargets));
         org.springframework.data.mongodb.core.aggregation.GroupOperation group =
                 org.springframework.data.mongodb.core.aggregation.Aggregation.group("collegeClass.$id").count().as("count");
         org.springframework.data.mongodb.core.aggregation.Aggregation agg =
