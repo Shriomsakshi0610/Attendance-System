@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +35,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -50,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -145,6 +148,85 @@ fun ActiveSessionScreen(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp,
                         color = Color.White.copy(alpha = 0.9f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Strict 5-Minute Live Attendance Window Countdown Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (state.isSessionExpired) AccentRed.copy(alpha = 0.08f)
+                    else PrimaryIndigo.copy(alpha = 0.08f)
+                ),
+                border = BorderStroke(
+                    width = 1.5.dp,
+                    color = if (state.isSessionExpired) AccentRed.copy(alpha = 0.6f)
+                    else AccentGreen.copy(alpha = 0.6f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(if (state.isSessionExpired) AccentRed else AccentGreen)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (state.isSessionExpired) "ATTENDANCE WINDOW CLOSED" else "ATTENDANCE WINDOW OPEN",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 12.sp,
+                                letterSpacing = 0.8.sp,
+                                color = if (state.isSessionExpired) AccentRed else AccentGreen
+                            )
+                        }
+
+                        // Countdown Timer in Monospace MM:SS
+                        Text(
+                            text = state.formattedRemainingTime,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 24.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = if (state.isSessionExpired) AccentRed else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    val progress = if (state.isSessionExpired) 0f else (state.remainingSeconds.toFloat() / 300f).coerceIn(0f, 1f)
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = if (state.isSessionExpired) AccentRed else AccentGreen,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = if (state.isSessionExpired)
+                            "Deadline reached. Server strictly rejects any further student submissions."
+                        else
+                            "Session closes automatically after 5 minutes. Real-time sync with Student Website.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

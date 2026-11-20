@@ -25,7 +25,7 @@ data class SessionUiState(
     val subjects: List<SubjectItem> = emptyList(),
     val selectedClass: ClassItem? = null,
     val selectedSubject: SubjectItem? = null,
-    val durationMinutes: Int = 15,
+    val durationMinutes: Int = 5,
     val enableBluetoothVerification: Boolean = true, // Enabled by default for dual verification
     val bleRssiThreshold: Int = -75,
     val currentLocation: DeviceLocation? = null,
@@ -33,7 +33,10 @@ data class SessionUiState(
     val attendeeRecords: List<AttendanceRecordItem> = emptyList(),
     val isAdvertisingBle: Boolean = false,
     val errorMessage: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val remainingSeconds: Long = 0L,
+    val formattedRemainingTime: String = "05:00",
+    val isSessionExpired: Boolean = false
 )
 
 class SessionViewModel(
@@ -46,10 +49,78 @@ class SessionViewModel(
     val uiState: StateFlow<SessionUiState> = _uiState.asStateFlow()
 
     private var pollingJob: Job? = null
+    private var timerJob: Job? = null
+    private var baselineRemainingSeconds: Long = 0L
+    private var baselineNanoTime: Long = 0L
 
     init {
         loadClassesAndSubjects()
         fetchLocation()
+    }
+
+    private fun startCountdownTimer(initialSeconds: Long) {
+        timerJob?.cancel()
+        baselineRemainingSeconds = maxOf(0L, initialSeconds)
+        baselineNanoTime = System.nanoTime()
+
+        val isExpired = baselineRemainingSeconds <= 0L
+        _uiState.value = _uiState.value.copy(
+            remainingSeconds = baselineRemainingSeconds,
+            formattedRemainingTime = formatSecondsToMmSs(baselineRemainingSeconds),
+            isSessionExpired = isExpired
+        )
+
+        if (isExpired) return
+
+        timerJob = viewModelScope.launch {
+            while (isActive) {
+                delay(1000L)
+                val elapsedSecs = (System.nanoTime() - baselineNanoTime) / 1_000_000_000L
+                val currentRemaining = maxOf(0L, baselineRemainingSeconds - elapsedSecs)
+                val expiredNow = currentRemaining <= 0L
+
+                _uiState.value = _uiState.value.copy(
+                    remainingSeconds = currentRemaining,
+                    formattedRemainingTime = formatSecondsToMmSs(currentRemaining),
+                    isSessionExpired = expiredNow
+                )
+
+                if (expiredNow) {
+                    val currentSess = _uiState.value.activeSession
+                    if (currentSess != null && currentSess.status.equals("ACTIVE", ignoreCase = true)) {
+                        _uiState.value = _uiState.value.copy(
+                            activeSession = currentSess.copy(status = "EXPIRED", remainingSeconds = 0L)
+                        )
+                    }
+                    break
+                }
+            }
+        }
+    }
+
+    private fun syncServerRemainingTime(serverRemaining: Long) {
+        val elapsedSecs = (System.nanoTime() - baselineNanoTime) / 1_000_000_000L
+        val currentLocalRemaining = maxOf(0L, baselineRemainingSeconds - elapsedSecs)
+        if (Math.abs(currentLocalRemaining - serverRemaining) >= 2L) {
+            baselineRemainingSeconds = serverRemaining
+            baselineNanoTime = System.nanoTime()
+            val expiredNow = serverRemaining <= 0L
+            _uiState.value = _uiState.value.copy(
+                remainingSeconds = serverRemaining,
+                formattedRemainingTime = formatSecondsToMmSs(serverRemaining),
+                isSessionExpired = expiredNow
+            )
+            if (expiredNow) {
+                timerJob?.cancel()
+            }
+        }
+    }
+
+    private fun formatSecondsToMmSs(seconds: Long): String {
+        val totalSec = maxOf(0L, seconds)
+        val minutes = totalSec / 60
+        val secs = totalSec % 60
+        return String.format("%02d:%02d", minutes, secs)
     }
 
     fun loadClassesAndSubjects() {
@@ -156,6 +227,9 @@ class SessionViewModel(
                 val response = apiClient.sessionApi.createSession(request)
                 if (response.isSuccessful && response.body()?.data != null) {
                     val session = response.body()!!.data!!
+                    val remaining = session.remainingSeconds ?: 300L
+                    startCountdownTimer(remaining)
+
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         activeSession = session,
@@ -197,10 +271,25 @@ class SessionViewModel(
                 val response = apiClient.sessionApi.getSessionById(sessionId)
                 if (response.isSuccessful && response.body()?.data != null) {
                     val session = response.body()!!.data!!
+                    val isExpired = session.isWindowExpired || (session.remainingSeconds != null && session.remainingSeconds <= 0L)
+
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        activeSession = session
+                        activeSession = session,
+                        isSessionExpired = isExpired
                     )
+
+                    if (isExpired) {
+                        _uiState.value = _uiState.value.copy(
+                            remainingSeconds = 0L,
+                            formattedRemainingTime = "00:00",
+                            isSessionExpired = true
+                        )
+                        timerJob?.cancel()
+                    } else {
+                        val remaining = session.remainingSeconds ?: 300L
+                        startCountdownTimer(remaining)
+                    }
 
                     if (session.bluetoothVerificationEnabled && !session.bleBeaconUuid.isNullOrBlank()) {
                         bleAdvertiser.startAdvertising(
@@ -238,6 +327,16 @@ class SessionViewModel(
                     if (sessRes.isSuccessful && sessRes.body()?.data != null) {
                         val session = sessRes.body()!!.data!!
                         _uiState.value = _uiState.value.copy(activeSession = session)
+                        if (session.isWindowExpired || (session.remainingSeconds != null && session.remainingSeconds <= 0L)) {
+                            _uiState.value = _uiState.value.copy(
+                                isSessionExpired = true,
+                                remainingSeconds = 0L,
+                                formattedRemainingTime = "00:00"
+                            )
+                            timerJob?.cancel()
+                        } else if (session.remainingSeconds != null) {
+                            syncServerRemainingTime(session.remainingSeconds)
+                        }
                     }
                 } catch (_: Exception) {}
                 delay(3000)
@@ -253,10 +352,14 @@ class SessionViewModel(
                 apiClient.sessionApi.endSession(session.id)
                 bleAdvertiser.stopAdvertising()
                 pollingJob?.cancel()
+                timerJob?.cancel()
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     activeSession = null,
-                    isAdvertisingBle = false
+                    isAdvertisingBle = false,
+                    remainingSeconds = 0L,
+                    formattedRemainingTime = "00:00",
+                    isSessionExpired = true
                 )
                 onEnded()
             } catch (e: Exception) {
@@ -268,6 +371,7 @@ class SessionViewModel(
     override fun onCleared() {
         super.onCleared()
         pollingJob?.cancel()
+        timerJob?.cancel()
         bleAdvertiser.stopAdvertising()
     }
 }

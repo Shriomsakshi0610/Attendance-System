@@ -14,9 +14,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.SocketTimeoutException
@@ -26,6 +28,9 @@ data class DashboardUiState(
     val facultyName: String = "",
     val department: String = "",
     val activeSession: AttendanceSessionItem? = null,
+    val activeSessionRemainingSeconds: Long = 0L,
+    val activeSessionFormattedTime: String = "",
+    val isActiveSessionExpired: Boolean = false,
     val assignedClasses: List<ClassItem> = emptyList(),
     val assignedSubjects: List<SubjectItem> = emptyList(),
     val classesState: ResourceState<List<ClassItem>> = ResourceState.Idle,
@@ -51,10 +56,54 @@ class DashboardViewModel(
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     private var refreshJob: Job? = null
+    private var activeSessionTimerJob: Job? = null
+    private var baselineRemainingSeconds: Long = 0L
+    private var baselineNanoTime: Long = 0L
 
     init {
         refreshDashboard()
         listenLocation()
+    }
+
+    private fun startActiveSessionTimer(initialSeconds: Long) {
+        activeSessionTimerJob?.cancel()
+        baselineRemainingSeconds = maxOf(0L, initialSeconds)
+        baselineNanoTime = System.nanoTime()
+
+        val isExpired = baselineRemainingSeconds <= 0L
+        _uiState.value = _uiState.value.copy(
+            activeSessionRemainingSeconds = baselineRemainingSeconds,
+            activeSessionFormattedTime = formatSecondsToMmSs(baselineRemainingSeconds),
+            isActiveSessionExpired = isExpired
+        )
+
+        if (isExpired) return
+
+        activeSessionTimerJob = viewModelScope.launch(Dispatchers.Main) {
+            while (isActive) {
+                delay(1000L)
+                val elapsedSecs = (System.nanoTime() - baselineNanoTime) / 1_000_000_000L
+                val currentRemaining = maxOf(0L, baselineRemainingSeconds - elapsedSecs)
+                val expiredNow = currentRemaining <= 0L
+
+                _uiState.value = _uiState.value.copy(
+                    activeSessionRemainingSeconds = currentRemaining,
+                    activeSessionFormattedTime = formatSecondsToMmSs(currentRemaining),
+                    isActiveSessionExpired = expiredNow
+                )
+
+                if (expiredNow) {
+                    break
+                }
+            }
+        }
+    }
+
+    private fun formatSecondsToMmSs(seconds: Long): String {
+        val totalSec = maxOf(0L, seconds)
+        val minutes = totalSec / 60
+        val secs = totalSec % 60
+        return String.format("%02d:%02d", minutes, secs)
     }
 
     /**
@@ -176,6 +225,18 @@ class DashboardViewModel(
                     facultyName = sessionPrefs.getTeacherName(),
                     department = sessionPrefs.getDepartment()
                 )
+
+                if (active != null) {
+                    val remaining = active.remainingSeconds ?: 300L
+                    startActiveSessionTimer(remaining)
+                } else {
+                    activeSessionTimerJob?.cancel()
+                    _uiState.value = _uiState.value.copy(
+                        activeSessionRemainingSeconds = 0L,
+                        activeSessionFormattedTime = "",
+                        isActiveSessionExpired = false
+                    )
+                }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 val currentClasses = _uiState.value.assignedClasses
@@ -212,5 +273,6 @@ class DashboardViewModel(
     override fun onCleared() {
         super.onCleared()
         refreshJob?.cancel()
+        activeSessionTimerJob?.cancel()
     }
 }

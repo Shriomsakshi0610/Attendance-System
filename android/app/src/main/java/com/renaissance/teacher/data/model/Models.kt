@@ -149,8 +149,15 @@ data class AttendanceSessionItem(
     val status: String,
     val presentCount: Long = 0,
     val totalEnrolled: Long = 0,
-    val attendanceLink: String?
-)
+    val attendanceLink: String?,
+    val serverTime: String? = null,
+    val remainingSeconds: Long? = null
+) {
+    val isWindowExpired: Boolean
+        get() = status.equals("EXPIRED", ignoreCase = true) ||
+                status.equals("COMPLETED", ignoreCase = true) ||
+                (remainingSeconds != null && remainingSeconds <= 0L)
+}
 
 data class CreateSessionRequest(
     val classId: String,
@@ -158,7 +165,7 @@ data class CreateSessionRequest(
     val latitude: Double,
     val longitude: Double,
     val accuracy: Double,
-    val durationMinutes: Int = 15,
+    val durationMinutes: Int = 5,
     val enableBluetoothVerification: Boolean = false,
     val bleRssiThreshold: Int = -75
 )

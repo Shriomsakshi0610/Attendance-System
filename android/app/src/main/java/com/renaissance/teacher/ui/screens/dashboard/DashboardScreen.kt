@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -295,23 +296,35 @@ fun DashboardScreen(
                                             modifier = Modifier
                                                 .size(10.dp)
                                                 .clip(CircleShape)
-                                                .background(AccentGreen)
+                                                .background(if (state.isActiveSessionExpired) AccentRed else AccentGreen)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = "LIVE SESSION RUNNING",
+                                            text = if (state.isActiveSessionExpired) "ATTENDANCE WINDOW CLOSED" else "LIVE ATTENDANCE RUNNING",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 12.sp,
                                             color = Color.White
                                         )
                                     }
-                                    Text(
-                                        text = active.sessionCode,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 18.sp,
-                                        letterSpacing = 1.sp,
-                                        color = Color.White
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        if (state.activeSessionFormattedTime.isNotBlank()) {
+                                            Text(
+                                                text = if (state.isActiveSessionExpired) "00:00" else state.activeSessionFormattedTime,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                fontSize = 14.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                color = if (state.isActiveSessionExpired) AccentRed else AccentGreen
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                        }
+                                        Text(
+                                            text = active.sessionCode,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            fontSize = 18.sp,
+                                            letterSpacing = 1.sp,
+                                            color = Color.White
+                                        )
+                                    }
                                 }
                                 Spacer(modifier = Modifier.height(10.dp))
                                 Text(
@@ -319,6 +332,17 @@ fun DashboardScreen(
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 15.sp,
                                     color = Color.White
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                val progress = if (state.isActiveSessionExpired) 0f else (state.activeSessionRemainingSeconds.toFloat() / 300f).coerceIn(0f, 1f)
+                                androidx.compose.material3.LinearProgressIndicator(
+                                    progress = { progress },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(4.dp)
+                                        .clip(RoundedCornerShape(2.dp)),
+                                    color = if (state.isActiveSessionExpired) AccentRed else AccentGreen,
+                                    trackColor = Color.White.copy(alpha = 0.25f)
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(
